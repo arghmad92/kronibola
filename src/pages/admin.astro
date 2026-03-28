@@ -44,6 +44,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="tabs">
         <button class="tab active" data-tab="schedule">MANAGE SCHEDULE</button>
         <button class="tab" data-tab="players">MANAGE PLAYERS</button>
+        <button class="tab" data-tab="revenue">REVENUE</button>
       </div>
 
       <!-- Schedule Tab -->
@@ -75,6 +76,18 @@ import Layout from '../layouts/Layout.astro';
           </div>
           <div id="playersTable" class="table-wrap"></div>
           <button class="btn btn--primary" id="savePlayersBtn" style="width:100%;margin-top:1rem">SAVE CHANGES</button>
+        </div>
+      </div>
+
+      <!-- Revenue Tab -->
+      <div class="tab-panel" id="tab-revenue">
+        <div class="glass panel-card">
+          <div class="panel-header">
+            <h3>REVENUE <span class="neon-text">DASHBOARD</span></h3>
+          </div>
+          <div id="revenueDashboard">
+            <p style="color:var(--text-muted);padding:1rem">Loading revenue data...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -112,6 +125,7 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('adminContent')!.style.display = '';
         loadSchedule();
         loadAllPlayers();
+        loadRevenue();
       } else {
         errEl.style.display = '';
         errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>';
@@ -288,6 +302,75 @@ import Layout from '../layouts/Layout.astro';
       setTimeout(() => { btn.textContent = 'SAVE CHANGES'; btn.disabled = false; }, 2000);
     } catch { btn.textContent = 'ERROR'; btn.disabled = false; }
   });
+
+  // --- REVENUE ---
+  async function loadRevenue() {
+    try {
+      const res = await fetch(`${API}/admin/players`, { headers: { Authorization: adminToken } });
+      const data = await res.json();
+      const players = data.players || [];
+      renderRevenue(players);
+    } catch {}
+  }
+
+  function renderRevenue(players: any[]) {
+    const wrap = document.getElementById('revenueDashboard')!;
+
+    const paid = players.filter((p: any) => p['Payment Status'] === 'Paid');
+    const pending = players.filter((p: any) => p['Payment Status'] === 'Pending');
+    const rejected = players.filter((p: any) => p['Payment Status'] === 'Rejected');
+
+    const totalRevenue = paid.reduce((sum: number, p: any) => sum + (parseFloat(p.Amount) || 0), 0);
+
+    // Revenue per session
+    const sessionMap: Record<string, { paid: number; count: number }> = {};
+    paid.forEach((p: any) => {
+      const date = p['Session Date'] || 'Unknown';
+      if (!sessionMap[date]) sessionMap[date] = { paid: 0, count: 0 };
+      sessionMap[date].paid += parseFloat(p.Amount) || 0;
+      sessionMap[date].count += 1;
+    });
+
+    const sessions = Object.entries(sessionMap).sort(([a], [b]) => a.localeCompare(b));
+    const maxRevenue = Math.max(...sessions.map(([, v]) => v.paid), 1);
+
+    wrap.innerHTML = `
+      <div class="revenue-summary">
+        <div class="rev-card glass">
+          <div class="rev-label">Total Revenue</div>
+          <div class="rev-value neon-text">RM ${totalRevenue.toFixed(2)}</div>
+        </div>
+        <div class="rev-card glass">
+          <div class="rev-label">Paid</div>
+          <div class="rev-value" style="color:var(--neon)">${paid.length}</div>
+        </div>
+        <div class="rev-card glass">
+          <div class="rev-label">Pending</div>
+          <div class="rev-value" style="color:#f0c040">${pending.length}</div>
+        </div>
+        <div class="rev-card glass">
+          <div class="rev-label">Rejected</div>
+          <div class="rev-value" style="color:var(--red)">${rejected.length}</div>
+        </div>
+      </div>
+
+      <h4 style="margin:1.5rem 0 1rem;font-size:0.95rem">REVENUE <span class="neon-text">PER SESSION</span></h4>
+      ${sessions.length === 0 ? '<p style="color:var(--text-muted)">No paid sessions yet.</p>' : `
+        <div class="rev-chart">
+          ${sessions.map(([date, v]) => {
+            const pct = (v.paid / maxRevenue) * 100;
+            return `<div class="rev-bar-row">
+              <span class="rev-bar-label">${date}</span>
+              <div class="rev-bar-track">
+                <div class="rev-bar-fill" style="width:${pct}%"></div>
+              </div>
+              <span class="rev-bar-amount">RM ${v.paid.toFixed(2)} (${v.count})</span>
+            </div>`;
+          }).join('')}
+        </div>
+      `}
+    `;
+  }
 </script>
 
 <style>
@@ -337,4 +420,17 @@ import Layout from '../layouts/Layout.astro';
 
   .footer { border-top: 1px solid var(--border); padding: 2rem 0; text-align: center; margin-top: 3rem; }
   .footer-inner { font-size: 0.78rem; color: var(--text-muted); }
+
+  /* Revenue Dashboard */
+  .revenue-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .rev-card { padding: 1.2rem; text-align: center; border-radius: 12px; }
+  .rev-label { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.1em; font-weight: 600; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .rev-value { font-size: 1.4rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+
+  .rev-chart { display: flex; flex-direction: column; gap: 0.6rem; }
+  .rev-bar-row { display: flex; align-items: center; gap: 0.8rem; }
+  .rev-bar-label { font-size: 0.78rem; color: var(--text-muted); min-width: 90px; text-align: right; }
+  .rev-bar-track { flex: 1; height: 24px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; }
+  .rev-bar-fill { height: 100%; background: linear-gradient(90deg, var(--neon), #00e676); border-radius: 6px; transition: width 0.4s ease; }
+  .rev-bar-amount { font-size: 0.78rem; color: var(--text); min-width: 110px; font-weight: 600; }
 </style>

@@ -52,6 +52,10 @@ import Layout from '../layouts/Layout.astro';
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         INVITE FRIENDS VIA WHATSAPP
       </button>
+      <button class="btn btn--ghost" id="calendarBtn" style="width:100%; margin-top:0.5rem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+        ADD TO CALENDAR
+      </button>
     </div>
   </main>
 </Layout>
@@ -104,6 +108,10 @@ import Layout from '../layouts/Layout.astro';
           <div class="mc-row">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <span>${s.Location}</span>
+            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.Location)}" target="_blank" rel="noopener" class="mc-maps-link" onclick="event.stopPropagation()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Maps
+            </a>
           </div>
           <div class="mc-row">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -126,21 +134,23 @@ import Layout from '../layouts/Layout.astro';
       </div>
     `).join('');
 
-    // Card click handlers
-    cardsEl.querySelectorAll('.mc-register').forEach((btn) => {
-      btn.addEventListener('click', () => openRegistration());
+    // Card click to select session
+    cardsEl.querySelectorAll('.match-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.mc-register') || target.closest('.mc-maps-link')) return;
+        selectSession(parseInt((card as HTMLElement).dataset.idx!));
+      });
     });
 
-    // If multiple cards, add dots
-    if (sessions.length > 1) {
-      const dots = document.createElement('div');
-      dots.className = 'card-dots';
-      dots.innerHTML = sessions.map((_: any, i: number) => `<span class="dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></span>`).join('');
-      cardsEl.appendChild(dots);
-      dots.querySelectorAll('.dot').forEach((d) => {
-        d.addEventListener('click', () => selectSession(parseInt((d as HTMLElement).dataset.idx!)));
+    // Register button handlers
+    cardsEl.querySelectorAll('.mc-register').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt((btn as HTMLElement).dataset.idx!);
+        selectSession(idx);
+        openRegistration();
       });
-    }
+    });
 
     startCountdowns();
   }
@@ -152,9 +162,6 @@ import Layout from '../layouts/Layout.astro';
     // Update active card
     cardsEl.querySelectorAll('.match-card').forEach((c, i) => {
       c.classList.toggle('active', i === idx);
-    });
-    cardsEl.querySelectorAll('.dot').forEach((d, i) => {
-      d.classList.toggle('active', i === idx);
     });
 
     lineupEl.style.display = '';
@@ -372,6 +379,24 @@ import Layout from '../layouts/Layout.astro';
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   });
 
+  // Add to Calendar
+  document.getElementById('calendarBtn')!.addEventListener('click', () => {
+    if (!currentSession) return;
+    const time = parseTime(currentSession.Time);
+    let dateStr = currentSession.Date.replace(/\//g, '-');
+    let startDT = dateStr.replace(/-/g, '');
+    let endDT = startDT;
+    if (time) {
+      const hh = String(time.hours).padStart(2, '0');
+      const mm = String(time.minutes).padStart(2, '0');
+      startDT += `T${hh}${mm}00`;
+      const endH = String((time.hours + 2) % 24).padStart(2, '0');
+      endDT += `T${endH}${mm}00`;
+    }
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(currentSession['Session Name'])}&dates=${startDT}/${endDT}&location=${encodeURIComponent(currentSession.Location)}&details=${encodeURIComponent('KroniBola match')}`;
+    window.open(url, '_blank');
+  });
+
   function showErr(el: HTMLElement, msg: string) {
     el.style.display = '';
     el.innerHTML = `<div class="alert alert--error">${msg}</div>`;
@@ -417,10 +442,14 @@ import Layout from '../layouts/Layout.astro';
   .match-cards { margin: 1.2rem 0; }
   .match-card {
     padding: 1.5rem; margin-bottom: 1rem;
-    border-left: 4px solid var(--neon); display: none;
+    border-left: 4px solid var(--border); cursor: pointer;
     background: linear-gradient(135deg, rgba(14,14,14,0.95), rgba(0,255,65,0.02));
+    opacity: 0.6; transition: all 0.25s ease;
   }
-  .match-card.active { display: block; animation: fadeIn 0.35s ease; }
+  .match-card.active {
+    border-left-color: var(--neon); opacity: 1;
+    animation: fadeIn 0.35s ease;
+  }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
   .mc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -461,11 +490,14 @@ import Layout from '../layouts/Layout.astro';
   .progress-fill--full { background: linear-gradient(90deg, #cc7a00, var(--orange)); box-shadow: 0 0 12px rgba(255,149,0,0.3); }
   .progress-fill--full::after { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
 
-  .card-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.5rem; }
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s;
+  .mc-maps-link {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.72rem; font-weight: 700; color: var(--neon); text-decoration: none;
+    margin-left: auto; padding: 0.2rem 0.5rem; border-radius: 6px;
+    border: 1px solid rgba(0,255,65,0.2); transition: all 0.2s;
   }
-  .dot.active { background: var(--neon); box-shadow: 0 0 8px var(--neon-glow); }
+  .mc-maps-link:hover { background: rgba(0,255,65,0.08); border-color: var(--neon); }
+  .mc-maps-link svg { color: var(--neon); opacity: 0.8; }
 
   /* Lineup */
   .section-header { display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1rem; }
