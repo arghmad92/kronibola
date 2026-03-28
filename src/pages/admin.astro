@@ -173,7 +173,7 @@ import Layout from '../layouts/Layout.astro';
           </div>
           <div class="ac-row2">
             <div class="ac-field">
-              <label>Date</label>
+              <label>Date ${s.Date ? `<span class="ac-day">${new Date(s.Date).toLocaleDateString('en-MY', { weekday: 'long' })}</span>` : ''}</label>
               <input class="form-input s-input" type="date" data-field="Date" data-idx="${i}" value="${s.Date || ''}" />
             </div>
             <div class="ac-field">
@@ -549,6 +549,7 @@ import Layout from '../layouts/Layout.astro';
   .ac-fields { display: flex; flex-direction: column; gap: 0.5rem; }
   .ac-field { display: flex; flex-direction: column; gap: 0.2rem; }
   .ac-field label { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .ac-day { color: var(--neon); text-transform: none; letter-spacing: 0; font-weight: 600; }
   .ac-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .ac-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
 
