@@ -248,20 +248,30 @@ import Layout from '../layouts/Layout.astro';
     if (!filtered.length) { wrap.innerHTML = '<p style="color:var(--text-muted);padding:1rem">No players for this game.</p>'; return; }
 
     wrap.innerHTML = `<table class="data-table">
-      <thead><tr><th>Del?</th><th>Name</th><th>Phone</th><th>Status</th><th>Notify</th></tr></thead>
+      <thead><tr><th>Del?</th><th>Ref</th><th>Name</th><th>Phone</th><th>Status</th><th>Refund</th><th>Notify</th></tr></thead>
       <tbody>${filtered.map((p, i) => {
         const phone = String(p.Phone || '').replace("'", '').trim();
+        const ref = p['Ref Code'] || '—';
+        const refund = p['Refund'] || '';
         const waMsg = encodeURIComponent(`Hi ${p['Player Name']}, good news! A slot opened up for the game on ${date}. Please pay RM${p.Amount} to confirm your spot.`);
         const waLink = phone ? `https://wa.me/6${phone}?text=${waMsg}` : '#';
-        return `<tr>
+        const isOverdue = p['Payment Status'] === 'Overdue';
+        return `<tr style="${isOverdue ? 'background:rgba(255,87,34,0.08)' : ''}">
           <td><input type="checkbox" class="player-del" data-name="${p['Player Name']}" /></td>
+          <td style="font-family:'Space Grotesk';font-size:0.68rem;color:var(--neon);white-space:nowrap">${ref}</td>
           <td>${p['Player Name']}</td>
           <td>${phone}</td>
           <td><select class="cell-select player-status" data-name="${p['Player Name']}">
             <option value="Pending" ${p['Payment Status'] === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Overdue" ${p['Payment Status'] === 'Overdue' ? 'selected' : ''}>Overdue</option>
             <option value="Paid" ${p['Payment Status'] === 'Paid' ? 'selected' : ''}>Paid</option>
             <option value="Waitlist" ${p['Payment Status'] === 'Waitlist' ? 'selected' : ''}>Waitlist</option>
             <option value="Rejected" ${p['Payment Status'] === 'Rejected' ? 'selected' : ''}>Rejected</option>
+          </select></td>
+          <td><select class="cell-select player-refund" data-name="${p['Player Name']}" style="font-size:0.72rem">
+            <option value="" ${!refund ? 'selected' : ''}>—</option>
+            <option value="Pending Refund" ${refund === 'Pending Refund' ? 'selected' : ''}>Pending</option>
+            <option value="Refunded" ${refund === 'Refunded' ? 'selected' : ''}>Refunded</option>
           </select></td>
           <td><a href="${waLink}" target="_blank" class="wa-notify-link">Send</a></td>
         </tr>`;
@@ -282,6 +292,11 @@ import Layout from '../layouts/Layout.astro';
       statusMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value);
     });
 
+    const refundMap = new Map<string, string>();
+    document.querySelectorAll('.player-refund').forEach((sel) => {
+      refundMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value);
+    });
+
     // Track status changes for notifications
     const changedPlayers: { name: string; phone: string; oldStatus: string; newStatus: string }[] = [];
 
@@ -299,6 +314,9 @@ import Layout from '../layouts/Layout.astro';
             });
           }
           p['Payment Status'] = newStatus;
+        }
+        if (refundMap.has(p['Player Name'])) {
+          p['Refund'] = refundMap.get(p['Player Name']);
         }
       }
       return p;

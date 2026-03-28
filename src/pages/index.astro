@@ -199,15 +199,15 @@ import Layout from '../layouts/Layout.astro';
       sessions.forEach((s: any, i: number) => {
         const max = parseInt(s['Max Players']) || 20;
         const active = players.filter((p: any) =>
-          String(p['Session Date']) === s.Date && ['Paid', 'Pending'].includes(p['Payment Status'])
+          String(p['Session Date']) === s.Date && ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])
         ).length;
         // Only update if this is the matching session
         const sessionPlayers = data.players?.filter((p: any) => String(p['Session Date']) === s.Date) || [];
-        const count = sessionPlayers.filter((p: any) => ['Paid', 'Pending'].includes(p['Payment Status'])).length;
+        const count = sessionPlayers.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])).length;
         updateSlots(i, count, max);
       });
 
-      const active = players.filter((p: any) => ['Paid', 'Pending'].includes(p['Payment Status']));
+      const active = players.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status']));
       document.getElementById('lineupCount')!.textContent = `${players.length} players`;
 
       // Update register button text
@@ -240,7 +240,7 @@ import Layout from '../layouts/Layout.astro';
   function renderLineup(list: any[]) {
     const grid = document.getElementById('lineupGrid')!;
     const empty = document.getElementById('lineupEmpty')!;
-    const order: Record<string, number> = { Paid: 1, Pending: 2, Waitlist: 3, Rejected: 4 };
+    const order: Record<string, number> = { Paid: 1, Pending: 2, Overdue: 3, Waitlist: 4, Rejected: 5 };
     const sorted = [...list].sort((a, b) => (order[a['Payment Status']] || 5) - (order[b['Payment Status']] || 5));
 
     if (!sorted.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
@@ -326,7 +326,7 @@ import Layout from '../layouts/Layout.astro';
 
     if (n === 1) steps[0].classList.add('active');
     else if (n === 2) {
-      const active = players.filter((p: any) => ['Paid', 'Pending'].includes(p['Payment Status']));
+      const active = players.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status']));
       if (active.length >= currentMax) {
         steps[2].classList.add('active'); // waitlist
       } else {
@@ -379,6 +379,8 @@ import Layout from '../layouts/Layout.astro';
           doneSub.textContent = 'Slot confirmed. See you on the pitch!';
         }
         // Populate receipt
+        const refCode = data.refCode || '—';
+        document.getElementById('rcptRef')!.textContent = refCode;
         document.getElementById('rcptName')!.textContent = name;
         document.getElementById('rcptSession')!.textContent = currentSession['Session Name'];
         document.getElementById('rcptDate')!.textContent = `${currentSession.Date} · ${currentSession.Time}`;
@@ -386,8 +388,8 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('rcptFee')!.textContent = `RM ${currentSession.Fee}`;
 
         const msg = wl
-          ? `Hi Admin, I joined WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}.`
-          : `Hi Admin, I registered for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}.`;
+          ? `Hi Admin, I joined WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}. Ref: ${refCode}`
+          : `Hi Admin, I registered for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}. Ref: ${refCode}. Please match this code with my payment receipt.`;
         (document.getElementById('waBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
         showStep(3);
       } else {

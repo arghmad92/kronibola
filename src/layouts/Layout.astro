@@ -109,6 +109,7 @@ const { title, description = 'KroniBola — Football pickup game registration', 
           <!-- Confirmation receipt -->
           <div class="receipt" id="receiptCard">
             <div class="receipt-header">REGISTRATION RECEIPT</div>
+            <div class="receipt-row"><span>Ref Code</span><span id="rcptRef" style="color:var(--neon);font-family:'Space Grotesk',sans-serif">—</span></div>
             <div class="receipt-row"><span>Player</span><span id="rcptName">—</span></div>
             <div class="receipt-row"><span>Session</span><span id="rcptSession">—</span></div>
             <div class="receipt-row"><span>Date</span><span id="rcptDate">—</span></div>
@@ -267,6 +268,8 @@ const { title, description = 'KroniBola — Football pickup game registration', 
   .badge--pending { background: var(--orange); color: #000; }
   .badge--waitlist { background: var(--blue); color: #000; }
   .badge--rejected { background: var(--red); color: #fff; }
+  .badge--overdue { background: #ff5722; color: #fff; animation: blink 1.5s infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
   /* Buttons */
   .btn {
