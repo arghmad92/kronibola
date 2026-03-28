@@ -159,7 +159,10 @@ import Layout from '../layouts/Layout.astro';
           <option value="Open" ${s.Status === 'Open' ? 'selected' : ''}>Open</option>
           <option value="Closed" ${s.Status === 'Closed' ? 'selected' : ''}>Closed</option>
         </select></td>
-        <td><button class="del-btn" data-idx="${i}">&#10005;</button></td>
+        <td class="action-cell">
+          <button class="dup-btn" data-idx="${i}" title="Duplicate">&#9851;</button>
+          <button class="del-btn" data-idx="${i}" title="Delete">&#10005;</button>
+        </td>
       </tr>`).join('')}</tbody>
     </table>`;
 
@@ -167,6 +170,16 @@ import Layout from '../layouts/Layout.astro';
       el.addEventListener('change', (e) => {
         const t = e.target as HTMLInputElement;
         sessionsData[parseInt(t.dataset.idx!)][t.dataset.field!] = t.value;
+      });
+    });
+
+    wrap.querySelectorAll('.dup-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt((btn as HTMLElement).dataset.idx!);
+        const original = sessionsData[idx];
+        const duplicate = { ...original, Date: '', Status: 'Open' };
+        sessionsData.push(duplicate);
+        renderSchedule();
       });
     });
 
@@ -312,8 +325,12 @@ import Layout from '../layouts/Layout.astro';
   }
   .cell-input:focus, .cell-select:focus { border-color: var(--neon); outline: none; }
 
-  .del-btn { background: none; border: 1px solid var(--border); color: var(--red); cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s; }
+  .action-cell { display: flex; gap: 0.3rem; }
+  .dup-btn, .del-btn { background: none; border: 1px solid var(--border); cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s; }
+  .del-btn { color: var(--red); }
   .del-btn:hover { background: var(--red); color: #fff; }
+  .dup-btn { color: var(--neon); }
+  .dup-btn:hover { background: var(--neon); color: #000; }
 
   .wa-notify-link { color: var(--neon); font-size: 0.82rem; font-weight: 600; }
   .wa-notify-link:hover { text-decoration: underline; }
