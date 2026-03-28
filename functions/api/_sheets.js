@@ -19,12 +19,18 @@ async function createJWT(credentials) {
   const unsigned = `${enc(header)}.${enc(payload)}`;
 
   // Import private key — handle both real newlines and literal \n
-  const pem = credentials.private_key
-    .replace(/\\n/g, '\n')
+  let rawKey = credentials.private_key || '';
+  // Normalize: replace literal \n with real newlines, then strip PEM headers and whitespace
+  rawKey = rawKey.replace(/\\n/g, '\n');
+  const pem = rawKey
     .replace(/-----BEGIN PRIVATE KEY-----/g, '')
     .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/[\n\r\s]/g, '');
-  const binaryKey = Uint8Array.from(atob(pem), (c) => c.charCodeAt(0));
+    .replace(/[\n\r\s]/g, '')
+    .trim();
+
+  // Pad base64 if needed
+  const padded = pem + '='.repeat((4 - (pem.length % 4)) % 4);
+  const binaryKey = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
   const key = await crypto.subtle.importKey('pkcs8', binaryKey, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
 
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsigned));
