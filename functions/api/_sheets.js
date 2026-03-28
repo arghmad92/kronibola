@@ -51,13 +51,14 @@ async function getAccessToken(credentials) {
 }
 
 function parseCreds(raw) {
-  // Handle escaped newlines in private_key that Cloudflare may mangle
-  const fixed = raw.replace(/\\n/g, '\n');
+  // Cloudflare may store real newlines inside the JSON string value,
+  // which breaks JSON.parse. Replace all real newlines with \\n first.
   try {
-    return JSON.parse(fixed);
+    return JSON.parse(raw);
   } catch {
-    // Try replacing literal newlines inside the key
-    return JSON.parse(raw.replace(/\n/g, '\\n'));
+    // Replace real newlines (that break JSON) with escaped \\n
+    const fixed = raw.replace(/\n/g, '\\n').replace(/\r/g, '');
+    return JSON.parse(fixed);
   }
 }
 
