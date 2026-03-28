@@ -1,0 +1,210 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Sponsors & Partners — KroniBola" activeTab="crew" hideNav={false}>
+  <header class="page-header">
+    <div class="container">
+      <h1 class="page-title">SPONSORS & <span class="neon-text">PARTNERS</span></h1>
+      <p class="page-sub">The brands that keep us on the pitch</p>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Why sponsor -->
+    <div class="why-section">
+      <h2 class="section-title">WHY <span class="neon-text">PARTNER</span> WITH US?</h2>
+      <div class="why-grid">
+        <div class="why-card glass">
+          <span class="why-icon">&#9917;</span>
+          <h3>Active Community</h3>
+          <p>Weekly games with 15-20 committed players per session. Real engagement, not just numbers.</p>
+        </div>
+        <div class="why-card glass">
+          <span class="why-icon">&#128248;</span>
+          <h3>Social Visibility</h3>
+          <p>Your brand featured on our app, match day photos, and shared across our players' social media.</p>
+        </div>
+        <div class="why-card glass">
+          <span class="why-icon">&#127919;</span>
+          <h3>Targeted Audience</h3>
+          <p>Active Malaysian men aged 20-35 — health-conscious, sports enthusiasts, and high engagement.</p>
+        </div>
+        <div class="why-card glass">
+          <span class="why-icon">&#129309;</span>
+          <h3>Flexible Packages</h3>
+          <p>From match day sponsorship to season-long partnerships. We'll tailor it to your brand goals.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sponsorship tiers -->
+    <div class="tiers-section">
+      <h2 class="section-title">SPONSORSHIP <span class="neon-text">TIERS</span></h2>
+      <div class="tiers-grid">
+
+        <div class="tier-card glass">
+          <div class="tier-badge">MATCH DAY</div>
+          <h3 class="tier-name">Game Sponsor</h3>
+          <div class="tier-perks">
+            <div class="perk">Logo on match day lineup</div>
+            <div class="perk">Mentioned in WhatsApp group</div>
+            <div class="perk">Photo coverage of your brand</div>
+            <div class="perk">1 game session</div>
+          </div>
+          <a href="https://wa.me/60126183827?text=Hi%20KroniBola%2C%20I'm%20interested%20in%20the%20Game%20Sponsor%20package." target="_blank" class="btn btn--outline" style="width:100%">ENQUIRE</a>
+        </div>
+
+        <div class="tier-card glass tier-card--featured">
+          <div class="tier-badge tier-badge--neon">SEASON</div>
+          <h3 class="tier-name">Season Partner</h3>
+          <div class="tier-perks">
+            <div class="perk">Logo on app & all match cards</div>
+            <div class="perk">Brand banner at venue</div>
+            <div class="perk">Featured in gallery & social</div>
+            <div class="perk">Product placement / giveaways</div>
+            <div class="perk">4 game sessions</div>
+          </div>
+          <a href="https://wa.me/60126183827?text=Hi%20KroniBola%2C%20I'm%20interested%20in%20the%20Season%20Partner%20package." target="_blank" class="btn btn--primary" style="width:100%">ENQUIRE</a>
+        </div>
+
+        <div class="tier-card glass">
+          <div class="tier-badge">PREMIUM</div>
+          <h3 class="tier-name">Title Sponsor</h3>
+          <div class="tier-perks">
+            <div class="perk">Everything in Season Partner</div>
+            <div class="perk">Co-branded match: "KroniBola x Brand"</div>
+            <div class="perk">Exclusive product booth at venue</div>
+            <div class="perk">Priority logo placement everywhere</div>
+            <div class="perk">Custom content collaboration</div>
+          </div>
+          <a href="https://wa.me/60126183827?text=Hi%20KroniBola%2C%20I'm%20interested%20in%20the%20Title%20Sponsor%20package." target="_blank" class="btn btn--outline" style="width:100%">ENQUIRE</a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Current sponsors -->
+    <div class="current-section">
+      <h2 class="section-title">OUR <span class="neon-text">PARTNERS</span></h2>
+      <div class="sponsors-grid" id="sponsorsGrid">
+        <div class="sponsor-empty glass">
+          <span class="empty-icon">&#127942;</span>
+          <p>Your brand could be here.</p>
+          <p class="empty-sub">Be the first to partner with KroniBola!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="sponsor-cta glass">
+      <div class="cta-glow"></div>
+      <h3>READY TO <span class="neon-text">KICK OFF?</span></h3>
+      <p>Let's talk about how your brand can be part of the beautiful game.</p>
+      <div class="cta-buttons">
+        <a href="https://wa.me/60126183827?text=Hi%20KroniBola%2C%20I'm%20interested%20in%20sponsoring." target="_blank" class="btn btn--wa" style="flex:1">WHATSAPP US</a>
+        <a href="mailto:kronibola@gmail.com" class="btn btn--ghost" style="flex:1">EMAIL US</a>
+      </div>
+    </div>
+
+  </main>
+</Layout>
+
+<style>
+  .section-title {
+    font-size: 1.2rem; letter-spacing: 0.04em; margin-bottom: 1rem;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  /* Why section */
+  .why-section { padding: 1.5rem 0; }
+  .why-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .why-card {
+    padding: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem;
+    animation: fadeUp 0.4s ease both;
+  }
+  .why-card:nth-child(1) { animation-delay: 0s; }
+  .why-card:nth-child(2) { animation-delay: 0.08s; }
+  .why-card:nth-child(3) { animation-delay: 0.16s; }
+  .why-card:nth-child(4) { animation-delay: 0.24s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  .why-icon { font-size: 1.3rem; }
+  .why-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 0.88rem; font-weight: 700; }
+  .why-card p { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
+
+  /* Tiers */
+  .tiers-section { padding: 1.5rem 0; }
+  .tiers-grid { display: flex; flex-direction: column; gap: 0.8rem; }
+
+  .tier-card {
+    padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .tier-card:hover { transform: translateY(-2px); }
+
+  .tier-card--featured {
+    border-color: rgba(0,255,65,0.25);
+    background: linear-gradient(135deg, rgba(0,255,65,0.04), rgba(14,14,14,0.95));
+    box-shadow: 0 0 30px rgba(0,255,65,0.05);
+  }
+
+  .tier-badge {
+    display: inline-block; align-self: flex-start;
+    font-size: 0.62rem; font-weight: 800; letter-spacing: 0.15em;
+    padding: 0.25rem 0.8rem; border-radius: 6px;
+    background: rgba(255,255,255,0.06); color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .tier-badge--neon { background: var(--neon); color: #000; border-color: var(--neon); }
+
+  .tier-name {
+    font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700;
+  }
+
+  .tier-perks { display: flex; flex-direction: column; gap: 0.4rem; }
+  .perk {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;
+  }
+  .perk::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--neon); flex-shrink: 0; box-shadow: 0 0 6px var(--neon-glow);
+  }
+
+  /* Current sponsors */
+  .current-section { padding: 1.5rem 0; }
+  .sponsors-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+
+  .sponsor-empty {
+    grid-column: span 2; padding: 2.5rem 1rem; text-align: center;
+    border-style: dashed; border-color: var(--border-light);
+  }
+  .empty-icon { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+  .sponsor-empty p { font-size: 0.88rem; color: var(--text-secondary); }
+  .empty-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+  /* CTA */
+  .sponsor-cta {
+    padding: 2rem 1.5rem; text-align: center; margin: 1rem 0 2rem;
+    position: relative; overflow: hidden;
+  }
+  .cta-glow {
+    position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,65,0.08), transparent);
+    pointer-events: none;
+  }
+  .sponsor-cta h3 {
+    font-size: 1.1rem; margin-bottom: 0.5rem; position: relative;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .sponsor-cta p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem; position: relative; }
+  .cta-buttons { display: flex; gap: 0.5rem; position: relative; }
+
+  @media (max-width: 380px) {
+    .why-grid { grid-template-columns: 1fr; }
+    .cta-buttons { flex-direction: column; }
+  }
+</style>
