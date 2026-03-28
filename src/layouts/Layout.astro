@@ -38,6 +38,13 @@ const { title, description = 'KroniBola — Football pickup game registration', 
     <slot />
 
     {!hideNav && (
+      <footer class="site-footer">
+        <p>&copy; 2025 KroniBola. All rights reserved.</p>
+        <p class="ssm-text">SSM: 202603032902 (TR0336774-T)</p>
+      </footer>
+    )}
+
+    {!hideNav && (
       <nav class="bottom-nav" id="bottomNav">
         <a href="/" class={`nav-item ${activeTab === 'home' ? 'active' : ''}`}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
@@ -408,6 +415,13 @@ const { title, description = 'KroniBola — Football pickup game registration', 
 
   .page-title { font-size: 1.4rem; letter-spacing: 0.04em; }
   .page-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  /* Site footer */
+  .site-footer {
+    text-align: center; padding: 1.5rem 1rem 5rem;
+    border-top: 1px solid var(--border); font-size: 0.72rem; color: var(--text-muted);
+  }
+  .ssm-text { margin-top: 0.25rem; font-size: 0.62rem; opacity: 0.5; }
 
   /* Receipt card */
   .receipt {
