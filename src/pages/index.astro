@@ -401,6 +401,22 @@ import Layout from '../layouts/Layout.astro';
           ? `Hi Admin, I joined WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}. Ref: ${refCode}`
           : `Hi Admin, I registered for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}. Ref: ${refCode}. Please match this code with my payment receipt.`;
         (document.getElementById('waBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
+
+        // Upload receipt if provided
+        if (receiptData) {
+          const uploadStatus = document.getElementById('uploadStatus')!;
+          uploadStatus.style.display = '';
+          uploadStatus.innerHTML = '<div class="alert alert--info" style="font-size:0.78rem">Uploading receipt...</div>';
+          try {
+            await fetch(`${API}/upload-receipt`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refCode, playerName: name, imageData: receiptData.base64, mimeType: receiptData.mimeType }),
+            });
+          } catch {}
+          receiptData = null;
+        }
+
         showStep(3);
       } else {
         showErr(errEl, data.error || 'Registration failed.');
@@ -470,6 +486,31 @@ import Layout from '../layouts/Layout.astro';
     link.download = `kronibola-${dateStr}.ics`;
     link.click();
     URL.revokeObjectURL(link.href);
+  });
+
+  // --- Receipt upload ---
+  let receiptData: { base64: string; mimeType: string } | null = null;
+
+  const receiptFile = document.getElementById('receiptFile') as HTMLInputElement;
+  const uploadPreview = document.getElementById('uploadPreview') as HTMLImageElement;
+  const uploadPlaceholder = document.getElementById('uploadPlaceholder')!;
+  const uploadArea = document.getElementById('uploadArea')!;
+
+  receiptFile.addEventListener('change', () => {
+    const file = receiptFile.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      receiptData = { base64: result, mimeType: file.type };
+      uploadPreview.src = result;
+      uploadPreview.style.display = '';
+      uploadPlaceholder.style.display = 'none';
+      uploadArea.classList.add('has-file');
+    };
+    reader.readAsDataURL(file);
   });
 
   // --- Check Status Modal ---

@@ -104,7 +104,23 @@ const { title, description = 'KroniBola — Football pickup game registration', 
           <p class="modal-sub" id="payFeeLabel">Fee: RM 10</p>
           <img src="/pay.jpg" alt="Payment QR" class="qr-img" />
           <a href="https://www.maybank2u.com.my" target="_blank" class="btn btn--mae" style="width:100%">Open Maybank MAE</a>
-          <button class="btn btn--primary" id="toStep3" style="width:100%;margin-top:0.5rem">I'VE PAID — CONFIRM</button>
+
+          <!-- Receipt upload -->
+          <div class="receipt-upload">
+            <p class="upload-label">Upload payment receipt</p>
+            <label class="upload-area" id="uploadArea">
+              <input type="file" accept="image/*" capture="environment" id="receiptFile" style="display:none" />
+              <div class="upload-placeholder" id="uploadPlaceholder">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Tap to upload screenshot</span>
+              </div>
+              <img id="uploadPreview" class="upload-preview" style="display:none" />
+            </label>
+            <p class="upload-hint">Take a screenshot of your payment confirmation and upload it here</p>
+            <div id="uploadStatus" style="display:none"></div>
+          </div>
+
+          <button class="btn btn--primary" id="toStep3" style="width:100%;margin-top:0.5rem">CONFIRM REGISTRATION</button>
         </div>
 
         <div class="modal-page" id="step2w">
@@ -431,6 +447,19 @@ const { title, description = 'KroniBola — Football pickup game registration', 
     border-top: 1px solid var(--border); font-size: 0.72rem; color: var(--text-muted);
   }
   .ssm-text { margin-top: 0.25rem; font-size: 0.62rem; opacity: 0.5; }
+
+  /* Receipt upload */
+  .receipt-upload { margin-top: 0.8rem; }
+  .upload-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem; }
+  .upload-area {
+    display: block; border: 2px dashed var(--border); border-radius: 14px;
+    padding: 1.2rem; cursor: pointer; transition: all 0.2s; text-align: center;
+    background: rgba(255,255,255,0.02);
+  }
+  .upload-area:hover, .upload-area.has-file { border-color: var(--neon); background: rgba(0,255,65,0.03); }
+  .upload-placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.82rem; }
+  .upload-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 10px; }
+  .upload-hint { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.3rem; font-style: italic; }
 
   /* Receipt card */
   .receipt {
