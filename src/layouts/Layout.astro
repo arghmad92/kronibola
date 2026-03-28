@@ -27,6 +27,14 @@ const { title, description = 'KroniBola — Football pickup game registration', 
     <title>{title}</title>
   </head>
   <body>
+    <!-- Animated background -->
+    <div class="bg-effects">
+      <div class="bg-orb bg-orb--1"></div>
+      <div class="bg-orb bg-orb--2"></div>
+      <div class="bg-orb bg-orb--3"></div>
+      <div class="bg-grid"></div>
+    </div>
+
     <slot />
 
     {!hideNav && (
@@ -52,7 +60,8 @@ const { title, description = 'KroniBola — Football pickup game registration', 
 
     <!-- Registration Modal -->
     <div class="modal-overlay" id="regModal" style="display:none">
-      <div class="modal glass">
+      <div class="modal">
+        <div class="modal-glow"></div>
         <button class="modal-close" id="modalClose">&times;</button>
         <div class="modal-steps" id="modalSteps">
           <div class="step-dot active" data-step="1">1</div>
@@ -62,7 +71,6 @@ const { title, description = 'KroniBola — Football pickup game registration', 
           <div class="step-dot" data-step="3">3</div>
         </div>
 
-        <!-- Step 1: Details -->
         <div class="modal-page active" id="step1">
           <h3 class="modal-title">YOUR <span class="neon-text">DETAILS</span></h3>
           <div class="form-group">
@@ -76,7 +84,6 @@ const { title, description = 'KroniBola — Football pickup game registration', 
           <button class="btn btn--primary" id="toStep2" style="width:100%">NEXT</button>
         </div>
 
-        <!-- Step 2: Payment -->
         <div class="modal-page" id="step2">
           <h3 class="modal-title">MAKE <span class="neon-text">PAYMENT</span></h3>
           <p class="modal-sub" id="payFeeLabel">Fee: RM 10</p>
@@ -85,14 +92,12 @@ const { title, description = 'KroniBola — Football pickup game registration', 
           <button class="btn btn--primary" id="toStep3" style="width:100%;margin-top:0.5rem">I'VE PAID — CONFIRM</button>
         </div>
 
-        <!-- Step 2b: Waitlist -->
         <div class="modal-page" id="step2w">
           <h3 class="modal-title">JOINING <span style="color:var(--blue)">WAITLIST</span></h3>
           <div class="alert alert--warning">Game is full. You'll be added to the waitlist. Do NOT pay yet — you'll be notified when a slot opens.</div>
           <button class="btn btn--primary" id="confirmWaitlist" style="width:100%;margin-top:1rem">JOIN WAITLIST</button>
         </div>
 
-        <!-- Step 3: Done -->
         <div class="modal-page" id="step3">
           <div class="done-icon">&#9917;</div>
           <h3 class="modal-title" id="doneTitle">YOU'RE <span class="neon-text">IN!</span></h3>
@@ -113,15 +118,15 @@ const { title, description = 'KroniBola — Football pickup game registration', 
     --neon-dim: #00cc33;
     --neon-glow: rgba(0, 255, 65, 0.15);
     --neon-glow-strong: rgba(0, 255, 65, 0.3);
-    --bg: #0a0a0a;
-    --surface: #141414;
-    --surface-hover: #1c1c1c;
-    --card: rgba(20, 20, 20, 0.85);
+    --bg: #060606;
+    --surface: #111111;
+    --surface-hover: #1a1a1a;
+    --card: rgba(14, 14, 14, 0.9);
     --text: #ffffff;
     --text-secondary: #a0a0a0;
-    --text-muted: #666666;
-    --border: #2a2a2a;
-    --border-light: #333;
+    --text-muted: #555555;
+    --border: #1e1e1e;
+    --border-light: #2a2a2a;
     --orange: #ff9500;
     --blue: #00c4ff;
     --red: #ff3b30;
@@ -140,6 +145,8 @@ const { title, description = 'KroniBola — Football pickup game registration', 
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
     padding-bottom: 80px;
+    position: relative;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4 {
@@ -153,23 +160,81 @@ const { title, description = 'KroniBola — Football pickup game registration', 
   img { max-width: 100%; display: block; }
 
   ::selection { background: var(--neon); color: #000; }
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
 
-  .container { max-width: 600px; margin: 0 auto; padding: 0 1rem; }
+  /* Animated background */
+  .bg-effects {
+    position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  }
+
+  .bg-orb {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4;
+    animation: float 20s infinite ease-in-out;
+  }
+
+  .bg-orb--1 {
+    width: 300px; height: 300px; top: -100px; right: -80px;
+    background: radial-gradient(circle, rgba(0, 255, 65, 0.15), transparent 70%);
+    animation-delay: 0s;
+  }
+
+  .bg-orb--2 {
+    width: 250px; height: 250px; bottom: 30%; left: -80px;
+    background: radial-gradient(circle, rgba(0, 196, 255, 0.08), transparent 70%);
+    animation-delay: -7s;
+  }
+
+  .bg-orb--3 {
+    width: 200px; height: 200px; top: 50%; right: -60px;
+    background: radial-gradient(circle, rgba(0, 255, 65, 0.06), transparent 70%);
+    animation-delay: -14s;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    33% { transform: translateY(-30px) scale(1.05); }
+    66% { transform: translateY(20px) scale(0.95); }
+  }
+
+  .bg-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+  }
+
+  .container { max-width: 600px; margin: 0 auto; padding: 0 1rem; position: relative; }
   .neon-text { color: var(--neon); text-shadow: 0 0 20px var(--neon-glow); }
+
   .glass {
     background: var(--card);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--border);
     border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,65,0.2), transparent);
   }
 
   /* Badges */
-  .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.7rem; border-radius: 100px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-  .badge--paid { background: var(--neon); color: #000; }
+  .badge {
+    display: inline-flex; align-items: center; padding: 0.25rem 0.7rem;
+    border-radius: 100px; font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .badge--paid { background: var(--neon); color: #000; box-shadow: 0 0 8px var(--neon-glow); }
   .badge--pending { background: var(--orange); color: #000; }
   .badge--waitlist { background: var(--blue); color: #000; }
   .badge--rejected { background: var(--red); color: #fff; }
@@ -177,88 +242,145 @@ const { title, description = 'KroniBola — Football pickup game registration', 
   /* Buttons */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-    padding: 0.9rem 1.8rem; border: none; border-radius: 12px;
-    font-family: 'Space Grotesk', sans-serif; font-size: 0.88rem; font-weight: 700;
-    letter-spacing: 0.04em; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    padding: 0.9rem 1.8rem; border: none; border-radius: 14px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 700;
+    letter-spacing: 0.05em; cursor: pointer; transition: all 0.25s; text-transform: uppercase;
   }
-  .btn--primary { background: var(--neon); color: #000; box-shadow: 0 0 24px var(--neon-glow); }
-  .btn--primary:hover { background: #fff; box-shadow: 0 0 32px var(--neon-glow-strong); transform: translateY(-1px); }
+  .btn--primary {
+    background: linear-gradient(135deg, var(--neon), var(--neon-dim));
+    color: #000; box-shadow: 0 4px 24px var(--neon-glow), 0 0 0 1px rgba(0,255,65,0.1);
+  }
+  .btn--primary:hover { box-shadow: 0 8px 40px var(--neon-glow-strong); transform: translateY(-2px); }
+  .btn--primary:active { transform: translateY(0); }
   .btn--primary:disabled { background: var(--border); color: var(--text-muted); box-shadow: none; cursor: not-allowed; }
-  .btn--tng { background: var(--tng-blue); color: #fff; width: 100%; }
-  .btn--tng:hover { background: #0070d4; }
-  .btn--outline { background: transparent; color: var(--neon); border: 1.5px solid var(--neon); }
-  .btn--outline:hover { background: var(--neon); color: #000; }
-  .btn--wa { background: #25D366; color: #fff; }
-  .btn--wa:hover { background: #20bd5a; }
-  .btn--ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
-  .btn--ghost:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .btn--tng { background: linear-gradient(135deg, var(--tng-blue), #0070d4); color: #fff; width: 100%; }
+  .btn--tng:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,94,184,0.3); }
+  .btn--outline { background: transparent; color: var(--neon); border: 1.5px solid rgba(0,255,65,0.3); }
+  .btn--outline:hover { background: rgba(0,255,65,0.1); border-color: var(--neon); }
+  .btn--wa { background: linear-gradient(135deg, #25D366, #20bd5a); color: #fff; }
+  .btn--wa:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,211,102,0.3); }
+  .btn--ghost { background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn--ghost:hover { background: rgba(255,255,255,0.08); color: var(--text); border-color: var(--border-light); }
 
   /* Form */
-  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-  .form-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; }
   .form-input, .form-select {
-    padding: 0.8rem 1rem; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
-    border-radius: 12px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+    padding: 0.85rem 1rem; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 14px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    outline: none; transition: all 0.2s;
   }
-  .form-input:focus, .form-select:focus { border-color: var(--neon); box-shadow: 0 0 0 2px var(--neon-glow); }
+  .form-input:focus, .form-select:focus {
+    border-color: var(--neon); box-shadow: 0 0 0 3px var(--neon-glow);
+    background: rgba(0,255,65,0.02);
+  }
   .form-input::placeholder { color: var(--text-muted); }
 
   /* Alerts */
-  .alert { padding: 0.9rem 1.2rem; border-radius: 12px; font-size: 0.85rem; font-weight: 500; }
-  .alert--success { background: rgba(0,255,65,0.1); border: 1px solid var(--neon); color: var(--neon); }
-  .alert--warning { background: rgba(255,149,0,0.1); border: 1px solid var(--orange); color: var(--orange); }
-  .alert--error { background: rgba(255,59,48,0.1); border: 1px solid var(--red); color: var(--red); }
-  .alert--info { background: rgba(0,196,255,0.1); border: 1px solid var(--blue); color: var(--blue); }
+  .alert { padding: 1rem 1.2rem; border-radius: 14px; font-size: 0.82rem; font-weight: 500; line-height: 1.5; }
+  .alert--success { background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.2); color: var(--neon); }
+  .alert--warning { background: rgba(255,149,0,0.08); border: 1px solid rgba(255,149,0,0.2); color: var(--orange); }
+  .alert--error { background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.2); color: var(--red); }
+  .alert--info { background: rgba(0,196,255,0.08); border: 1px solid rgba(0,196,255,0.2); color: var(--blue); }
 
   /* Bottom Nav */
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
     display: flex; justify-content: space-around; align-items: center;
-    background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
-    border-top: 1px solid var(--border); padding: 0.5rem 0;
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    background: rgba(6, 6, 6, 0.95); backdrop-filter: blur(24px);
+    border-top: 1px solid var(--border); padding: 0.4rem 0;
+    padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
   }
+
+  .bottom-nav::before {
+    content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,65,0.15), transparent);
+  }
+
   .nav-item {
-    display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
-    padding: 0.4rem 0.8rem; color: var(--text-muted); font-size: 0.62rem;
-    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; transition: color 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    padding: 0.4rem 1rem; color: var(--text-muted); font-size: 0.58rem;
+    font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    transition: all 0.2s; position: relative;
   }
   .nav-item.active { color: var(--neon); }
+  .nav-item.active::after {
+    content: ''; position: absolute; top: -0.4rem; left: 50%; transform: translateX(-50%);
+    width: 16px; height: 2px; background: var(--neon); border-radius: 1px;
+    box-shadow: 0 0 8px var(--neon-glow);
+  }
   .nav-item:hover { color: var(--text); }
 
   /* Modal */
   .modal-overlay {
-    position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
-    padding: 1rem;
+    position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(12px); display: flex; align-items: flex-end; justify-content: center;
+    padding: 0;
   }
+
   .modal {
-    width: 100%; max-width: 420px; padding: 2rem; position: relative;
+    width: 100%; max-width: 480px; padding: 2rem 1.5rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0; position: relative;
     max-height: 90vh; overflow-y: auto;
+    animation: slideUp 0.3s ease;
   }
+
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
+
+  .modal-glow {
+    position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 100px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,65,0.15), transparent);
+    pointer-events: none;
+  }
+
   .modal-close {
-    position: absolute; top: 1rem; right: 1rem; background: none; border: none;
-    color: var(--text-muted); font-size: 1.5rem; cursor: pointer; line-height: 1;
+    position: absolute; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border); color: var(--text-muted); width: 32px; height: 32px;
+    border-radius: 10px; font-size: 1.1rem; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; transition: all 0.2s;
   }
-  .modal-close:hover { color: var(--text); }
+  .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.1); }
+
   .modal-steps {
     display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 1.5rem;
   }
   .step-dot {
-    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 0.7rem; font-weight: 700; background: var(--border); color: var(--text-muted); transition: all 0.3s;
+    width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.06); color: var(--text-muted);
+    border: 1px solid var(--border); transition: all 0.3s;
   }
-  .step-dot.active { background: var(--neon); color: #000; box-shadow: 0 0 12px var(--neon-glow); }
-  .step-dot.done { background: var(--neon-dim); color: #000; }
-  .step-line { width: 40px; height: 2px; background: var(--border); }
-  .modal-title { font-size: 1.2rem; margin-bottom: 1rem; text-align: center; }
+  .step-dot.active { background: var(--neon); color: #000; border-color: var(--neon); box-shadow: 0 0 16px var(--neon-glow); }
+  .step-dot.done { background: rgba(0,255,65,0.2); color: var(--neon); border-color: rgba(0,255,65,0.3); }
+  .step-line { width: 36px; height: 2px; background: var(--border); }
+
+  .modal-title { font-size: 1.3rem; margin-bottom: 1rem; text-align: center; }
   .modal-sub { font-size: 0.88rem; color: var(--text-secondary); text-align: center; margin-bottom: 1rem; }
   .modal-page { display: none; flex-direction: column; gap: 1rem; }
   .modal-page.active { display: flex; }
-  .qr-img { border-radius: 12px; border: 1px solid var(--border); margin-bottom: 0.5rem; }
-  .done-icon { font-size: 3rem; text-align: center; margin-bottom: 0.5rem; }
+  .qr-img { border-radius: 16px; border: 1px solid var(--border); }
+  .done-icon { font-size: 3.5rem; text-align: center; margin-bottom: 0.5rem; }
 
-  @media (max-width: 640px) {
-    .container { padding: 0 0.8rem; }
+  /* Page header shared */
+  .page-header {
+    padding: 1.2rem 0 1rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .page-header::after {
+    content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,65,0.15), transparent);
+  }
+
+  .page-title { font-size: 1.4rem; letter-spacing: 0.04em; }
+  .page-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  /* Responsive desktop */
+  @media (min-width: 641px) {
+    .modal-overlay { align-items: center; padding: 1rem; }
+    .modal { border-radius: 24px; }
+    @keyframes slideUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
   }
 </style>

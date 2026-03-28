@@ -3,16 +3,15 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="Match History — KroniBola" activeTab="history">
-  <header class="header">
+  <header class="page-header">
     <div class="container">
       <h1 class="page-title">MATCH <span class="neon-text">HISTORY</span></h1>
+      <p class="page-sub">Past games and who played</p>
     </div>
   </header>
 
   <main class="container">
-    <div id="loading" class="loading">
-      <div class="loader"></div>
-    </div>
+    <div id="loading" class="loading"><div class="loader"></div></div>
     <div id="historyList" class="history-list"></div>
     <p id="empty" style="display:none" class="empty">No past games yet.</p>
   </main>
@@ -21,12 +20,9 @@ import Layout from '../layouts/Layout.astro';
 <script>
   async function load() {
     try {
-      const [sRes, pRes] = await Promise.all([
-        fetch('/api/sessions'),
-        fetch('/api/players'),
-      ]);
+      const [sRes, pRes] = await Promise.all([fetch('/api/sessions'), fetch('/api/players')]);
       const sessions = (await sRes.json()).sessions || [];
-      const players = (await pRes.json()).players || [];
+      const allPlayers = (await pRes.json()).players || [];
 
       document.getElementById('loading')!.style.display = 'none';
 
@@ -34,27 +30,30 @@ import Layout from '../layouts/Layout.astro';
       if (!closed.length) { document.getElementById('empty')!.style.display = ''; return; }
 
       const list = document.getElementById('historyList')!;
-      list.innerHTML = closed.map((s: any) => {
-        const gamePlayers = players.filter((p: any) => String(p['Session Date']) === s.Date && p['Payment Status'] === 'Paid');
-        const colors = ['#00FF41', '#00c4ff', '#ff9500', '#e040fb', '#ff5252', '#40c4ff'];
-        const avatars = gamePlayers.slice(0, 8).map((p: any, i: number) => {
+      const colors = ['#00FF41', '#00c4ff', '#ff9500', '#e040fb', '#ff5252', '#40c4ff', '#69f0ae', '#ffd740'];
+
+      list.innerHTML = closed.map((s: any, si: number) => {
+        const gamePlayers = allPlayers.filter((p: any) => String(p['Session Date']) === s.Date && p['Payment Status'] === 'Paid');
+        const avatars = gamePlayers.slice(0, 10).map((p: any, i: number) => {
           const init = (p['Player Name'] || '?')[0].toUpperCase();
           const c = colors[i % colors.length];
-          return `<div class="h-avatar" style="background:${c}20;color:${c};border-color:${c}40">${init}</div>`;
+          return `<div class="h-avatar" style="background:${c}15;color:${c};border-color:${c}30">${init}</div>`;
         }).join('');
-        const extra = gamePlayers.length > 8 ? `<span class="h-more">+${gamePlayers.length - 8}</span>` : '';
+        const extra = gamePlayers.length > 10 ? `<span class="h-more">+${gamePlayers.length - 10}</span>` : '';
 
-        return `<div class="history-card glass">
+        return `<div class="history-card glass" style="animation-delay:${si * 0.08}s">
+          <div class="hc-accent"></div>
           <div class="hc-top">
-            <span class="hc-name">${s['Session Name']}</span>
-            <span class="hc-date">${s.Date}</span>
-          </div>
-          <div class="hc-info">
-            <span>${s.Location}</span>
-            <span>·</span>
-            <span>${s.Time}</span>
-            <span>·</span>
-            <span>${gamePlayers.length} players</span>
+            <div>
+              <span class="hc-name">${s['Session Name']}</span>
+              <div class="hc-info">
+                <span>${s.Location}</span><span class="hc-dot">·</span><span>${s.Time}</span>
+              </div>
+            </div>
+            <div class="hc-right">
+              <span class="hc-date">${s.Date}</span>
+              <span class="hc-players">${gamePlayers.length} players</span>
+            </div>
           </div>
           <div class="hc-avatars">${avatars}${extra}</div>
         </div>`;
@@ -67,23 +66,37 @@ import Layout from '../layouts/Layout.astro';
 </script>
 
 <style>
-  .header { padding: 1.2rem 0 0.8rem; border-bottom: 1px solid var(--border); }
-  .page-title { font-size: 1.3rem; letter-spacing: 0.04em; }
   .loading { text-align: center; padding: 3rem 0; }
   .loader { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--neon); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .empty { text-align: center; padding: 3rem; color: var(--text-muted); }
 
-  .history-list { display: flex; flex-direction: column; gap: 0.8rem; padding: 1rem 0; }
-  .history-card { padding: 1.2rem; }
-  .hc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-  .hc-name { font-family: 'Space Grotesk'; font-weight: 700; font-size: 0.95rem; }
-  .hc-date { font-size: 0.75rem; color: var(--text-muted); }
-  .hc-info { display: flex; gap: 0.4rem; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.8rem; flex-wrap: wrap; }
-  .hc-avatars { display: flex; gap: 0.3rem; align-items: center; }
+  .history-list { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.2rem 0 2rem; }
+
+  .history-card {
+    padding: 1.3rem; position: relative; overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  .hc-accent {
+    position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
+    background: linear-gradient(180deg, var(--neon), transparent);
+  }
+
+  .hc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; gap: 1rem; }
+  .hc-name { font-family: 'Space Grotesk'; font-weight: 700; font-size: 0.95rem; display: block; margin-bottom: 0.2rem; }
+  .hc-info { display: flex; gap: 0.3rem; font-size: 0.75rem; color: var(--text-muted); flex-wrap: wrap; }
+  .hc-dot { color: var(--border-light); }
+  .hc-right { text-align: right; flex-shrink: 0; }
+  .hc-date { font-size: 0.72rem; color: var(--text-secondary); display: block; }
+  .hc-players { font-size: 0.68rem; color: var(--neon); font-weight: 600; }
+
+  .hc-avatars { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; }
   .h-avatar {
     width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 0.65rem; font-weight: 800; border: 1.5px solid; font-family: 'Space Grotesk';
+    font-size: 0.62rem; font-weight: 800; border: 1.5px solid; font-family: 'Space Grotesk';
   }
-  .h-more { font-size: 0.72rem; color: var(--text-muted); margin-left: 0.3rem; }
+  .h-more { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.2rem; font-weight: 600; }
 </style>
