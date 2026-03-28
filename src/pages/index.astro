@@ -235,13 +235,35 @@ import Layout from '../layouts/Layout.astro';
   }
 
   // --- Countdown ---
+  function parseTime(timeStr: string): { hours: number; minutes: number } | null {
+    if (!timeStr) return null;
+    // Take the start time (before any dash): "830pm-10pm" → "830pm"
+    const start = timeStr.split('-')[0].trim();
+    // Match patterns: "830pm", "8:30pm", "8:30 PM", "20:30", "8pm"
+    const match = start.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)?$/i);
+    if (!match) return null;
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2] || '0');
+    const period = (match[3] || '').toLowerCase();
+    // Handle "830" as 8:30, not 830
+    if (!match[2] && hours > 24) {
+      return { hours: Math.floor(hours / 100), minutes: hours % 100 };
+    }
+    if (period === 'pm' && hours < 12) hours += 12;
+    if (period === 'am' && hours === 12) hours = 0;
+    return { hours, minutes };
+  }
+
   function startCountdowns() {
     setInterval(() => {
       sessions.forEach((s: any, i: number) => {
         const el = document.getElementById(`countdown-${i}`);
         if (!el) return;
-        const target = new Date(`${s.Date}T${s.Time?.replace(/\s*(AM|PM)/i, ' $1') || '00:00'}`);
+        const time = parseTime(s.Time);
+        if (!time) { el.textContent = s.Time || '--:--'; return; }
+        const target = new Date(`${s.Date}T${String(time.hours).padStart(2, '0')}:${String(time.minutes).padStart(2, '0')}:00`);
         const diff = target.getTime() - Date.now();
+        if (isNaN(diff)) { el.textContent = s.Time || '--:--'; return; }
         if (diff <= 0) { el.textContent = 'MATCH TIME!'; el.classList.add('live'); return; }
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
