@@ -265,10 +265,11 @@ import Layout from '../layouts/Layout.astro';
         const diff = target.getTime() - Date.now();
         if (isNaN(diff)) { el.textContent = s.Time || '--:--'; return; }
         if (diff <= 0) { el.textContent = 'MATCH TIME!'; el.classList.add('live'); return; }
-        const h = Math.floor(diff / 3600000);
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const sec = Math.floor((diff % 60000) / 1000);
-        el.textContent = `${h}h ${m}m ${sec}s`;
+        el.textContent = d > 0 ? `${d}d ${h}h ${m}m ${sec}s` : `${h}h ${m}m ${sec}s`;
       });
     }, 1000);
   }
