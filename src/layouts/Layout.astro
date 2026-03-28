@@ -92,7 +92,7 @@ const { title, description = 'KroniBola — Football pickup game registration', 
           <h3 class="modal-title">MAKE <span class="neon-text">PAYMENT</span></h3>
           <p class="modal-sub" id="payFeeLabel">Fee: RM 10</p>
           <img src="/pay.jpg" alt="Payment QR" class="qr-img" />
-          <a href="tngdwallet://" class="btn btn--tng" style="width:100%">Open Touch 'n Go</a>
+          <a href="https://www.maybank2u.com.my" target="_blank" class="btn btn--mae" style="width:100%">Open Maybank MAE</a>
           <button class="btn btn--primary" id="toStep3" style="width:100%;margin-top:0.5rem">I'VE PAID — CONFIRM</button>
         </div>
 
@@ -257,8 +257,8 @@ const { title, description = 'KroniBola — Football pickup game registration', 
   .btn--primary:hover { box-shadow: 0 8px 40px var(--neon-glow-strong); transform: translateY(-2px); }
   .btn--primary:active { transform: translateY(0); }
   .btn--primary:disabled { background: var(--border); color: var(--text-muted); box-shadow: none; cursor: not-allowed; }
-  .btn--tng { background: linear-gradient(135deg, var(--tng-blue), #0070d4); color: #fff; width: 100%; }
-  .btn--tng:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,94,184,0.3); }
+  .btn--tng, .btn--mae { background: linear-gradient(135deg, #ffc107, #f9a825); color: #000; width: 100%; font-weight: 800; }
+  .btn--tng:hover, .btn--mae:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,193,7,0.3); }
   .btn--outline { background: transparent; color: var(--neon); border: 1.5px solid rgba(0,255,65,0.3); }
   .btn--outline:hover { background: rgba(0,255,65,0.1); border-color: var(--neon); }
   .btn--wa { background: linear-gradient(135deg, #25D366, #20bd5a); color: #fff; }
