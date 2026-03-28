@@ -486,154 +486,165 @@ import Layout from '../layouts/Layout.astro';
   .empty-state h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
   .empty-state p { color: var(--text-muted); font-size: 0.88rem; }
 
-  /* Match Cards */
+  /* Match Cards — use :global for JS-generated content */
   .match-cards { margin: 1.2rem 0; display: flex; flex-direction: column; gap: 0.6rem; }
 
-  .match-card {
+  :global(.match-card) {
     padding: 1.5rem; cursor: pointer; transition: all 0.3s ease;
     position: relative; overflow: hidden;
     border-left: 3px solid var(--border);
     background: rgba(255,255,255,0.02);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    border-left: 3px solid var(--border);
   }
 
-  /* Inactive: compact summary */
-  .match-card .mc-countdown,
-  .match-card .mc-slots,
-  .match-card .mc-register,
-  .match-card .mc-maps-btn {
-    display: none;
+  /* Inactive: hide expanded content */
+  :global(.match-card .mc-countdown),
+  :global(.match-card .mc-slots),
+  :global(.match-card .mc-register),
+  :global(.match-card .mc-maps-btn) {
+    display: none !important;
   }
 
-  .match-card .mc-details { margin-bottom: 0; }
+  :global(.match-card .mc-details) { margin-bottom: 0; }
 
-  .match-card:not(.active) {
+  :global(.match-card:not(.active)) {
     padding: 1rem 1.2rem;
   }
 
-  .match-card:not(.active) .mc-top { margin-bottom: 0.5rem; }
-  .match-card:not(.active) .mc-details { gap: 0.3rem; }
-  .match-card:not(.active) .mc-row { font-size: 0.78rem; }
-  .match-card:not(.active) .mc-badge { font-size: 0.65rem; padding: 0.2rem 0.6rem; }
-  .match-card:not(.active) .mc-fee { font-size: 0.95rem; }
-  .match-card:not(.active) .mc-maps-btn { display: none; }
+  :global(.match-card:not(.active) .mc-top) { margin-bottom: 0.4rem; }
+  :global(.match-card:not(.active) .mc-details) { gap: 0.25rem; }
+  :global(.match-card:not(.active) .mc-row) { font-size: 0.75rem; }
+  :global(.match-card:not(.active) .mc-badge) { font-size: 0.62rem; padding: 0.2rem 0.6rem; }
+  :global(.match-card:not(.active) .mc-fee) { font-size: 0.9rem; }
 
-  .match-card:not(.active):hover {
+  :global(.match-card:not(.active):hover) {
     background: rgba(0,255,65,0.03);
-    border-left-color: rgba(0,255,65,0.3);
+    border-left-color: rgba(0,255,65,0.4);
+    border-color: rgba(0,255,65,0.1);
   }
 
   /* Active: full hero card */
-  .match-card.active {
+  :global(.match-card.active) {
+    padding: 1.5rem;
     border-left: 4px solid var(--neon);
-    background: linear-gradient(135deg, rgba(0,255,65,0.04) 0%, rgba(14,14,14,0.95) 40%, rgba(0,196,255,0.02) 100%);
-    box-shadow: 0 0 40px rgba(0,255,65,0.05), inset 0 1px 0 rgba(0,255,65,0.1);
+    background: linear-gradient(135deg, rgba(0,255,65,0.05) 0%, rgba(14,14,14,0.95) 40%, rgba(0,196,255,0.02) 100%);
+    box-shadow: 0 0 40px rgba(0,255,65,0.06), inset 0 1px 0 rgba(0,255,65,0.1);
+    border-color: rgba(0,255,65,0.15);
     animation: cardIn 0.35s ease;
   }
 
-  .match-card.active::after {
-    content: ''; position: absolute; top: 0; right: 0;
-    width: 120px; height: 120px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,255,65,0.06), transparent 70%);
+  :global(.match-card.active)::after {
+    content: ''; position: absolute; top: -20px; right: -20px;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,65,0.07), transparent 70%);
     pointer-events: none;
   }
 
-  .match-card.active .mc-countdown,
-  .match-card.active .mc-slots,
-  .match-card.active .mc-register,
-  .match-card.active .mc-maps-btn {
-    display: flex;
+  :global(.match-card.active .mc-countdown),
+  :global(.match-card.active .mc-slots),
+  :global(.match-card.active .mc-register),
+  :global(.match-card.active .mc-maps-btn) {
+    display: flex !important;
   }
 
-  .match-card.active .mc-details { margin-bottom: 1.2rem; }
+  :global(.match-card.active .mc-register) {
+    display: flex !important;
+    width: 100%;
+  }
+
+  :global(.match-card.active .mc-details) { margin-bottom: 1.2rem; }
 
   @keyframes cardIn { from { opacity: 0.5; transform: scale(0.98); } to { opacity: 1; transform: none; } }
 
-  .mc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-  .mc-badge {
+  :global(.mc-top) { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  :global(.mc-badge) {
     background: var(--neon); color: #000; padding: 0.3rem 0.9rem; border-radius: 8px;
     font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
   }
-  .mc-fee { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--text); }
+  :global(.mc-fee) { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--text); }
 
-  .mc-details { display: flex; flex-direction: column; gap: 0.5rem; }
-  .mc-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: var(--text-secondary); }
-  .mc-row svg { color: var(--neon); flex-shrink: 0; opacity: 0.7; }
+  :global(.mc-details) { display: flex; flex-direction: column; gap: 0.5rem; }
+  :global(.mc-row) { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: var(--text-secondary); }
+  :global(.mc-row svg) { color: var(--neon); flex-shrink: 0; opacity: 0.7; }
 
-  .mc-countdown {
+  :global(.mc-countdown) {
     text-align: center; font-family: 'Space Grotesk', monospace; font-size: 2rem; font-weight: 700;
     color: var(--neon); padding: 0.8rem 0; letter-spacing: 0.05em;
     text-shadow: 0 0 30px var(--neon-glow);
     background: radial-gradient(ellipse at center, rgba(0,255,65,0.06), transparent 70%);
     border-radius: 12px; margin-bottom: 1rem;
   }
-  .mc-countdown.live { animation: pulse 1s infinite; color: var(--orange); }
+  :global(.mc-countdown.live) { animation: pulse 1s infinite; color: var(--orange); }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-  .mc-slots { margin-bottom: 1.2rem; }
-  .mc-slots-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-  .mc-slots-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; }
-  .mc-spots { font-size: 0.78rem; font-weight: 700; color: var(--neon); }
-  .mc-spots--full { color: var(--orange); }
+  :global(.mc-slots) { margin-bottom: 1.2rem; }
+  :global(.mc-slots-header) { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+  :global(.mc-slots-label) { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; }
+  :global(.mc-spots) { font-size: 0.78rem; font-weight: 700; color: var(--neon); }
+  :global(.mc-spots--full) { color: var(--orange); }
 
-  .progress-track { width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 100px; overflow: hidden; }
-  .progress-fill {
+  :global(.progress-track) { width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 100px; overflow: hidden; }
+  :global(.progress-fill) {
     height: 100%; background: linear-gradient(90deg, var(--neon-dim), var(--neon)); border-radius: 100px;
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 12px var(--neon-glow);
     position: relative;
   }
-  .progress-fill::after {
+  :global(.progress-fill::after) {
     content: ''; position: absolute; right: 0; top: -1px; bottom: -1px; width: 10px;
     background: var(--neon); border-radius: 50%; box-shadow: 0 0 8px var(--neon);
   }
-  .progress-fill--full { background: linear-gradient(90deg, #cc7a00, var(--orange)); box-shadow: 0 0 12px rgba(255,149,0,0.3); }
-  .progress-fill--full::after { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+  :global(.progress-fill--full) { background: linear-gradient(90deg, #cc7a00, var(--orange)); box-shadow: 0 0 12px rgba(255,149,0,0.3); }
+  :global(.progress-fill--full::after) { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
 
-  .mc-maps-btn {
+  :global(.mc-maps-btn) {
     display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem;
     background: rgba(0,255,65,0.04); border: 1px solid rgba(0,255,65,0.12);
     border-radius: 14px; text-decoration: none; color: inherit;
     margin-bottom: 1rem; transition: all 0.25s; cursor: pointer;
   }
-  .mc-maps-btn:hover {
+  :global(.mc-maps-btn:hover) {
     background: rgba(0,255,65,0.08); border-color: rgba(0,255,65,0.25);
     transform: translateX(2px);
   }
-  .mc-maps-icon {
+  :global(.mc-maps-icon) {
     width: 36px; height: 36px; border-radius: 10px;
     background: rgba(0,255,65,0.1); display: flex; align-items: center; justify-content: center;
     color: var(--neon); flex-shrink: 0;
   }
-  .mc-maps-text { flex: 1; min-width: 0; }
-  .mc-maps-label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--neon); letter-spacing: 0.04em; }
-  .mc-maps-loc { display: block; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mc-maps-arrow { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
-  .mc-maps-btn:hover .mc-maps-arrow { transform: translateX(3px); color: var(--neon); }
+  :global(.mc-maps-text) { flex: 1; min-width: 0; }
+  :global(.mc-maps-label) { display: block; font-size: 0.72rem; font-weight: 700; color: var(--neon); letter-spacing: 0.04em; }
+  :global(.mc-maps-loc) { display: block; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  :global(.mc-maps-arrow) { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
+  :global(.mc-maps-btn:hover .mc-maps-arrow) { transform: translateX(3px); color: var(--neon); }
 
   /* Lineup */
   .section-header { display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1rem; }
   .section-title { font-size: 1.2rem; }
   .lineup-count { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.08em; }
 
-  .lineup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 0.5rem; }
-  .player-card {
+  :global(.lineup-grid) { display: grid; grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); gap: 0.5rem; }
+  :global(.player-card) {
     display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
     padding: 0.9rem 0.4rem; background: rgba(255,255,255,0.02);
     border: 1px solid var(--border); border-radius: 16px;
     transition: all 0.25s; position: relative; overflow: hidden;
   }
-  .player-card::before {
+  :global(.player-card::before) {
     content: ''; position: absolute; inset: 0;
     background: radial-gradient(circle at 50% 0%, rgba(0,255,65,0.04), transparent 70%);
     opacity: 0; transition: opacity 0.25s;
   }
-  .player-card:hover { transform: translateY(-3px); border-color: var(--border-light); }
-  .player-card:hover::before { opacity: 1; }
-  .player-avatar {
+  :global(.player-card:hover) { transform: translateY(-3px); border-color: var(--border-light); }
+  :global(.player-card:hover::before) { opacity: 1; }
+  :global(.player-avatar) {
     width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-size: 0.8rem; font-weight: 800; border: 2px solid;
     font-family: 'Space Grotesk', sans-serif; position: relative; z-index: 1;
   }
-  .player-name {
+  :global(.player-name) {
     font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); text-align: center;
     line-height: 1.2; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     position: relative; z-index: 1;
