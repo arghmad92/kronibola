@@ -71,32 +71,39 @@ import Layout from '../layouts/Layout.astro';
   @keyframes spin { to { transform: rotate(360deg); } }
   .empty { text-align: center; padding: 3rem; color: var(--text-muted); }
 
-  .history-list { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.2rem 0 2rem; }
+  :global(.history-list) { display: flex; flex-direction: column; gap: 0.7rem; padding: 1.2rem 0 2rem; }
 
-  .history-card {
+  :global(.history-card) {
     padding: 1.3rem; position: relative; overflow: hidden;
+    background: var(--card); backdrop-filter: blur(24px);
+    border: 1px solid var(--border); border-radius: 20px;
     animation: fadeUp 0.4s ease both;
+  }
+
+  :global(.history-card::before) {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,65,0.15), transparent);
   }
 
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
-  .hc-accent {
+  :global(.hc-accent) {
     position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
     background: linear-gradient(180deg, var(--neon), transparent);
   }
 
-  .hc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; gap: 1rem; }
-  .hc-name { font-family: 'Space Grotesk'; font-weight: 700; font-size: 0.95rem; display: block; margin-bottom: 0.2rem; }
-  .hc-info { display: flex; gap: 0.3rem; font-size: 0.75rem; color: var(--text-muted); flex-wrap: wrap; }
-  .hc-dot { color: var(--border-light); }
-  .hc-right { text-align: right; flex-shrink: 0; }
-  .hc-date { font-size: 0.72rem; color: var(--text-secondary); display: block; }
-  .hc-players { font-size: 0.68rem; color: var(--neon); font-weight: 600; }
+  :global(.hc-top) { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; gap: 1rem; }
+  :global(.hc-name) { font-family: 'Space Grotesk'; font-weight: 700; font-size: 0.95rem; display: block; margin-bottom: 0.2rem; }
+  :global(.hc-info) { display: flex; gap: 0.3rem; font-size: 0.75rem; color: var(--text-muted); flex-wrap: wrap; }
+  :global(.hc-dot) { color: var(--border-light); }
+  :global(.hc-right) { text-align: right; flex-shrink: 0; }
+  :global(.hc-date) { font-size: 0.72rem; color: var(--text-secondary); display: block; }
+  :global(.hc-players) { font-size: 0.68rem; color: var(--neon); font-weight: 600; }
 
-  .hc-avatars { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; }
-  .h-avatar {
+  :global(.hc-avatars) { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; }
+  :global(.h-avatar) {
     width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-size: 0.62rem; font-weight: 800; border: 1.5px solid; font-family: 'Space Grotesk';
   }
-  .h-more { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.2rem; font-weight: 600; }
+  :global(.h-more) { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.2rem; font-weight: 600; }
 </style>
