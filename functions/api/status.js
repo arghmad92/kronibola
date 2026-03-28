@@ -27,6 +27,7 @@ export async function onRequest(context) {
         status: m['Payment Status'],
         fee: m.Amount,
         timestamp: m.Timestamp,
+        refCode: m['Ref Code'] || '',
         sessionName: session ? session['Session Name'] : '',
         location: session ? session.Location : '',
         time: session ? session.Time : '',

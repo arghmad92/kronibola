@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 
 export default defineConfig({
-  site: 'https://kronibola.pages.dev',
+  site: 'https://kronibola.com',
   output: 'static',
   devToolbar: { enabled: false },
 });

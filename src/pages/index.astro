@@ -548,6 +548,8 @@ import Layout from '../layouts/Layout.astro';
 
       result.innerHTML = regs.map((r: any) => {
         const statusClass = (r.status || 'pending').toLowerCase();
+        const needsReceipt = ['Pending', 'Overdue'].includes(r.status);
+        const refCode = r.refCode || '';
         return `<div class="status-card">
           <div class="status-card-header">
             <span class="status-card-name">${r.name}</span>
@@ -556,10 +558,59 @@ import Layout from '../layouts/Layout.astro';
           <div class="status-card-details">
             <strong>${r.sessionName}</strong><br>
             ${r.date} · ${r.time} · ${r.location}<br>
-            Fee: RM ${r.fee}
+            Fee: RM ${r.fee}${refCode ? ` · Ref: ${refCode}` : ''}
           </div>
+          ${needsReceipt ? `
+            <div class="status-upload" style="margin-top:0.6rem">
+              <label class="upload-area-mini" data-ref="${refCode}" data-name="${r.name}">
+                <input type="file" accept="image/*" class="status-receipt-input" style="display:none" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Upload payment receipt</span>
+              </label>
+              <div class="status-upload-result" style="display:none"></div>
+            </div>
+          ` : ''}
         </div>`;
       }).join('');
+
+      // Handle receipt uploads from status cards
+      result.querySelectorAll('.status-receipt-input').forEach((input: Element) => {
+        input.addEventListener('change', async () => {
+          const fileInput = input as HTMLInputElement;
+          const file = fileInput.files?.[0];
+          if (!file) return;
+          if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
+
+          const label = fileInput.closest('.upload-area-mini') as HTMLElement;
+          const refCode = label.dataset.ref || 'UNKNOWN';
+          const playerName = label.dataset.name || 'Player';
+          const resultDiv = label.parentElement!.querySelector('.status-upload-result') as HTMLElement;
+
+          resultDiv.style.display = '';
+          resultDiv.innerHTML = '<span style="color:var(--neon);font-size:0.75rem">Uploading...</span>';
+
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              const res = await fetch(`${API}/upload-receipt`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refCode, playerName, imageData: reader.result, mimeType: file.type }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                resultDiv.innerHTML = '<span style="color:var(--neon);font-size:0.75rem">✓ Receipt uploaded!</span>';
+                label.style.display = 'none';
+              } else {
+                resultDiv.innerHTML = '<span style="color:var(--red);font-size:0.75rem">Upload failed. Try again.</span>';
+              }
+            } catch {
+              resultDiv.innerHTML = '<span style="color:var(--red);font-size:0.75rem">Upload failed. Try again.</span>';
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      });
     } catch { result.innerHTML = '<div class="alert alert--error">Failed to check. Try again.</div>'; }
   });
 
@@ -801,6 +852,14 @@ import Layout from '../layouts/Layout.astro';
 
   /* Share */
   .share-section { margin: 1.5rem 0 2rem; }
+
+  :global(.upload-area-mini) {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.8rem;
+    background: rgba(0,255,65,0.04); border: 1.5px dashed rgba(0,255,65,0.2);
+    border-radius: 10px; cursor: pointer; transition: all 0.2s;
+    font-size: 0.78rem; color: var(--neon); font-weight: 600;
+  }
+  :global(.upload-area-mini:hover) { background: rgba(0,255,65,0.08); border-color: var(--neon); }
 
   :global(.wa-group-banner) {
     display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem;
