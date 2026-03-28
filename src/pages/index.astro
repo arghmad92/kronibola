@@ -219,10 +219,11 @@ import Layout from '../layouts/Layout.astro';
 
       const paid = players.filter((p: any) => p['Payment Status'] === 'Paid');
       const nonRejected = players.filter((p: any) => p['Payment Status'] !== 'Rejected');
+      const activeCount = players.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])).length;
       document.getElementById('lineupCount')!.textContent = `${paid.length} confirmed · ${nonRejected.length} total`;
 
       // Update register button text
-      const isFull = active.length >= currentMax;
+      const isFull = activeCount >= currentMax;
       cardsEl.querySelectorAll('.mc-register').forEach((btn) => {
         btn.textContent = isFull ? 'JOIN WAITLIST' : 'REGISTER NOW';
       });
