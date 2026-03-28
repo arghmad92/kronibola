@@ -218,7 +218,8 @@ import Layout from '../layouts/Layout.astro';
       });
 
       const active = players.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status']));
-      document.getElementById('lineupCount')!.textContent = `${players.length} players`;
+      const nonRejected = players.filter((p: any) => p['Payment Status'] !== 'Rejected');
+      document.getElementById('lineupCount')!.textContent = `${active.length} confirmed · ${nonRejected.length} total`;
 
       // Update register button text
       const isFull = active.length >= currentMax;
@@ -250,8 +251,9 @@ import Layout from '../layouts/Layout.astro';
   function renderLineup(list: any[]) {
     const grid = document.getElementById('lineupGrid')!;
     const empty = document.getElementById('lineupEmpty')!;
-    const order: Record<string, number> = { Paid: 1, Pending: 2, Overdue: 3, Waitlist: 4, Rejected: 5 };
-    const sorted = [...list].sort((a, b) => (order[a['Payment Status']] || 5) - (order[b['Payment Status']] || 5));
+    const order: Record<string, number> = { Paid: 1, Pending: 2, Overdue: 3, Waitlist: 4 };
+    const filtered = list.filter((p: any) => p['Payment Status'] !== 'Rejected');
+    const sorted = [...filtered].sort((a, b) => (order[a['Payment Status']] || 5) - (order[b['Payment Status']] || 5));
 
     if (!sorted.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
     empty.style.display = 'none';
