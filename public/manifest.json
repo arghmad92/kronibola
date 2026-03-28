@@ -1,0 +1,12 @@
+{
+  "name": "KroniBola",
+  "short_name": "KroniBola",
+  "description": "Football pickup game registration",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#00FF41",
+  "icons": [
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

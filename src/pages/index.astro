@@ -1,0 +1,459 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="KroniBola — Match Day" activeTab="home">
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-inner">
+      <div class="brand">
+        <img src="/logo.png" alt="KroniBola" class="brand-logo" />
+        <div>
+          <h1 class="brand-name">KRONI<span class="neon-text">BOLA</span></h1>
+          <p class="brand-tag">EST. 2026</p>
+        </div>
+      </div>
+      <a href="/admin" class="admin-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Loading state -->
+    <div id="loadingState" class="loading-state">
+      <div class="loader"></div>
+      <p>Loading match data...</p>
+    </div>
+
+    <!-- No games state -->
+    <div id="noGames" style="display:none" class="empty-state">
+      <span class="empty-icon">&#9917;</span>
+      <h2>No Open Games</h2>
+      <p>Check back later for upcoming matches.</p>
+    </div>
+
+    <!-- Match cards (swipeable) -->
+    <div id="matchCards" class="match-cards" style="display:none"></div>
+
+    <!-- Lineup section -->
+    <div id="lineupSection" style="display:none">
+      <div class="section-header">
+        <h2 class="section-title">THE <span class="neon-text">LINEUP</span></h2>
+        <span class="lineup-count" id="lineupCount">0 players</span>
+      </div>
+      <div class="lineup-grid" id="lineupGrid"></div>
+      <p class="lineup-empty" id="lineupEmpty" style="display:none">No players yet. Be the first!</p>
+    </div>
+
+    <!-- Share section -->
+    <div id="shareSection" style="display:none" class="share-section">
+      <button class="btn btn--ghost" id="shareBtn" style="width:100%">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        INVITE FRIENDS VIA WHATSAPP
+      </button>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const API = '/api';
+  const ADMIN_WA = '60126183827';
+  let sessions: any[] = [];
+  let currentSession: any = null;
+  let players: any[] = [];
+  let currentMax = 20;
+
+  // --- DOM refs ---
+  const loadingEl = document.getElementById('loadingState')!;
+  const noGamesEl = document.getElementById('noGames')!;
+  const cardsEl = document.getElementById('matchCards')!;
+  const lineupEl = document.getElementById('lineupSection')!;
+  const shareEl = document.getElementById('shareSection')!;
+
+  // --- Load sessions ---
+  async function init() {
+    try {
+      const res = await fetch(`${API}/sessions`);
+      const data = await res.json();
+      sessions = (data.sessions || []).filter((s: any) => s.Status === 'Open');
+
+      loadingEl.style.display = 'none';
+
+      if (!sessions.length) {
+        noGamesEl.style.display = '';
+        return;
+      }
+
+      renderMatchCards();
+      selectSession(0);
+    } catch {
+      loadingEl.innerHTML = '<p style="color:var(--red)">Failed to load. Try refreshing.</p>';
+    }
+  }
+
+  function renderMatchCards() {
+    cardsEl.style.display = '';
+    cardsEl.innerHTML = sessions.map((s: any, i: number) => `
+      <div class="match-card glass ${i === 0 ? 'active' : ''}" data-idx="${i}">
+        <div class="mc-top">
+          <span class="mc-badge">${s['Session Name']}</span>
+          <span class="mc-fee">RM ${s.Fee}</span>
+        </div>
+        <div class="mc-details">
+          <div class="mc-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>${s.Location}</span>
+          </div>
+          <div class="mc-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>${s.Date}</span>
+          </div>
+          <div class="mc-row">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>${s.Time}</span>
+          </div>
+        </div>
+        <div class="mc-countdown" id="countdown-${i}">--:--:--</div>
+        <div class="mc-slots">
+          <div class="mc-slots-header">
+            <span class="mc-slots-label" id="slotsLabel-${i}">0 / ${s['Max Players'] || 20}</span>
+            <span class="mc-spots" id="spots-${i}"></span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="bar-${i}" style="width:0%"></div></div>
+        </div>
+        <button class="btn btn--primary mc-register" data-idx="${i}" style="width:100%">REGISTER NOW</button>
+      </div>
+    `).join('');
+
+    // Card click handlers
+    cardsEl.querySelectorAll('.mc-register').forEach((btn) => {
+      btn.addEventListener('click', () => openRegistration());
+    });
+
+    // If multiple cards, add dots
+    if (sessions.length > 1) {
+      const dots = document.createElement('div');
+      dots.className = 'card-dots';
+      dots.innerHTML = sessions.map((_: any, i: number) => `<span class="dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></span>`).join('');
+      cardsEl.appendChild(dots);
+      dots.querySelectorAll('.dot').forEach((d) => {
+        d.addEventListener('click', () => selectSession(parseInt((d as HTMLElement).dataset.idx!)));
+      });
+    }
+
+    startCountdowns();
+  }
+
+  function selectSession(idx: number) {
+    currentSession = sessions[idx];
+    currentMax = parseInt(currentSession['Max Players']) || 20;
+
+    // Update active card
+    cardsEl.querySelectorAll('.match-card').forEach((c, i) => {
+      c.classList.toggle('active', i === idx);
+    });
+    cardsEl.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === idx);
+    });
+
+    lineupEl.style.display = '';
+    shareEl.style.display = '';
+    loadPlayers(currentSession.Date);
+  }
+
+  async function loadPlayers(date: string) {
+    try {
+      const res = await fetch(`${API}/players?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      players = data.players || [];
+
+      // Update all card slot counters
+      sessions.forEach((s: any, i: number) => {
+        const max = parseInt(s['Max Players']) || 20;
+        const active = players.filter((p: any) =>
+          String(p['Session Date']) === s.Date && ['Paid', 'Pending'].includes(p['Payment Status'])
+        ).length;
+        // Only update if this is the matching session
+        const sessionPlayers = data.players?.filter((p: any) => String(p['Session Date']) === s.Date) || [];
+        const count = sessionPlayers.filter((p: any) => ['Paid', 'Pending'].includes(p['Payment Status'])).length;
+        updateSlots(i, count, max);
+      });
+
+      const active = players.filter((p: any) => ['Paid', 'Pending'].includes(p['Payment Status']));
+      document.getElementById('lineupCount')!.textContent = `${players.length} players`;
+
+      // Update register button text
+      const isFull = active.length >= currentMax;
+      cardsEl.querySelectorAll('.mc-register').forEach((btn) => {
+        btn.textContent = isFull ? 'JOIN WAITLIST' : 'REGISTER NOW';
+      });
+
+      renderLineup(players);
+    } catch {}
+  }
+
+  function updateSlots(idx: number, count: number, max: number) {
+    const label = document.getElementById(`slotsLabel-${idx}`);
+    const spots = document.getElementById(`spots-${idx}`);
+    const bar = document.getElementById(`bar-${idx}`);
+    if (!label || !spots || !bar) return;
+
+    const left = Math.max(max - count, 0);
+    const pct = Math.min(count / max, 1) * 100;
+    const full = left <= 0;
+
+    label.textContent = `${count} / ${max}`;
+    spots.textContent = full ? 'FULL' : `${left} left`;
+    spots.className = `mc-spots ${full ? 'mc-spots--full' : ''}`;
+    bar.style.width = `${pct}%`;
+    bar.className = `progress-fill ${full ? 'progress-fill--full' : ''}`;
+  }
+
+  function renderLineup(list: any[]) {
+    const grid = document.getElementById('lineupGrid')!;
+    const empty = document.getElementById('lineupEmpty')!;
+    const order: Record<string, number> = { Paid: 1, Pending: 2, Waitlist: 3, Rejected: 4 };
+    const sorted = [...list].sort((a, b) => (order[a['Payment Status']] || 5) - (order[b['Payment Status']] || 5));
+
+    if (!sorted.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
+    empty.style.display = 'none';
+
+    const colors = ['#00FF41', '#00c4ff', '#ff9500', '#e040fb', '#ff5252', '#40c4ff', '#69f0ae', '#ffd740'];
+
+    grid.innerHTML = sorted.map((p, i) => {
+      const name = p['Player Name'] || '?';
+      const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+      const status = p['Payment Status'] || 'Pending';
+      const color = colors[i % colors.length];
+      return `<div class="player-card">
+        <div class="player-avatar" style="background:${color}20;color:${color};border-color:${color}40">${initials}</div>
+        <span class="player-name">${name}</span>
+        <span class="badge badge--${status.toLowerCase()}">${status}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Countdown ---
+  function startCountdowns() {
+    setInterval(() => {
+      sessions.forEach((s: any, i: number) => {
+        const el = document.getElementById(`countdown-${i}`);
+        if (!el) return;
+        const target = new Date(`${s.Date}T${s.Time?.replace(/\s*(AM|PM)/i, ' $1') || '00:00'}`);
+        const diff = target.getTime() - Date.now();
+        if (diff <= 0) { el.textContent = 'MATCH TIME!'; el.classList.add('live'); return; }
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const sec = Math.floor((diff % 60000) / 1000);
+        el.textContent = `${h}h ${m}m ${sec}s`;
+      });
+    }, 1000);
+  }
+
+  // --- Registration modal ---
+  const modal = document.getElementById('regModal')!;
+  const steps = [
+    document.getElementById('step1')!,
+    document.getElementById('step2')!,
+    document.getElementById('step2w')!,
+    document.getElementById('step3')!,
+  ];
+  const dots = document.querySelectorAll('.step-dot');
+
+  function openRegistration() {
+    modal.style.display = '';
+    showStep(1);
+  }
+
+  function showStep(n: number) {
+    steps.forEach((s) => s.classList.remove('active'));
+    dots.forEach((d, i) => {
+      d.classList.remove('active', 'done');
+      if (i + 1 < n) d.classList.add('done');
+      if (i + 1 === n) d.classList.add('active');
+    });
+
+    if (n === 1) steps[0].classList.add('active');
+    else if (n === 2) {
+      const active = players.filter((p: any) => ['Paid', 'Pending'].includes(p['Payment Status']));
+      if (active.length >= currentMax) {
+        steps[2].classList.add('active'); // waitlist
+      } else {
+        steps[1].classList.add('active'); // payment
+        document.getElementById('payFeeLabel')!.textContent = `Fee: RM ${currentSession?.Fee || 10}`;
+      }
+    }
+    else if (n === 3) steps[3].classList.add('active');
+  }
+
+  document.getElementById('modalClose')!.addEventListener('click', () => modal.style.display = 'none');
+  document.getElementById('modalDone')!.addEventListener('click', () => { modal.style.display = 'none'; location.reload(); });
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+  document.getElementById('toStep2')!.addEventListener('click', () => {
+    const name = (document.getElementById('regName') as HTMLInputElement).value.trim();
+    const phone = (document.getElementById('regPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const errEl = document.getElementById('regError')!;
+
+    if (!name || !phone) { showErr(errEl, 'Fill in both fields.'); return; }
+    if (!/^\d{10,13}$/.test(phone)) { showErr(errEl, 'Invalid phone number.'); return; }
+    if (players.some((p: any) => p['Player Name'].toLowerCase().trim() === name.toLowerCase())) {
+      showErr(errEl, `"${name}" is already taken!`); return;
+    }
+    errEl.style.display = 'none';
+    showStep(2);
+  });
+
+  async function submitRegistration() {
+    const name = (document.getElementById('regName') as HTMLInputElement).value.trim();
+    const phone = (document.getElementById('regPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const errEl = document.getElementById('regError')!;
+
+    try {
+      const res = await fetch(`${API}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: currentSession.Date, name, phone, fee: currentSession.Fee, sessionName: currentSession['Session Name'] }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const wl = data.status === 'Waitlist';
+        const doneTitle = document.getElementById('doneTitle')!;
+        const doneSub = document.getElementById('doneSub')!;
+        if (wl) {
+          doneTitle.innerHTML = 'ON THE <span style="color:var(--blue)">WAITLIST</span>';
+          doneSub.textContent = "We'll notify you when a slot opens.";
+        } else {
+          doneTitle.innerHTML = "YOU'RE <span class='neon-text'>IN!</span>";
+          doneSub.textContent = 'Slot confirmed. See you on the pitch!';
+        }
+        const msg = wl
+          ? `Hi Admin, I joined WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}.`
+          : `Hi Admin, I registered for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}.`;
+        (document.getElementById('waBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
+        showStep(3);
+      } else {
+        showErr(errEl, data.error || 'Registration failed.');
+      }
+    } catch { showErr(errEl, 'Network error.'); }
+  }
+
+  document.getElementById('toStep3')!.addEventListener('click', submitRegistration);
+  document.getElementById('confirmWaitlist')!.addEventListener('click', submitRegistration);
+
+  // Share
+  document.getElementById('shareBtn')!.addEventListener('click', () => {
+    if (!currentSession) return;
+    const msg = `Join us for football! ${currentSession['Session Name']} on ${currentSession.Date} at ${currentSession.Location}. Register here: ${location.origin}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  });
+
+  function showErr(el: HTMLElement, msg: string) {
+    el.style.display = '';
+    el.innerHTML = `<div class="alert alert--error">${msg}</div>`;
+  }
+
+  init();
+</script>
+
+<style>
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,10,0.92); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; }
+  .brand { display: flex; align-items: center; gap: 0.7rem; }
+  .brand-logo { width: 40px; height: 40px; border-radius: 10px; }
+  .brand-name { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.05em; line-height: 1; }
+  .brand-tag { font-size: 0.58rem; color: var(--text-muted); letter-spacing: 0.2em; font-weight: 600; }
+  .admin-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.2s;
+  }
+  .admin-btn:hover { border-color: var(--neon); color: var(--neon); }
+
+  /* Loading */
+  .loading-state { text-align: center; padding: 4rem 0; color: var(--text-muted); }
+  .loader {
+    width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--neon);
+    border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state { text-align: center; padding: 4rem 0; }
+  .empty-icon { font-size: 3rem; display: block; margin-bottom: 1rem; }
+  .empty-state h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+  .empty-state p { color: var(--text-muted); font-size: 0.88rem; }
+
+  /* Match Cards */
+  .match-cards { margin: 1.2rem 0; }
+  .match-card {
+    padding: 1.5rem; margin-bottom: 1rem;
+    border-left: 4px solid var(--neon); display: none;
+  }
+  .match-card.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .mc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .mc-badge {
+    background: var(--neon); color: #000; padding: 0.3rem 0.9rem; border-radius: 8px;
+    font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .mc-fee { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--text); }
+
+  .mc-details { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .mc-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: var(--text-secondary); }
+  .mc-row svg { color: var(--neon); flex-shrink: 0; opacity: 0.7; }
+
+  .mc-countdown {
+    text-align: center; font-family: 'Space Grotesk', monospace; font-size: 1.8rem; font-weight: 700;
+    color: var(--neon); margin-bottom: 1.2rem; letter-spacing: 0.05em;
+    text-shadow: 0 0 30px var(--neon-glow);
+  }
+  .mc-countdown.live { animation: pulse 1s infinite; color: var(--orange); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .mc-slots { margin-bottom: 1.2rem; }
+  .mc-slots-header { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+  .mc-slots-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; }
+  .mc-spots { font-size: 0.78rem; font-weight: 700; color: var(--neon); }
+  .mc-spots--full { color: var(--orange); }
+
+  .progress-track { width: 100%; height: 8px; background: var(--border); border-radius: 100px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; background: var(--neon); border-radius: 100px;
+    transition: width 0.6s ease; box-shadow: 0 0 10px var(--neon-glow);
+  }
+  .progress-fill--full { background: var(--orange); box-shadow: 0 0 10px rgba(255,149,0,0.3); }
+
+  .card-dots { display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.5rem; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s;
+  }
+  .dot.active { background: var(--neon); box-shadow: 0 0 8px var(--neon-glow); }
+
+  /* Lineup */
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1rem; }
+  .section-title { font-size: 1.2rem; }
+  .lineup-count { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.08em; }
+
+  .lineup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.6rem; }
+  .player-card {
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    padding: 1rem 0.5rem; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; transition: transform 0.2s;
+  }
+  .player-card:hover { transform: translateY(-2px); }
+  .player-avatar {
+    width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.82rem; font-weight: 800; border: 2px solid;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .player-name { font-size: 0.72rem; font-weight: 600; color: var(--text); text-align: center; line-height: 1.2; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .lineup-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic; font-size: 0.88rem; }
+
+  /* Share */
+  .share-section { margin: 1.5rem 0 2rem; }
+</style>

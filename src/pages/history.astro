@@ -1,0 +1,89 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Match History — KroniBola" activeTab="history">
+  <header class="header">
+    <div class="container">
+      <h1 class="page-title">MATCH <span class="neon-text">HISTORY</span></h1>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="loading" class="loading">
+      <div class="loader"></div>
+    </div>
+    <div id="historyList" class="history-list"></div>
+    <p id="empty" style="display:none" class="empty">No past games yet.</p>
+  </main>
+</Layout>
+
+<script>
+  async function load() {
+    try {
+      const [sRes, pRes] = await Promise.all([
+        fetch('/api/sessions'),
+        fetch('/api/players'),
+      ]);
+      const sessions = (await sRes.json()).sessions || [];
+      const players = (await pRes.json()).players || [];
+
+      document.getElementById('loading')!.style.display = 'none';
+
+      const closed = sessions.filter((s: any) => s.Status === 'Closed');
+      if (!closed.length) { document.getElementById('empty')!.style.display = ''; return; }
+
+      const list = document.getElementById('historyList')!;
+      list.innerHTML = closed.map((s: any) => {
+        const gamePlayers = players.filter((p: any) => String(p['Session Date']) === s.Date && p['Payment Status'] === 'Paid');
+        const colors = ['#00FF41', '#00c4ff', '#ff9500', '#e040fb', '#ff5252', '#40c4ff'];
+        const avatars = gamePlayers.slice(0, 8).map((p: any, i: number) => {
+          const init = (p['Player Name'] || '?')[0].toUpperCase();
+          const c = colors[i % colors.length];
+          return `<div class="h-avatar" style="background:${c}20;color:${c};border-color:${c}40">${init}</div>`;
+        }).join('');
+        const extra = gamePlayers.length > 8 ? `<span class="h-more">+${gamePlayers.length - 8}</span>` : '';
+
+        return `<div class="history-card glass">
+          <div class="hc-top">
+            <span class="hc-name">${s['Session Name']}</span>
+            <span class="hc-date">${s.Date}</span>
+          </div>
+          <div class="hc-info">
+            <span>${s.Location}</span>
+            <span>·</span>
+            <span>${s.Time}</span>
+            <span>·</span>
+            <span>${gamePlayers.length} players</span>
+          </div>
+          <div class="hc-avatars">${avatars}${extra}</div>
+        </div>`;
+      }).join('');
+    } catch {
+      document.getElementById('loading')!.innerHTML = '<p style="color:var(--red)">Failed to load.</p>';
+    }
+  }
+  load();
+</script>
+
+<style>
+  .header { padding: 1.2rem 0 0.8rem; border-bottom: 1px solid var(--border); }
+  .page-title { font-size: 1.3rem; letter-spacing: 0.04em; }
+  .loading { text-align: center; padding: 3rem 0; }
+  .loader { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--neon); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { text-align: center; padding: 3rem; color: var(--text-muted); }
+
+  .history-list { display: flex; flex-direction: column; gap: 0.8rem; padding: 1rem 0; }
+  .history-card { padding: 1.2rem; }
+  .hc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .hc-name { font-family: 'Space Grotesk'; font-weight: 700; font-size: 0.95rem; }
+  .hc-date { font-size: 0.75rem; color: var(--text-muted); }
+  .hc-info { display: flex; gap: 0.4rem; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.8rem; flex-wrap: wrap; }
+  .hc-avatars { display: flex; gap: 0.3rem; align-items: center; }
+  .h-avatar {
+    width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 800; border: 1.5px solid; font-family: 'Space Grotesk';
+  }
+  .h-more { font-size: 0.72rem; color: var(--text-muted); margin-left: 0.3rem; }
+</style>

@@ -1,0 +1,108 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="House Rules — KroniBola" activeTab="rules">
+  <header class="header">
+    <div class="container">
+      <h1 class="page-title">HOUSE <span class="neon-text">RULES</span></h1>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="rules-list">
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#9200;</span>
+        <h3>Punctuality</h3>
+        <p>Be at the venue <strong>15 minutes</strong> before kick-off. Late arrivals may lose their slot to waitlist players without refund.</p>
+      </div>
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#128176;</span>
+        <h3>Payment</h3>
+        <p>Pay via <strong>Touch 'n Go</strong> within 1 hour of registering. Unpaid slots will be released to the waitlist. <strong>No cash</strong> on game day.</p>
+      </div>
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#128244;</span>
+        <h3>Cancellations</h3>
+        <p>Cancel at least <strong>6 hours</strong> before the game for a full refund. Late cancellations are <strong>non-refundable</strong> — your slot goes to the next waitlist player.</p>
+      </div>
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#9917;</span>
+        <h3>Fair Play</h3>
+        <p>Play fair, respect all players. <strong>No dangerous tackles</strong>. The admin reserves the right to ban repeat offenders. This is a friendly game — keep it fun.</p>
+      </div>
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#128085;</span>
+        <h3>Kit</h3>
+        <p>Bring <strong>two shirts</strong> (light and dark) for team split. Proper futsal shoes required — no running shoes or barefoot. Shin guards recommended.</p>
+      </div>
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#128167;</span>
+        <h3>Hydration</h3>
+        <p>Bring your own <strong>water bottle</strong>. We play hard — stay hydrated. No glass bottles on the pitch.</p>
+      </div>
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#128246;</span>
+        <h3>Communication</h3>
+        <p>All announcements via <strong>WhatsApp group</strong>. If you can't make it, notify the admin ASAP — don't just ghost.</p>
+      </div>
+
+      <div class="rule-card glass">
+        <span class="rule-icon">&#127942;</span>
+        <h3>Team Selection</h3>
+        <p>Teams are split <strong>randomly or balanced</strong> by the admin. No cherry-picking. Rotate goalkeepers every game.</p>
+      </div>
+
+    </div>
+
+    <div class="contact-box glass">
+      <h3>Questions?</h3>
+      <p>Message the admin directly.</p>
+      <a href="https://wa.me/60126183827" target="_blank" class="btn btn--wa" style="width:100%">WHATSAPP ADMIN</a>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .header { padding: 1.2rem 0 0.8rem; border-bottom: 1px solid var(--border); }
+  .page-title { font-size: 1.3rem; }
+
+  .rules-list { display: flex; flex-direction: column; gap: 0.8rem; padding: 1.2rem 0; }
+
+  .rule-card {
+    padding: 1.3rem; display: flex; flex-direction: column; gap: 0.4rem;
+    border-left: 3px solid var(--neon);
+  }
+
+  .rule-icon { font-size: 1.3rem; }
+
+  .rule-card h3 {
+    font-size: 0.95rem; font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; color: var(--text);
+  }
+
+  .rule-card p {
+    font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7; font-weight: 400;
+  }
+
+  .rule-card strong { color: var(--text); font-weight: 600; }
+
+  .contact-box {
+    padding: 1.5rem; text-align: center; margin: 0.5rem 0 2rem;
+    border: 1px solid var(--neon); border-left: 4px solid var(--neon);
+  }
+
+  .contact-box h3 {
+    font-size: 1rem; margin-bottom: 0.3rem;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .contact-box p { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; }
+</style>
