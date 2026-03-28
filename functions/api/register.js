@@ -58,18 +58,23 @@ export async function onRequest(context) {
     const spotsLeft = maxPlayers - activeCount - (status === 'Waitlist' ? 0 : 1);
     const emoji = status === 'Waitlist' ? '⏳' : '✅';
     const sessionLabel = session ? session['Session Name'] : 'Game';
+    const sessionTime = session ? session.Time : '';
+    const sessionLoc = session ? session.Location : '';
     const tgMsg = [
       `${emoji} <b>New Registration</b>`,
       ``,
-      `Player: <b>${name}</b>`,
-      `Phone: ${phone}`,
-      `Session: ${sessionLabel} (${date})`,
-      `Status: <b>${status}</b>`,
-      `Ref: <code>${refCode}</code>`,
-      `Fee: RM ${fee}`,
+      `👤 Player: <b>${name}</b>`,
+      `📱 Phone: ${phone}`,
+      `🏟 Session: <b>${sessionLabel}</b>`,
+      `📅 Date: ${date}`,
+      sessionTime ? `⏰ Time: ${sessionTime}` : '',
+      sessionLoc ? `📍 Location: ${sessionLoc}` : '',
+      `💳 Status: <b>${status}</b>`,
+      `🔖 Ref: <code>${refCode}</code>`,
+      `💰 Fee: RM ${fee}`,
       ``,
-      spotsLeft > 0 ? `📊 ${spotsLeft} spot${spotsLeft > 1 ? 's' : ''} remaining` : `🔴 Game is FULL`,
-    ].join('\n');
+      spotsLeft > 0 ? `📊 <b>${spotsLeft}</b> spot${spotsLeft > 1 ? 's' : ''} remaining out of ${maxPlayers}` : `🔴 Game is <b>FULL</b> (${maxPlayers}/${maxPlayers})`,
+    ].filter(Boolean).join('\n');
     await sendTelegramNotification(tgMsg);
 
     return json({ success: true, status, refCode });

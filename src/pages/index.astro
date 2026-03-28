@@ -398,8 +398,8 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('rcptFee')!.textContent = `RM ${currentSession.Fee}`;
 
         const msg = wl
-          ? `Hi Admin, I joined WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}. Ref: ${refCode}`
-          : `Hi Admin, I registered for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}. Ref: ${refCode}. Please match this code with my payment receipt.`;
+          ? `Hi Admin, I've joined the WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date} at ${currentSession.Location}.\n\nName: ${name}\nRef: ${refCode}\n\nPlease notify me if a slot opens up.`
+          : `Hi Admin, I've registered and paid for ${currentSession['Session Name']} on ${currentSession.Date} at ${currentSession.Location}.\n\nName: ${name}\nRef: ${refCode}\nFee: RM ${currentSession.Fee}\n\nReceipt uploaded on the app. Please verify my payment.`;
         (document.getElementById('waBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
 
         // Upload receipt (mandatory for non-waitlist)
@@ -440,7 +440,7 @@ import Layout from '../layouts/Layout.astro';
   // Share
   document.getElementById('shareBtn')!.addEventListener('click', () => {
     if (!currentSession) return;
-    const msg = `Join us for football! ${currentSession['Session Name']} on ${currentSession.Date} at ${currentSession.Location}. Register here: ${location.origin}`;
+    const msg = `⚽ Join us for football!\n\n🏟 ${currentSession['Session Name']}\n📅 ${currentSession.Date}\n⏰ ${currentSession.Time}\n📍 ${currentSession.Location}\n💰 RM ${currentSession.Fee}\n\nRegister here: ${location.origin}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   });
 

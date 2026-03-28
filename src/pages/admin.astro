@@ -132,7 +132,15 @@ import Layout from '../layouts/Layout.astro';
     const wrap = document.getElementById('scheduleList')!;
     if (!sessionsData.length) { wrap.innerHTML = '<p class="empty-msg">No games yet. Tap "+ ADD" to create one.</p>'; return; }
 
-    wrap.innerHTML = sessionsData.map((s, i) => {
+    // Sort: Open first, then by date descending. Keep original indices for editing.
+    const indexed = sessionsData.map((s: any, i: number) => ({ s, i }));
+    indexed.sort((a: any, b: any) => {
+      if (a.s.Status === 'Open' && b.s.Status !== 'Open') return -1;
+      if (a.s.Status !== 'Open' && b.s.Status === 'Open') return 1;
+      return (b.s.Date || '').localeCompare(a.s.Date || '');
+    });
+
+    wrap.innerHTML = indexed.map(({ s, i }: any) => {
       const isOpen = s.Status === 'Open';
       return `<div class="admin-card ${isOpen ? '' : 'admin-card--closed'}">
         <div class="ac-header">
@@ -254,7 +262,7 @@ import Layout from '../layouts/Layout.astro';
       const isOverdue = status === 'Overdue';
       const color = statusColors[status] || '#666';
       const initial = (p['Player Name'] || '?')[0].toUpperCase();
-      const waMsg = encodeURIComponent(`Hi ${p['Player Name']}, regarding the game on ${date}.`);
+      const waMsg = encodeURIComponent(`Hi ${p['Player Name']}, this is regarding your registration (Ref: ${ref}) for the game on ${date}. `);
       const waLink = phone ? `https://wa.me/6${phone}?text=${waMsg}` : '#';
 
       return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
@@ -339,10 +347,11 @@ import Layout from '../layouts/Layout.astro';
         box.innerHTML = `<p class="notify-title">Notify players:</p>` +
           changedPlayers.map(cp => {
             const msgs: Record<string, string> = {
-              Paid: `Hi ${cp.name}, your payment for the game on ${date} has been confirmed! See you on the pitch!`,
-              Pending: `Hi ${cp.name}, a slot opened for the game on ${date}. Please pay to confirm.`,
-              Rejected: `Hi ${cp.name}, your registration for ${date} has been cancelled.`,
-              Waitlist: `Hi ${cp.name}, you've been moved to waitlist for ${date}.`,
+              Paid: `Hi ${cp.name}! ✅ Your payment for the KroniBola game on ${date} has been confirmed. You're in! See you on the pitch. ⚽`,
+              Pending: `Hi ${cp.name}! 🎉 Good news — a slot has opened up for the KroniBola game on ${date}. Please pay RM28 via Maybank MAE and upload your receipt at kronibola.pages.dev to confirm your spot.`,
+              Rejected: `Hi ${cp.name}, unfortunately your registration for the KroniBola game on ${date} has been cancelled. If you believe this is a mistake, please contact us.`,
+              Waitlist: `Hi ${cp.name}, you've been moved to the waitlist for the KroniBola game on ${date}. We'll notify you immediately if a slot opens up. Please do NOT pay yet.`,
+              Overdue: `Hi ${cp.name}, ⚠️ your payment for the KroniBola game on ${date} is overdue. Please pay and upload your receipt ASAP at kronibola.pages.dev or your slot may be given to the next player.`,
             };
             const msg = msgs[cp.newStatus] || `Hi ${cp.name}, your status for ${date} is now: ${cp.newStatus}.`;
             const link = cp.phone ? `https://wa.me/6${cp.phone}?text=${encodeURIComponent(msg)}` : '#';
