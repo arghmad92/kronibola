@@ -23,8 +23,11 @@ async function createJWT(credentials) {
     .replace(/\\n/g, '')
     .replace(/\n/g, '')
     .replace(/\r/g, '')
-    .replace(/-+BEGIN PRIVATE KEY-+/g, '')
-    .replace(/-+END PRIVATE KEY-+/g, '')
+    .replace(/-/g, '')
+    .replace(/BEGIN\s*PRIVATE\s*KEY/g, '')
+    .replace(/END\s*PRIVATE\s*KEY/g, '')
+    .replace(/BEGINPRIVATEKEY/g, '')
+    .replace(/ENDPRIVATEKEY/g, '')
     .replace(/\s/g, '')
     .trim();
 
