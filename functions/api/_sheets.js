@@ -4,12 +4,12 @@
  */
 
 // Generate JWT for Google API auth
-async function createJWT(credentials) {
+async function createJWT(credentials, scope) {
   const header = { alg: 'RS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: credentials.client_email,
-    scope: 'https://www.googleapis.com/auth/spreadsheets',
+    scope: scope || 'https://www.googleapis.com/auth/spreadsheets',
     aud: 'https://oauth2.googleapis.com/token',
     iat: now,
     exp: now + 3600,
@@ -40,8 +40,8 @@ async function createJWT(credentials) {
   return `${unsigned}.${sig}`;
 }
 
-async function getAccessToken(credentials) {
-  const jwt = await createJWT(credentials);
+async function getAccessToken(credentials, scope) {
+  const jwt = await createJWT(credentials, scope);
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -120,6 +120,12 @@ export async function appendRow(env, sheetName, row) {
       body: JSON.stringify({ values: [row] }),
     }
   );
+}
+
+// Get access token for any Google API scope
+export async function getGoogleToken(env, scope) {
+  const creds = parseCreds(env.GCP_CREDENTIALS);
+  return getAccessToken(creds, scope);
 }
 
 export function json(data, status = 200) {
