@@ -25,10 +25,19 @@ import Layout from '../layouts/Layout.astro';
 
       document.getElementById('loading')!.style.display = 'none';
 
-      const counts: Record<string, number> = {};
-      players.forEach((p: any) => { counts[p['Player Name']] = (counts[p['Player Name']] || 0) + 1; });
+      // Group by phone number (unique per player), use latest name
+      const phoneMap: Record<string, { name: string; count: number }> = {};
+      players.forEach((p: any) => {
+        const phone = String(p.Phone || '').replace(/[-\s']/g, '').replace(/^0/, '').slice(-10);
+        if (!phone) return;
+        if (!phoneMap[phone]) phoneMap[phone] = { name: p['Player Name'], count: 0 };
+        phoneMap[phone].count += 1;
+        phoneMap[phone].name = p['Player Name']; // use latest name
+      });
 
-      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const sorted = Object.values(phoneMap)
+        .map((v) => [v.name, v.count] as [string, number])
+        .sort((a, b) => b[1] - a[1]);
       if (!sorted.length) {
         document.getElementById('board')!.innerHTML = '<p class="empty">No data yet. Play some games!</p>';
         return;
