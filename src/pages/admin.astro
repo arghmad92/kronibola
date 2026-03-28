@@ -44,6 +44,7 @@ import Layout from '../layouts/Layout.astro';
         <button class="tab active" data-tab="schedule">Schedule</button>
         <button class="tab" data-tab="players">Players</button>
         <button class="tab" data-tab="revenue">Revenue</button>
+        <button class="tab" data-tab="notifs">Notifs</button>
       </div>
 
       <!-- Schedule Tab -->
@@ -68,6 +69,17 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <div id="playersList" class="card-list"></div>
         <button class="btn btn--primary" id="savePlayersBtn" style="width:100%;margin-top:1rem">SAVE CHANGES</button>
+      </div>
+
+      <!-- Notifications Tab -->
+      <div class="tab-panel" id="tab-notifs">
+        <div class="panel-top">
+          <h3 class="panel-title">NOTIFICATION <span class="neon-text">LOG</span></h3>
+          <button class="btn btn--primary btn--sm" id="refreshNotifsBtn">Refresh</button>
+        </div>
+        <div id="notifsList" class="card-list">
+          <p class="empty-msg">Loading...</p>
+        </div>
       </div>
 
       <!-- Revenue Tab -->
@@ -104,7 +116,7 @@ import Layout from '../layouts/Layout.astro';
         adminToken = data.token;
         document.getElementById('loginGate')!.style.display = 'none';
         document.getElementById('adminContent')!.style.display = '';
-        loadSchedule(); loadAllPlayers(); loadRevenue();
+        loadSchedule(); loadAllPlayers(); loadRevenue(); loadNotifs();
       } else { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>'; }
     } catch { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>'; }
   });
@@ -355,16 +367,80 @@ import Layout from '../layouts/Layout.astro';
             };
             const msg = msgs[cp.newStatus] || `Hi ${cp.name}, your status for ${date} is now: ${cp.newStatus}.`;
             const link = cp.phone ? `https://wa.me/6${cp.phone}?text=${encodeURIComponent(msg)}` : '#';
-            return `<a href="${link}" target="_blank" class="notify-item">
+            // Log the notification
+            logNotification(cp.name, cp.phone, cp.newStatus, date, msg);
+            return `<a href="${link}" target="_blank" class="notify-item" data-name="${cp.name}" data-phone="${cp.phone}" data-status="${cp.newStatus}" data-date="${date}" data-msg="${encodeURIComponent(msg)}">
               <span>${cp.name} → <strong>${cp.newStatus}</strong></span>
               <span class="notify-send">Send</span>
             </a>`;
           }).join('');
         wrap.parentElement!.appendChild(box);
-        setTimeout(() => box.remove(), 15000);
+        setTimeout(() => box.remove(), 20000);
       }
     } catch { btn.textContent = 'ERROR'; btn.disabled = false; }
   });
+
+  // --- NOTIFICATIONS LOG ---
+  async function loadNotifs() {
+    try {
+      const res = await fetch(`${API}/admin/notifications`, { headers: { Authorization: adminToken } });
+      const data = await res.json();
+      renderNotifs(data.logs || []);
+    } catch { renderNotifs([]); }
+  }
+
+  function renderNotifs(logs: any[]) {
+    const wrap = document.getElementById('notifsList')!;
+    if (!logs.length) { wrap.innerHTML = '<p class="empty-msg">No notifications sent yet.</p>'; return; }
+
+    const statusColors: Record<string, string> = { Paid: '#00FF41', Pending: '#ff9500', Overdue: '#ff5722', Waitlist: '#00c4ff', Rejected: '#ff3b30' };
+
+    wrap.innerHTML = logs.map((log: any) => {
+      const color = statusColors[log.Status] || '#666';
+      const phone = String(log.Phone || '').replace("'", '').trim();
+      const waLink = phone ? `https://wa.me/6${phone}?text=${encodeURIComponent(log.Message || '')}` : '#';
+      const timeAgo = getTimeAgo(log.Timestamp);
+
+      return `<div class="notif-card">
+        <div class="notif-top">
+          <div class="notif-info">
+            <span class="notif-name">${log['Player Name']}</span>
+            <span class="notif-meta">${log['Session Date'] || ''} · ${timeAgo}</span>
+          </div>
+          <span class="badge" style="background:${color}20;color:${color};font-size:0.58rem">${log.Status || '—'}</span>
+        </div>
+        <p class="notif-msg">${(log.Message || '').replace(/\n/g, '<br>').slice(0, 200)}${(log.Message || '').length > 200 ? '...' : ''}</p>
+        <div class="notif-actions">
+          <span class="notif-sent-by">${log['Sent By'] || 'Admin'}</span>
+          <a href="${waLink}" target="_blank" class="notif-resend">Resend</a>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function getTimeAgo(ts: string) {
+    if (!ts) return '';
+    const diff = Date.now() - new Date(ts.replace(' ', 'T') + 'Z').getTime();
+    if (isNaN(diff)) return ts;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
+
+  async function logNotification(playerName: string, phone: string, status: string, date: string, message: string) {
+    try {
+      await fetch(`${API}/admin/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+        body: JSON.stringify({ playerName, phone, status, date, message, sentBy: 'Admin' }),
+      });
+    } catch {}
+  }
+
+  document.getElementById('refreshNotifsBtn')!.addEventListener('click', loadNotifs);
 
   // --- REVENUE ---
   async function loadRevenue() {
@@ -539,6 +615,25 @@ import Layout from '../layouts/Layout.astro';
   .rev-bar-head { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.3rem; color: var(--text-secondary); }
   .rev-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden; }
   .rev-bar-fill { height: 100%; background: linear-gradient(90deg, var(--neon-dim), var(--neon)); border-radius: 100px; transition: width 0.6s ease; }
+
+  /* Notification cards */
+  .notif-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 0.8rem 1rem; margin-bottom: 0.5rem;
+  }
+  .notif-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem; }
+  .notif-info { display: flex; flex-direction: column; }
+  .notif-name { font-weight: 700; font-size: 0.85rem; }
+  .notif-meta { font-size: 0.65rem; color: var(--text-muted); }
+  .notif-msg {
+    font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;
+    padding: 0.5rem 0; border-top: 1px solid var(--border); margin-top: 0.3rem;
+    word-break: break-word;
+  }
+  .notif-actions { display: flex; justify-content: space-between; align-items: center; }
+  .notif-sent-by { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .notif-resend { font-size: 0.72rem; color: var(--neon); font-weight: 700; }
+  .notif-resend:hover { text-decoration: underline; }
 
   .footer { border-top: 1px solid var(--border); padding: 1.5rem 0; text-align: center; margin-top: 2rem; font-size: 0.72rem; color: var(--text-muted); }
   .ssm { font-size: 0.6rem; opacity: 0.5; margin-top: 0.2rem; }
