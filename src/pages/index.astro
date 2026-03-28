@@ -402,7 +402,7 @@ import Layout from '../layouts/Layout.astro';
           : `Hi Admin, I registered for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}. Ref: ${refCode}. Please match this code with my payment receipt.`;
         (document.getElementById('waBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
 
-        // Upload receipt if provided
+        // Upload receipt (mandatory for non-waitlist)
         if (receiptData) {
           const uploadStatus = document.getElementById('uploadStatus')!;
           uploadStatus.style.display = '';
@@ -424,7 +424,17 @@ import Layout from '../layouts/Layout.astro';
     } catch { showErr(errEl, 'Network error.'); }
   }
 
-  document.getElementById('toStep3')!.addEventListener('click', submitRegistration);
+  document.getElementById('toStep3')!.addEventListener('click', () => {
+    if (!receiptData) {
+      const uploadStatus = document.getElementById('uploadStatus')!;
+      uploadStatus.style.display = '';
+      uploadStatus.innerHTML = '<div class="alert alert--error" style="font-size:0.78rem">Please upload your payment receipt before confirming.</div>';
+      document.getElementById('uploadArea')!.style.borderColor = 'var(--red)';
+      setTimeout(() => { document.getElementById('uploadArea')!.style.borderColor = ''; }, 3000);
+      return;
+    }
+    submitRegistration();
+  });
   document.getElementById('confirmWaitlist')!.addEventListener('click', submitRegistration);
 
   // Share
