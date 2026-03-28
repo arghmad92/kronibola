@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Admin — KroniBola">
+<Layout title="Admin — KroniBola" hideNav={true}>
   <header class="header">
     <div class="container header-inner">
       <a href="/" class="brand">
@@ -13,18 +13,18 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </a>
       <a href="/" class="back-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Back
       </a>
     </div>
   </header>
 
   <main class="container">
-    <!-- Login Gate -->
+    <!-- Login -->
     <div id="loginGate">
       <div class="login-card glass">
         <div class="login-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
         <h2>ADMIN <span class="neon-text">ACCESS</span></h2>
         <form id="loginForm">
@@ -38,66 +38,51 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <!-- Admin Content (hidden until auth) -->
     <div id="adminContent" style="display:none">
       <!-- Tabs -->
       <div class="tabs">
-        <button class="tab active" data-tab="schedule">MANAGE SCHEDULE</button>
-        <button class="tab" data-tab="players">MANAGE PLAYERS</button>
-        <button class="tab" data-tab="revenue">REVENUE</button>
+        <button class="tab active" data-tab="schedule">Schedule</button>
+        <button class="tab" data-tab="players">Players</button>
+        <button class="tab" data-tab="revenue">Revenue</button>
       </div>
 
       <!-- Schedule Tab -->
       <div class="tab-panel active" id="tab-schedule">
-        <div class="glass panel-card">
-          <div class="panel-header">
-            <h3>UPCOMING <span class="neon-text">GAMES</span></h3>
-            <button class="btn btn--primary" id="addSessionBtn" style="padding:0.6rem 1.2rem;font-size:0.78rem">+ ADD GAME</button>
-          </div>
-          <div id="scheduleTable" class="table-wrap"></div>
-          <button class="btn btn--primary" id="saveScheduleBtn" style="width:100%;margin-top:1rem">SAVE SCHEDULE</button>
+        <div class="panel-top">
+          <h3 class="panel-title">UPCOMING <span class="neon-text">GAMES</span></h3>
+          <button class="btn btn--primary btn--sm" id="addSessionBtn">+ ADD</button>
         </div>
+        <div id="scheduleList" class="card-list"></div>
+        <button class="btn btn--primary" id="saveScheduleBtn" style="width:100%;margin-top:1rem">SAVE SCHEDULE</button>
       </div>
 
       <!-- Players Tab -->
       <div class="tab-panel" id="tab-players">
-        <div class="glass panel-card">
-          <div class="panel-header">
-            <h3>MANAGE <span class="neon-text">PLAYERS</span></h3>
-          </div>
-          <div class="form-group" style="margin-bottom:1rem">
-            <label class="form-label" for="filterDate">Filter by Game</label>
-            <select class="form-select" id="filterDate" style="width:100%;margin-top:0.3rem">
-              <option value="">Select a date...</option>
-            </select>
-          </div>
-          <div class="alert alert--info" style="margin-bottom:1rem">
-            Moving a player from Waitlist to Pending? Use the WhatsApp link to notify them to pay.
-          </div>
-          <div id="playersTable" class="table-wrap"></div>
-          <button class="btn btn--primary" id="savePlayersBtn" style="width:100%;margin-top:1rem">SAVE CHANGES</button>
+        <div class="panel-top">
+          <h3 class="panel-title">MANAGE <span class="neon-text">PLAYERS</span></h3>
         </div>
+        <div class="form-group" style="margin-bottom:0.8rem">
+          <select class="form-select" id="filterDate" style="width:100%">
+            <option value="">Select a game...</option>
+          </select>
+        </div>
+        <div id="playersList" class="card-list"></div>
+        <button class="btn btn--primary" id="savePlayersBtn" style="width:100%;margin-top:1rem">SAVE CHANGES</button>
       </div>
 
       <!-- Revenue Tab -->
       <div class="tab-panel" id="tab-revenue">
-        <div class="glass panel-card">
-          <div class="panel-header">
-            <h3>REVENUE <span class="neon-text">DASHBOARD</span></h3>
-          </div>
-          <div id="revenueDashboard">
-            <p style="color:var(--text-muted);padding:1rem">Loading revenue data...</p>
-          </div>
+        <div class="panel-top">
+          <h3 class="panel-title">REVENUE <span class="neon-text">DASHBOARD</span></h3>
         </div>
+        <div id="revenueDashboard"></div>
       </div>
     </div>
   </main>
 
   <footer class="footer">
-    <div class="container footer-inner">
-      <p>&copy; 2025 KroniBola. All rights reserved.</p>
-      <p style="margin-top:0.3rem;font-size:0.65rem;color:var(--text-muted);opacity:0.6">SSM: 202603032902 (TR0336774-T)</p>
-    </div>
+    <p>&copy; 2025 KroniBola. All rights reserved.</p>
+    <p class="ssm">SSM: 202603032902 (TR0336774-T)</p>
   </footer>
 </Layout>
 
@@ -112,94 +97,111 @@ import Layout from '../layouts/Layout.astro';
     e.preventDefault();
     const pass = (document.getElementById('adminPass') as HTMLInputElement).value;
     const errEl = document.getElementById('loginError')!;
-
     try {
-      const res = await fetch(`${API}/admin/auth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pass }),
-      });
+      const res = await fetch(`${API}/admin/auth`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
       const data = await res.json();
       if (data.success) {
         adminToken = data.token;
         document.getElementById('loginGate')!.style.display = 'none';
         document.getElementById('adminContent')!.style.display = '';
-        loadSchedule();
-        loadAllPlayers();
-        loadRevenue();
-      } else {
-        errEl.style.display = '';
-        errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>';
-      }
-    } catch {
-      errEl.style.display = '';
-      errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>';
-    }
+        loadSchedule(); loadAllPlayers(); loadRevenue();
+      } else { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>'; }
+    } catch { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>'; }
   });
 
   // --- TABS ---
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(`tab-${(tab as HTMLElement).dataset.tab}`)!.classList.add('active');
     });
   });
 
-  // --- SCHEDULE ---
+  // --- SCHEDULE (Card Layout) ---
   async function loadSchedule() {
     try {
       const res = await fetch(`${API}/admin/sessions`, { headers: { Authorization: adminToken } });
-      const data = await res.json();
-      sessionsData = data.sessions || [];
+      sessionsData = (await res.json()).sessions || [];
       renderSchedule();
     } catch {}
   }
 
   function renderSchedule() {
-    const wrap = document.getElementById('scheduleTable')!;
-    if (!sessionsData.length) { wrap.innerHTML = '<p style="color:var(--text-muted);padding:1rem">No sessions. Click "+ ADD GAME" to create one.</p>'; return; }
+    const wrap = document.getElementById('scheduleList')!;
+    if (!sessionsData.length) { wrap.innerHTML = '<p class="empty-msg">No games yet. Tap "+ ADD" to create one.</p>'; return; }
 
-    wrap.innerHTML = `<table class="data-table">
-      <thead><tr><th>Name</th><th>Date</th><th>Time</th><th>Location</th><th>Fee</th><th>Max</th><th>Status</th><th></th></tr></thead>
-      <tbody>${sessionsData.map((s, i) => `<tr>
-        <td><input class="cell-input" data-field="Session Name" data-idx="${i}" value="${s['Session Name'] || ''}" /></td>
-        <td><input class="cell-input" type="date" data-field="Date" data-idx="${i}" value="${s.Date || ''}" /></td>
-        <td><input class="cell-input" data-field="Time" data-idx="${i}" value="${s.Time || ''}" /></td>
-        <td><input class="cell-input" data-field="Location" data-idx="${i}" value="${s.Location || ''}" /></td>
-        <td><input class="cell-input" type="number" data-field="Fee" data-idx="${i}" value="${s.Fee || ''}" style="width:60px" /></td>
-        <td><input class="cell-input" type="number" data-field="Max Players" data-idx="${i}" value="${s['Max Players'] || 15}" style="width:50px" /></td>
-        <td><select class="cell-select" data-field="Status" data-idx="${i}">
-          <option value="Open" ${s.Status === 'Open' ? 'selected' : ''}>Open</option>
-          <option value="Closed" ${s.Status === 'Closed' ? 'selected' : ''}>Closed</option>
-        </select></td>
-        <td class="action-cell">
-          <button class="dup-btn" data-idx="${i}" title="Duplicate">&#9851;</button>
-          <button class="del-btn" data-idx="${i}" title="Delete">&#10005;</button>
-        </td>
-      </tr>`).join('')}</tbody>
-    </table>`;
+    wrap.innerHTML = sessionsData.map((s, i) => {
+      const isOpen = s.Status === 'Open';
+      return `<div class="admin-card ${isOpen ? '' : 'admin-card--closed'}">
+        <div class="ac-header">
+          <span class="ac-badge ${isOpen ? 'ac-badge--open' : 'ac-badge--closed'}">${s.Status || 'Open'}</span>
+          <div class="ac-actions">
+            <button class="ac-btn ac-btn--dup" data-idx="${i}" title="Duplicate">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button class="ac-btn ac-btn--del" data-idx="${i}" title="Delete">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="ac-fields">
+          <div class="ac-field">
+            <label>Name</label>
+            <input class="form-input s-input" data-field="Session Name" data-idx="${i}" value="${s['Session Name'] || ''}" placeholder="e.g. Minifootball" />
+          </div>
+          <div class="ac-row2">
+            <div class="ac-field">
+              <label>Date</label>
+              <input class="form-input s-input" type="date" data-field="Date" data-idx="${i}" value="${s.Date || ''}" />
+            </div>
+            <div class="ac-field">
+              <label>Time</label>
+              <input class="form-input s-input" data-field="Time" data-idx="${i}" value="${s.Time || ''}" placeholder="e.g. 5pm-7pm" />
+            </div>
+          </div>
+          <div class="ac-field">
+            <label>Location</label>
+            <input class="form-input s-input" data-field="Location" data-idx="${i}" value="${s.Location || ''}" placeholder="e.g. FootballHub" />
+          </div>
+          <div class="ac-row3">
+            <div class="ac-field">
+              <label>Fee (RM)</label>
+              <input class="form-input s-input" type="number" data-field="Fee" data-idx="${i}" value="${s.Fee || ''}" />
+            </div>
+            <div class="ac-field">
+              <label>Max Players</label>
+              <input class="form-input s-input" type="number" data-field="Max Players" data-idx="${i}" value="${s['Max Players'] || 15}" />
+            </div>
+            <div class="ac-field">
+              <label>Status</label>
+              <select class="form-select s-input" data-field="Status" data-idx="${i}">
+                <option value="Open" ${s.Status === 'Open' ? 'selected' : ''}>Open</option>
+                <option value="Closed" ${s.Status === 'Closed' ? 'selected' : ''}>Closed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
 
-    wrap.querySelectorAll('.cell-input, .cell-select').forEach((el) => {
+    wrap.querySelectorAll('.s-input').forEach(el => {
       el.addEventListener('change', (e) => {
         const t = e.target as HTMLInputElement;
         sessionsData[parseInt(t.dataset.idx!)][t.dataset.field!] = t.value;
       });
     });
-
-    wrap.querySelectorAll('.dup-btn').forEach((btn) => {
+    wrap.querySelectorAll('.ac-btn--dup').forEach(btn => {
       btn.addEventListener('click', () => {
-        const idx = parseInt((btn as HTMLElement).dataset.idx!);
-        const original = sessionsData[idx];
-        const duplicate = { ...original, Date: '', Status: 'Open' };
-        sessionsData.push(duplicate);
+        const idx = parseInt((btn as HTMLElement).closest('[data-idx]')!.getAttribute('data-idx') || (btn as HTMLElement).dataset.idx!);
+        sessionsData.push({ ...sessionsData[idx], Date: '', Status: 'Open' });
         renderSchedule();
       });
     });
-
-    wrap.querySelectorAll('.del-btn').forEach((btn) => {
+    wrap.querySelectorAll('.ac-btn--del').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (!confirm('Delete this game?')) return;
         sessionsData.splice(parseInt((btn as HTMLElement).dataset.idx!), 1);
         renderSchedule();
       });
@@ -215,26 +217,20 @@ import Layout from '../layouts/Layout.astro';
     const btn = document.getElementById('saveScheduleBtn') as HTMLButtonElement;
     btn.disabled = true; btn.textContent = 'SAVING...';
     try {
-      await fetch(`${API}/admin/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-        body: JSON.stringify({ sessions: sessionsData }),
-      });
+      await fetch(`${API}/admin/sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ sessions: sessionsData }) });
       btn.textContent = 'SAVED!';
       setTimeout(() => { btn.textContent = 'SAVE SCHEDULE'; btn.disabled = false; }, 2000);
     } catch { btn.textContent = 'ERROR'; btn.disabled = false; }
   });
 
-  // --- PLAYERS ---
+  // --- PLAYERS (Card Layout) ---
   async function loadAllPlayers() {
     try {
       const res = await fetch(`${API}/admin/players`, { headers: { Authorization: adminToken } });
-      const data = await res.json();
-      allPlayers = data.players || [];
-
+      allPlayers = (await res.json()).players || [];
       const dates = [...new Set(allPlayers.map((p: any) => p['Session Date']))];
       const sel = document.getElementById('filterDate') as HTMLSelectElement;
-      sel.innerHTML = dates.map((d) => `<option value="${d}">${d}</option>`).join('');
+      sel.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
       if (dates.length) { sel.value = dates[0] as string; renderPlayers(dates[0] as string); }
     } catch {}
   }
@@ -244,40 +240,60 @@ import Layout from '../layouts/Layout.astro';
   });
 
   function renderPlayers(date: string) {
-    const wrap = document.getElementById('playersTable')!;
+    const wrap = document.getElementById('playersList')!;
     const filtered = allPlayers.filter((p: any) => p['Session Date'] === date);
-    if (!filtered.length) { wrap.innerHTML = '<p style="color:var(--text-muted);padding:1rem">No players for this game.</p>'; return; }
+    if (!filtered.length) { wrap.innerHTML = '<p class="empty-msg">No players for this game.</p>'; return; }
 
-    wrap.innerHTML = `<table class="data-table">
-      <thead><tr><th>Del?</th><th>Ref</th><th>Name</th><th>Phone</th><th>Status</th><th>Refund</th><th>Notify</th></tr></thead>
-      <tbody>${filtered.map((p, i) => {
-        const phone = String(p.Phone || '').replace("'", '').trim();
-        const ref = p['Ref Code'] || '—';
-        const refund = p['Refund'] || '';
-        const waMsg = encodeURIComponent(`Hi ${p['Player Name']}, good news! A slot opened up for the game on ${date}. Please pay RM${p.Amount} to confirm your spot.`);
-        const waLink = phone ? `https://wa.me/6${phone}?text=${waMsg}` : '#';
-        const isOverdue = p['Payment Status'] === 'Overdue';
-        return `<tr style="${isOverdue ? 'background:rgba(255,87,34,0.08)' : ''}">
-          <td><input type="checkbox" class="player-del" data-name="${p['Player Name']}" /></td>
-          <td style="font-family:'Space Grotesk';font-size:0.68rem;color:var(--neon);white-space:nowrap">${ref}</td>
-          <td>${p['Player Name']}</td>
-          <td>${phone}</td>
-          <td><select class="cell-select player-status" data-name="${p['Player Name']}">
-            <option value="Pending" ${p['Payment Status'] === 'Pending' ? 'selected' : ''}>Pending</option>
-            <option value="Overdue" ${p['Payment Status'] === 'Overdue' ? 'selected' : ''}>Overdue</option>
-            <option value="Paid" ${p['Payment Status'] === 'Paid' ? 'selected' : ''}>Paid</option>
-            <option value="Waitlist" ${p['Payment Status'] === 'Waitlist' ? 'selected' : ''}>Waitlist</option>
-            <option value="Rejected" ${p['Payment Status'] === 'Rejected' ? 'selected' : ''}>Rejected</option>
-          </select></td>
-          <td><select class="cell-select player-refund" data-name="${p['Player Name']}" style="font-size:0.72rem">
-            <option value="" ${!refund ? 'selected' : ''}>—</option>
-            <option value="Pending Refund" ${refund === 'Pending Refund' ? 'selected' : ''}>Pending</option>
-            <option value="Refunded" ${refund === 'Refunded' ? 'selected' : ''}>Refunded</option>
-          </select></td>
-          <td><a href="${waLink}" target="_blank" class="wa-notify-link">Send</a></td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>`;
+    const statusColors: Record<string, string> = { Paid: '#00FF41', Pending: '#ff9500', Overdue: '#ff5722', Waitlist: '#00c4ff', Rejected: '#ff3b30' };
+
+    wrap.innerHTML = filtered.map((p: any, i: number) => {
+      const phone = String(p.Phone || '').replace("'", '').trim();
+      const ref = p['Ref Code'] || '';
+      const refund = p['Refund'] || '';
+      const status = p['Payment Status'] || 'Pending';
+      const isOverdue = status === 'Overdue';
+      const color = statusColors[status] || '#666';
+      const initial = (p['Player Name'] || '?')[0].toUpperCase();
+      const waMsg = encodeURIComponent(`Hi ${p['Player Name']}, regarding the game on ${date}.`);
+      const waLink = phone ? `https://wa.me/6${phone}?text=${waMsg}` : '#';
+
+      return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
+        <div class="pca-top">
+          <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">${initial}</div>
+          <div class="pca-info">
+            <span class="pca-name">${p['Player Name']}</span>
+            <span class="pca-phone">${phone}</span>
+            ${ref ? `<span class="pca-ref">${ref}</span>` : ''}
+          </div>
+          <div class="pca-check">
+            <input type="checkbox" class="player-del" data-name="${p['Player Name']}" title="Select to delete" />
+          </div>
+        </div>
+        <div class="pca-controls">
+          <div class="pca-field">
+            <label>Status</label>
+            <select class="form-select p-status" data-name="${p['Player Name']}">
+              <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="Overdue" ${status === 'Overdue' ? 'selected' : ''}>Overdue</option>
+              <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
+              <option value="Waitlist" ${status === 'Waitlist' ? 'selected' : ''}>Waitlist</option>
+              <option value="Rejected" ${status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+            </select>
+          </div>
+          <div class="pca-field">
+            <label>Refund</label>
+            <select class="form-select p-refund" data-name="${p['Player Name']}">
+              <option value="" ${!refund ? 'selected' : ''}>—</option>
+              <option value="Pending Refund" ${refund === 'Pending Refund' ? 'selected' : ''}>Pending</option>
+              <option value="Refunded" ${refund === 'Refunded' ? 'selected' : ''}>Done</option>
+            </select>
+          </div>
+          <a href="${waLink}" target="_blank" class="pca-wa" title="WhatsApp">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+          </a>
+        </div>
+      </div>`;
+    }).join('');
   }
 
   document.getElementById('savePlayersBtn')!.addEventListener('click', async () => {
@@ -286,78 +302,57 @@ import Layout from '../layouts/Layout.astro';
     btn.disabled = true; btn.textContent = 'SAVING...';
 
     const delNames = new Set<string>();
-    document.querySelectorAll('.player-del:checked').forEach((cb) => delNames.add((cb as HTMLInputElement).dataset.name!));
+    document.querySelectorAll('.player-del:checked').forEach(cb => delNames.add((cb as HTMLInputElement).dataset.name!));
 
     const statusMap = new Map<string, string>();
-    document.querySelectorAll('.player-status').forEach((sel) => {
-      statusMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value);
-    });
+    document.querySelectorAll('.p-status').forEach(sel => statusMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value));
 
     const refundMap = new Map<string, string>();
-    document.querySelectorAll('.player-refund').forEach((sel) => {
-      refundMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value);
-    });
+    document.querySelectorAll('.p-refund').forEach(sel => refundMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value));
 
-    // Track status changes for notifications
     const changedPlayers: { name: string; phone: string; oldStatus: string; newStatus: string }[] = [];
 
     const updated = allPlayers.map((p: any) => {
       if (p['Session Date'] === date) {
         if (delNames.has(p['Player Name'])) return null;
         if (statusMap.has(p['Player Name'])) {
-          const newStatus = statusMap.get(p['Player Name'])!;
-          if (newStatus !== p['Payment Status']) {
-            changedPlayers.push({
-              name: p['Player Name'],
-              phone: String(p.Phone || '').replace("'", '').trim(),
-              oldStatus: p['Payment Status'],
-              newStatus,
-            });
-          }
-          p['Payment Status'] = newStatus;
+          const ns = statusMap.get(p['Player Name'])!;
+          if (ns !== p['Payment Status']) changedPlayers.push({ name: p['Player Name'], phone: String(p.Phone || '').replace("'", '').trim(), oldStatus: p['Payment Status'], newStatus: ns });
+          p['Payment Status'] = ns;
         }
-        if (refundMap.has(p['Player Name'])) {
-          p['Refund'] = refundMap.get(p['Player Name']);
-        }
+        if (refundMap.has(p['Player Name'])) p['Refund'] = refundMap.get(p['Player Name']);
       }
       return p;
     }).filter(Boolean);
 
     try {
-      await fetch(`${API}/admin/players`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-        body: JSON.stringify({ players: updated }),
-      });
+      await fetch(`${API}/admin/players`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ players: updated }) });
       allPlayers = updated as any[];
       renderPlayers(date);
       btn.textContent = 'SAVED!';
       setTimeout(() => { btn.textContent = 'SAVE CHANGES'; btn.disabled = false; }, 3000);
 
-      // Show WhatsApp notification links for changed players
       if (changedPlayers.length > 0) {
-        const notifyHtml = changedPlayers.map((cp) => {
-          const statusMsgs: Record<string, string> = {
-            Paid: `Hi ${cp.name}, your payment for the game on ${date} has been confirmed! See you on the pitch!`,
-            Pending: `Hi ${cp.name}, a slot has opened for the game on ${date}. Please pay to confirm your spot.`,
-            Rejected: `Hi ${cp.name}, your registration for the game on ${date} has been cancelled.`,
-            Waitlist: `Hi ${cp.name}, you've been moved to the waitlist for the game on ${date}. We'll notify you if a slot opens.`,
-          };
-          const msg = statusMsgs[cp.newStatus] || `Hi ${cp.name}, your status for the game on ${date} has been updated to: ${cp.newStatus}.`;
-          const waLink = cp.phone ? `https://wa.me/6${cp.phone}?text=${encodeURIComponent(msg)}` : '#';
-          return `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid var(--border)">
-            <span style="flex:1;font-size:0.82rem"><strong>${cp.name}</strong> → <span class="badge badge--${cp.newStatus.toLowerCase()}">${cp.newStatus}</span></span>
-            <a href="${waLink}" target="_blank" class="btn btn--wa" style="padding:0.4rem 0.8rem;font-size:0.72rem">Notify</a>
-          </div>`;
-        }).join('');
-
-        const wrap = document.getElementById('playersTable')!;
-        const notifyBox = document.createElement('div');
-        notifyBox.className = 'alert alert--success';
-        notifyBox.style.marginTop = '1rem';
-        notifyBox.innerHTML = `<div><strong style="display:block;margin-bottom:0.5rem">Notify players of status changes:</strong>${notifyHtml}</div>`;
-        wrap.parentElement!.appendChild(notifyBox);
-        setTimeout(() => notifyBox.remove(), 15000);
+        const wrap = document.getElementById('playersList')!;
+        const box = document.createElement('div');
+        box.className = 'notify-box';
+        box.innerHTML = `<p class="notify-title">Notify players:</p>` +
+          changedPlayers.map(cp => {
+            const msgs: Record<string, string> = {
+              Paid: `Hi ${cp.name}, your payment for the game on ${date} has been confirmed! See you on the pitch!`,
+              Pending: `Hi ${cp.name}, a slot opened for the game on ${date}. Please pay to confirm.`,
+              Rejected: `Hi ${cp.name}, your registration for ${date} has been cancelled.`,
+              Waitlist: `Hi ${cp.name}, you've been moved to waitlist for ${date}.`,
+            };
+            const msg = msgs[cp.newStatus] || `Hi ${cp.name}, your status for ${date} is now: ${cp.newStatus}.`;
+            const link = cp.phone ? `https://wa.me/6${cp.phone}?text=${encodeURIComponent(msg)}` : '#';
+            return `<a href="${link}" target="_blank" class="notify-item">
+              <span>${cp.name} → <strong>${cp.newStatus}</strong></span>
+              <span class="notify-send">Send</span>
+            </a>`;
+          }).join('');
+        wrap.parentElement!.appendChild(box);
+        setTimeout(() => box.remove(), 15000);
       }
     } catch { btn.textContent = 'ERROR'; btn.disabled = false; }
   });
@@ -366,130 +361,176 @@ import Layout from '../layouts/Layout.astro';
   async function loadRevenue() {
     try {
       const res = await fetch(`${API}/admin/players`, { headers: { Authorization: adminToken } });
-      const data = await res.json();
-      const players = data.players || [];
+      const players = (await res.json()).players || [];
       renderRevenue(players);
     } catch {}
   }
 
   function renderRevenue(players: any[]) {
     const wrap = document.getElementById('revenueDashboard')!;
-
     const paid = players.filter((p: any) => p['Payment Status'] === 'Paid');
-    const pending = players.filter((p: any) => p['Payment Status'] === 'Pending');
+    const pending = players.filter((p: any) => ['Pending', 'Overdue'].includes(p['Payment Status']));
     const rejected = players.filter((p: any) => p['Payment Status'] === 'Rejected');
+    const total = paid.reduce((s: number, p: any) => s + (parseFloat(p.Amount) || 0), 0);
 
-    const totalRevenue = paid.reduce((sum: number, p: any) => sum + (parseFloat(p.Amount) || 0), 0);
-
-    // Revenue per session
     const sessionMap: Record<string, { paid: number; count: number }> = {};
     paid.forEach((p: any) => {
-      const date = p['Session Date'] || 'Unknown';
-      if (!sessionMap[date]) sessionMap[date] = { paid: 0, count: 0 };
-      sessionMap[date].paid += parseFloat(p.Amount) || 0;
-      sessionMap[date].count += 1;
+      const d = p['Session Date'] || '?';
+      if (!sessionMap[d]) sessionMap[d] = { paid: 0, count: 0 };
+      sessionMap[d].paid += parseFloat(p.Amount) || 0;
+      sessionMap[d].count += 1;
     });
-
-    const sessions = Object.entries(sessionMap).sort(([a], [b]) => a.localeCompare(b));
-    const maxRevenue = Math.max(...sessions.map(([, v]) => v.paid), 1);
+    const sessions = Object.entries(sessionMap).sort(([a], [b]) => b.localeCompare(a));
+    const maxRev = Math.max(...sessions.map(([, v]) => v.paid), 1);
 
     wrap.innerHTML = `
-      <div class="revenue-summary">
-        <div class="rev-card glass">
-          <div class="rev-label">Total Revenue</div>
-          <div class="rev-value neon-text">RM ${totalRevenue.toFixed(2)}</div>
+      <div class="rev-grid">
+        <div class="rev-stat rev-stat--big">
+          <span class="rev-stat-label">Total Revenue</span>
+          <span class="rev-stat-value neon-text">RM ${total.toFixed(0)}</span>
         </div>
-        <div class="rev-card glass">
-          <div class="rev-label">Paid</div>
-          <div class="rev-value" style="color:var(--neon)">${paid.length}</div>
-        </div>
-        <div class="rev-card glass">
-          <div class="rev-label">Pending</div>
-          <div class="rev-value" style="color:#f0c040">${pending.length}</div>
-        </div>
-        <div class="rev-card glass">
-          <div class="rev-label">Rejected</div>
-          <div class="rev-value" style="color:var(--red)">${rejected.length}</div>
-        </div>
+        <div class="rev-stat"><span class="rev-stat-label">Paid</span><span class="rev-stat-value" style="color:var(--neon)">${paid.length}</span></div>
+        <div class="rev-stat"><span class="rev-stat-label">Pending</span><span class="rev-stat-value" style="color:var(--orange)">${pending.length}</span></div>
+        <div class="rev-stat"><span class="rev-stat-label">Rejected</span><span class="rev-stat-value" style="color:var(--red)">${rejected.length}</span></div>
       </div>
-
-      <h4 style="margin:1.5rem 0 1rem;font-size:0.95rem">REVENUE <span class="neon-text">PER SESSION</span></h4>
-      ${sessions.length === 0 ? '<p style="color:var(--text-muted)">No paid sessions yet.</p>' : `
-        <div class="rev-chart">
-          ${sessions.map(([date, v]) => {
-            const pct = (v.paid / maxRevenue) * 100;
-            return `<div class="rev-bar-row">
-              <span class="rev-bar-label">${date}</span>
-              <div class="rev-bar-track">
-                <div class="rev-bar-fill" style="width:${pct}%"></div>
-              </div>
-              <span class="rev-bar-amount">RM ${v.paid.toFixed(2)} (${v.count})</span>
-            </div>`;
-          }).join('')}
+      ${sessions.length ? `
+        <h4 class="rev-section-title">PER SESSION</h4>
+        <div class="rev-bars">
+          ${sessions.map(([date, v]) => `
+            <div class="rev-bar-item">
+              <div class="rev-bar-head"><span>${date}</span><span class="neon-text">RM ${v.paid.toFixed(0)} (${v.count})</span></div>
+              <div class="rev-bar-track"><div class="rev-bar-fill" style="width:${(v.paid / maxRev) * 100}%"></div></div>
+            </div>
+          `).join('')}
         </div>
-      `}
+      ` : '<p class="empty-msg">No paid sessions yet.</p>'}
     `;
   }
 </script>
 
-<style>
-  .header { position: sticky; top: 0; z-index: 100; background: rgba(10,10,10,0.92); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
-  .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 0; }
-  .brand { display: flex; align-items: center; gap: 0.8rem; }
-  .brand-logo { width: 40px; height: 40px; border-radius: 8px; }
-  .brand-name { font-size: 1.2rem; }
-  .brand-tag { font-size: 0.6rem; color: var(--neon); letter-spacing: 0.2em; font-weight: 600; }
-  .back-link { display: flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; color: var(--text-muted); transition: color 0.2s; }
+<style is:global>
+  .header { position: sticky; top: 0; z-index: 100; background: rgba(6,6,6,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; }
+  .brand { display: flex; align-items: center; gap: 0.7rem; }
+  .brand-logo { width: 36px; height: 36px; border-radius: 8px; }
+  .brand-name { font-size: 1.1rem; }
+  .brand-tag { font-size: 0.55rem; color: var(--neon); letter-spacing: 0.2em; font-weight: 600; }
+  .back-link { display: flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; color: var(--text-muted); transition: color 0.2s; }
   .back-link:hover { color: var(--neon); }
 
-  .login-card { max-width: 400px; margin: 4rem auto; padding: 2.5rem; text-align: center; }
-  .login-icon { color: var(--neon); margin-bottom: 1rem; }
-  .login-card h2 { margin-bottom: 1.5rem; font-size: 1.3rem; }
+  .login-card { max-width: 380px; margin: 3rem auto; padding: 2rem; text-align: center; }
+  .login-icon { color: var(--neon); margin-bottom: 0.8rem; }
+  .login-card h2 { margin-bottom: 1.2rem; font-size: 1.2rem; }
 
-  .tabs { display: flex; gap: 0; margin: 2rem 0 0; border-bottom: 1px solid var(--border); }
-  .tab { flex: 1; padding: 1rem; background: none; border: none; color: var(--text-muted); font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.1em; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tabs { display: flex; gap: 0; margin: 1rem 0 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tab {
+    flex: 1; padding: 0.8rem 0.5rem; background: none; border: none; color: var(--text-muted);
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.08em; cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.2s; white-space: nowrap; text-transform: uppercase;
+  }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--neon); border-bottom-color: var(--neon); }
 
-  .tab-panel { display: none; padding: 1.5rem 0; }
+  .tab-panel { display: none; padding: 1rem 0 2rem; }
   .tab-panel.active { display: block; }
 
-  .panel-card { padding: 1.5rem; }
-  .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-  .panel-header h3 { font-size: 1.1rem; }
+  .panel-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+  .panel-title { font-size: 1rem; font-family: 'Space Grotesk', sans-serif; }
+  .btn--sm { padding: 0.5rem 1rem; font-size: 0.72rem; }
 
-  .table-wrap { overflow-x: auto; }
+  .card-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .empty-msg { color: var(--text-muted); padding: 1.5rem; text-align: center; font-size: 0.85rem; }
 
-  .cell-input, .cell-select {
-    background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: var(--text);
-    padding: 0.4rem 0.5rem; border-radius: 6px; font-size: 0.82rem; font-family: 'Inter', sans-serif;
-    width: 100%;
+  /* Schedule Cards */
+  .admin-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1rem; transition: border-color 0.2s;
   }
-  .cell-input:focus, .cell-select:focus { border-color: var(--neon); outline: none; }
+  .admin-card--closed { opacity: 0.5; }
+  .admin-card:hover { border-color: var(--border-light); }
 
-  .action-cell { display: flex; gap: 0.3rem; }
-  .dup-btn, .del-btn { background: none; border: 1px solid var(--border); cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s; }
-  .del-btn { color: var(--red); }
-  .del-btn:hover { background: var(--red); color: #fff; }
-  .dup-btn { color: var(--neon); }
-  .dup-btn:hover { background: var(--neon); color: #000; }
+  .ac-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+  .ac-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; padding: 0.2rem 0.6rem; border-radius: 6px; text-transform: uppercase; }
+  .ac-badge--open { background: rgba(0,255,65,0.15); color: var(--neon); }
+  .ac-badge--closed { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .ac-actions { display: flex; gap: 0.3rem; }
+  .ac-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .ac-btn--dup { color: var(--neon); }
+  .ac-btn--dup:hover { background: rgba(0,255,65,0.1); border-color: var(--neon); }
+  .ac-btn--del { color: var(--red); }
+  .ac-btn--del:hover { background: rgba(255,59,48,0.1); border-color: var(--red); }
 
-  .wa-notify-link { color: var(--neon); font-size: 0.82rem; font-weight: 600; }
-  .wa-notify-link:hover { text-decoration: underline; }
+  .ac-fields { display: flex; flex-direction: column; gap: 0.5rem; }
+  .ac-field { display: flex; flex-direction: column; gap: 0.2rem; }
+  .ac-field label { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .ac-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .ac-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
 
-  .footer { border-top: 1px solid var(--border); padding: 2rem 0; text-align: center; margin-top: 3rem; }
-  .footer-inner { font-size: 0.78rem; color: var(--text-muted); }
+  .s-input { padding: 0.6rem 0.8rem; font-size: 0.82rem; border-radius: 10px; }
 
-  /* Revenue Dashboard */
-  .revenue-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
-  .rev-card { padding: 1.2rem; text-align: center; border-radius: 12px; }
-  .rev-label { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.1em; font-weight: 600; text-transform: uppercase; margin-bottom: 0.4rem; }
-  .rev-value { font-size: 1.4rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  /* Player Cards */
+  .player-card-admin {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1rem; transition: all 0.2s;
+  }
+  .player-card--overdue { border-color: rgba(255,87,34,0.3); background: rgba(255,87,34,0.04); }
 
-  .rev-chart { display: flex; flex-direction: column; gap: 0.6rem; }
-  .rev-bar-row { display: flex; align-items: center; gap: 0.8rem; }
-  .rev-bar-label { font-size: 0.78rem; color: var(--text-muted); min-width: 90px; text-align: right; }
-  .rev-bar-track { flex: 1; height: 24px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; }
-  .rev-bar-fill { height: 100%; background: linear-gradient(90deg, var(--neon), #00e676); border-radius: 6px; transition: width 0.4s ease; }
-  .rev-bar-amount { font-size: 0.78rem; color: var(--text); min-width: 110px; font-weight: 600; }
+  .pca-top { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.8rem; }
+  .pca-avatar {
+    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 800; border: 2px solid; font-family: 'Space Grotesk', sans-serif; flex-shrink: 0;
+  }
+  .pca-info { flex: 1; min-width: 0; }
+  .pca-name { display: block; font-weight: 700; font-size: 0.9rem; }
+  .pca-phone { display: block; font-size: 0.72rem; color: var(--text-muted); }
+  .pca-ref { display: inline-block; font-size: 0.62rem; font-family: 'Space Grotesk', monospace; color: var(--neon); background: rgba(0,255,65,0.08); padding: 0.1rem 0.4rem; border-radius: 4px; margin-top: 0.15rem; }
+  .pca-check input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--red); }
+
+  .pca-controls { display: flex; gap: 0.5rem; align-items: flex-end; }
+  .pca-field { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; }
+  .pca-field label { font-size: 0.58rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .pca-field .form-select { padding: 0.5rem 0.6rem; font-size: 0.78rem; border-radius: 10px; }
+  .pca-wa {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.2);
+    display: flex; align-items: center; justify-content: center; color: #25D366; transition: all 0.2s;
+  }
+  .pca-wa:hover { background: #25D366; color: #fff; }
+
+  /* Notify box */
+  .notify-box {
+    margin-top: 0.8rem; padding: 1rem; background: rgba(0,255,65,0.05);
+    border: 1px solid rgba(0,255,65,0.15); border-radius: 14px;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .notify-title { font-size: 0.72rem; font-weight: 700; color: var(--neon); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .notify-item {
+    display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border); font-size: 0.82rem; color: var(--text-secondary);
+  }
+  .notify-item:last-child { border-bottom: none; }
+  .notify-send { color: var(--neon); font-weight: 700; font-size: 0.72rem; }
+
+  /* Revenue */
+  .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .rev-stat {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1rem; text-align: center;
+  }
+  .rev-stat--big { grid-column: span 2; }
+  .rev-stat-label { display: block; font-size: 0.62rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+  .rev-stat-value { font-size: 1.5rem; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+  .rev-stat--big .rev-stat-value { font-size: 2rem; }
+
+  .rev-section-title { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.8rem; }
+  .rev-bars { display: flex; flex-direction: column; gap: 0.8rem; }
+  .rev-bar-item {}
+  .rev-bar-head { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.3rem; color: var(--text-secondary); }
+  .rev-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden; }
+  .rev-bar-fill { height: 100%; background: linear-gradient(90deg, var(--neon-dim), var(--neon)); border-radius: 100px; transition: width 0.6s ease; }
+
+  .footer { border-top: 1px solid var(--border); padding: 1.5rem 0; text-align: center; margin-top: 2rem; font-size: 0.72rem; color: var(--text-muted); }
+  .ssm { font-size: 0.6rem; opacity: 0.5; margin-top: 0.2rem; }
 </style>
