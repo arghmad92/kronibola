@@ -217,9 +217,9 @@ import Layout from '../layouts/Layout.astro';
         updateSlots(i, count, max);
       });
 
-      const active = players.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status']));
+      const paid = players.filter((p: any) => p['Payment Status'] === 'Paid');
       const nonRejected = players.filter((p: any) => p['Payment Status'] !== 'Rejected');
-      document.getElementById('lineupCount')!.textContent = `${active.length} confirmed · ${nonRejected.length} total`;
+      document.getElementById('lineupCount')!.textContent = `${paid.length} confirmed · ${nonRejected.length} total`;
 
       // Update register button text
       const isFull = active.length >= currentMax;
