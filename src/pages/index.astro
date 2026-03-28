@@ -10,7 +10,7 @@ import Layout from '../layouts/Layout.astro';
         <img src="/logo.png" alt="KroniBola" class="brand-logo" />
         <div>
           <h1 class="brand-name">KRONI<span class="neon-text">BOLA</span></h1>
-          <p class="brand-tag">EST. 2026</p>
+          <p class="brand-tag">EST. 2025</p>
         </div>
       </div>
       <a href="/admin" class="admin-btn">
@@ -114,10 +114,6 @@ import Layout from '../layouts/Layout.astro';
           <div class="mc-row">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <span>${s.Location}</span>
-            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.Location)}" target="_blank" rel="noopener" class="mc-maps-link" onclick="event.stopPropagation()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              Maps
-            </a>
           </div>
           <div class="mc-row">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -128,6 +124,16 @@ import Layout from '../layouts/Layout.astro';
             <span>${s.Time}</span>
           </div>
         </div>
+        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.Location)}" target="_blank" rel="noopener" class="mc-maps-btn" onclick="event.stopPropagation()">
+          <div class="mc-maps-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="mc-maps-text">
+            <span class="mc-maps-label">View on Google Maps</span>
+            <span class="mc-maps-loc">${s.Location}</span>
+          </div>
+          <svg class="mc-maps-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
         <div class="mc-countdown" id="countdown-${i}">--:--:--</div>
         <div class="mc-slots">
           <div class="mc-slots-header">
@@ -144,7 +150,7 @@ import Layout from '../layouts/Layout.astro';
     cardsEl.querySelectorAll('.match-card').forEach((card) => {
       card.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('.mc-register') || target.closest('.mc-maps-link')) return;
+        if (target.closest('.mc-register') || target.closest('.mc-maps-btn')) return;
         selectSession(parseInt((card as HTMLElement).dataset.idx!));
       });
     });
@@ -493,7 +499,8 @@ import Layout from '../layouts/Layout.astro';
   /* Inactive: compact summary */
   .match-card .mc-countdown,
   .match-card .mc-slots,
-  .match-card .mc-register {
+  .match-card .mc-register,
+  .match-card .mc-maps-btn {
     display: none;
   }
 
@@ -508,7 +515,7 @@ import Layout from '../layouts/Layout.astro';
   .match-card:not(.active) .mc-row { font-size: 0.78rem; }
   .match-card:not(.active) .mc-badge { font-size: 0.65rem; padding: 0.2rem 0.6rem; }
   .match-card:not(.active) .mc-fee { font-size: 0.95rem; }
-  .match-card:not(.active) .mc-maps-link { display: none; }
+  .match-card:not(.active) .mc-maps-btn { display: none; }
 
   .match-card:not(.active):hover {
     background: rgba(0,255,65,0.03);
@@ -532,8 +539,9 @@ import Layout from '../layouts/Layout.astro';
 
   .match-card.active .mc-countdown,
   .match-card.active .mc-slots,
-  .match-card.active .mc-register {
-    display: block;
+  .match-card.active .mc-register,
+  .match-card.active .mc-maps-btn {
+    display: flex;
   }
 
   .match-card.active .mc-details { margin-bottom: 1.2rem; }
@@ -580,14 +588,26 @@ import Layout from '../layouts/Layout.astro';
   .progress-fill--full { background: linear-gradient(90deg, #cc7a00, var(--orange)); box-shadow: 0 0 12px rgba(255,149,0,0.3); }
   .progress-fill--full::after { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
 
-  .mc-maps-link {
-    display: inline-flex; align-items: center; gap: 0.3rem;
-    font-size: 0.7rem; font-weight: 700; color: var(--neon); text-decoration: none;
-    margin-left: auto; padding: 0.2rem 0.6rem; border-radius: 6px;
-    border: 1px solid rgba(0,255,65,0.2); transition: all 0.2s;
+  .mc-maps-btn {
+    display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem;
+    background: rgba(0,255,65,0.04); border: 1px solid rgba(0,255,65,0.12);
+    border-radius: 14px; text-decoration: none; color: inherit;
+    margin-bottom: 1rem; transition: all 0.25s; cursor: pointer;
   }
-  .mc-maps-link:hover { background: rgba(0,255,65,0.08); border-color: var(--neon); }
-  .mc-maps-link svg { color: var(--neon); opacity: 0.8; }
+  .mc-maps-btn:hover {
+    background: rgba(0,255,65,0.08); border-color: rgba(0,255,65,0.25);
+    transform: translateX(2px);
+  }
+  .mc-maps-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(0,255,65,0.1); display: flex; align-items: center; justify-content: center;
+    color: var(--neon); flex-shrink: 0;
+  }
+  .mc-maps-text { flex: 1; min-width: 0; }
+  .mc-maps-label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--neon); letter-spacing: 0.04em; }
+  .mc-maps-loc { display: block; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-maps-arrow { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
+  .mc-maps-btn:hover .mc-maps-arrow { transform: translateX(3px); color: var(--neon); }
 
   /* Lineup */
   .section-header { display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1rem; }
