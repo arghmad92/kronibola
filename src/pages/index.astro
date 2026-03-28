@@ -52,10 +52,16 @@ import Layout from '../layouts/Layout.astro';
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         INVITE FRIENDS VIA WHATSAPP
       </button>
-      <button class="btn btn--ghost" id="calendarBtn" style="width:100%; margin-top:0.5rem">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-        ADD TO CALENDAR
-      </button>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
+        <button class="btn btn--ghost" id="calendarBtn" style="flex:1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          GOOGLE
+        </button>
+        <button class="btn btn--ghost" id="appleCalBtn" style="flex:1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 5-2.5 5-6.24 0-4.5-4-7.76-6-7.76-1.25 0-2 .5-3 .5s-1.75-.5-3-.5c-2 0-6 3.26-6 7.76 0 3.74 2 6.24 5 6.24 1.25 0 2.5-1.06 4-1.06z"/><path d="M10 2c1 .5 2 2 2 3.5-1.5 0-3-1-3.5-2.5C9 2 10 2 10 2z"/></svg>
+          APPLE
+        </button>
+      </div>
     </div>
   </main>
 </Layout>
@@ -395,6 +401,42 @@ import Layout from '../layouts/Layout.astro';
     }
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(currentSession['Session Name'])}&dates=${startDT}/${endDT}&location=${encodeURIComponent(currentSession.Location)}&details=${encodeURIComponent('KroniBola match')}`;
     window.open(url, '_blank');
+  });
+
+  // Apple Calendar (.ics download)
+  document.getElementById('appleCalBtn')!.addEventListener('click', () => {
+    if (!currentSession) return;
+    const time = parseTime(currentSession.Time);
+    const dateStr = currentSession.Date.replace(/\//g, '-');
+    let startDT = dateStr.replace(/-/g, '');
+    let endDT = startDT;
+    if (time) {
+      const hh = String(time.hours).padStart(2, '0');
+      const mm = String(time.minutes).padStart(2, '0');
+      startDT += `T${hh}${mm}00`;
+      const endH = String((time.hours + 2) % 24).padStart(2, '0');
+      endDT += `T${endH}${mm}00`;
+    }
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//KroniBola//EN',
+      'BEGIN:VEVENT',
+      `DTSTART:${startDT}`,
+      `DTEND:${endDT}`,
+      `SUMMARY:${currentSession['Session Name']}`,
+      `LOCATION:${currentSession.Location}`,
+      'DESCRIPTION:KroniBola match',
+      `URL:${location.origin}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `kronibola-${dateStr}.ics`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   });
 
   function showErr(el: HTMLElement, msg: string) {
