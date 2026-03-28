@@ -40,9 +40,20 @@ async function getAccessToken(credentials) {
   return data.access_token;
 }
 
+function parseCreds(raw) {
+  // Handle escaped newlines in private_key that Cloudflare may mangle
+  const fixed = raw.replace(/\\n/g, '\n');
+  try {
+    return JSON.parse(fixed);
+  } catch {
+    // Try replacing literal newlines inside the key
+    return JSON.parse(raw.replace(/\n/g, '\\n'));
+  }
+}
+
 // Read a sheet
 export async function readSheet(env, sheetName) {
-  const creds = JSON.parse(env.GCP_CREDENTIALS);
+  const creds = parseCreds(env.GCP_CREDENTIALS);
   const token = await getAccessToken(creds);
   const spreadsheetId = env.SPREADSHEET_ID;
 
@@ -64,7 +75,7 @@ export async function readSheet(env, sheetName) {
 
 // Write entire sheet (clear + write)
 export async function writeSheet(env, sheetName, records, headers) {
-  const creds = JSON.parse(env.GCP_CREDENTIALS);
+  const creds = parseCreds(env.GCP_CREDENTIALS);
   const token = await getAccessToken(creds);
   const spreadsheetId = env.SPREADSHEET_ID;
   const authHeader = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -85,7 +96,7 @@ export async function writeSheet(env, sheetName, records, headers) {
 
 // Append a row
 export async function appendRow(env, sheetName, row) {
-  const creds = JSON.parse(env.GCP_CREDENTIALS);
+  const creds = parseCreds(env.GCP_CREDENTIALS);
   const token = await getAccessToken(creds);
   const spreadsheetId = env.SPREADSHEET_ID;
 
