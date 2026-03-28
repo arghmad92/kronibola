@@ -1,0 +1,222 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const crew = [
+  { name: 'Deen', role: 'Admin', phone: '60103359255', photo: '/deen.jpg' },
+  { name: 'Marwan', role: 'Admin', phone: '60126183827', photo: '/marwan.jpg' },
+  { name: 'Zaman', role: 'Admin', phone: '60193851624', photo: '/zaman.jpg' },
+  { name: 'Syamil', role: 'Admin', phone: '60123372863', photo: '/syamil.jpg' },
+];
+---
+
+<Layout title="The Crew — KroniBola" activeTab="crew">
+  <header class="page-header">
+    <div class="container">
+      <h1 class="page-title">THE <span class="neon-text">CREW</span></h1>
+      <p class="page-sub">The people behind KroniBola</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="crew-grid">
+      {crew.map((member, i) => (
+        <div class="crew-card" style={`animation-delay:${i * 0.1}s`}>
+          <div class="crew-photo-wrap">
+            <img src={member.photo} alt={member.name} class="crew-photo" loading="lazy" />
+            <div class="crew-glow"></div>
+          </div>
+          <div class="crew-info">
+            <h3 class="crew-name">{member.name}</h3>
+            <span class="crew-role">{member.role}</span>
+          </div>
+          <a
+            href={`https://wa.me/${member.phone}`}
+            target="_blank"
+            rel="noopener"
+            class="crew-wa"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            WhatsApp
+          </a>
+        </div>
+      ))}
+    </div>
+
+    <div class="crew-cta glass">
+      <div class="crew-cta-glow"></div>
+      <p class="crew-cta-text">Want to join the crew or have questions?</p>
+      <a href="https://wa.me/60126183827" target="_blank" class="btn btn--wa" style="width:100%">MESSAGE US</a>
+    </div>
+
+    <!-- Quick links to Gallery and Rules -->
+    <div class="quick-links">
+      <a href="/gallery" class="quick-link glass">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Photo Gallery</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      <a href="/rules" class="quick-link glass">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>House Rules</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .crew-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+    padding: 1.5rem 0;
+  }
+
+  .crew-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1.5rem 1rem;
+    background: var(--card);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+    transition: transform 0.25s, border-color 0.25s;
+  }
+
+  .crew-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0, 255, 65, 0.2);
+  }
+
+  .crew-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,65,0.15), transparent);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .crew-photo-wrap {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--border);
+    transition: border-color 0.25s;
+  }
+
+  .crew-card:hover .crew-photo-wrap {
+    border-color: var(--neon);
+  }
+
+  .crew-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .crew-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent, rgba(0,255,65,0.2), transparent, rgba(0,255,65,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+    animation: spin 4s linear infinite;
+  }
+
+  .crew-card:hover .crew-glow { opacity: 1; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .crew-info { display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .crew-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .crew-role {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--neon);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  .crew-wa {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(37, 211, 102, 0.1);
+    border: 1px solid rgba(37, 211, 102, 0.2);
+    border-radius: 100px;
+    color: #25D366;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .crew-wa:hover {
+    background: #25D366;
+    color: #fff;
+    border-color: #25D366;
+    transform: translateY(-1px);
+  }
+
+  .crew-cta {
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin: 0.5rem 0 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .crew-cta-glow {
+    position: absolute;
+    top: -40px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,255,65,0.08), transparent);
+    pointer-events: none;
+  }
+
+  .crew-cta-text {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .quick-links { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
+  .quick-link {
+    display: flex; align-items: center; gap: 0.8rem; padding: 1rem 1.2rem;
+    color: var(--text-secondary); font-size: 0.88rem; font-weight: 500;
+    transition: all 0.2s; border-left: 3px solid transparent;
+  }
+  .quick-link:hover { color: var(--text); border-left-color: var(--neon); background: rgba(0,255,65,0.03); }
+  .quick-link span { flex: 1; }
+  .quick-link svg:first-child { color: var(--neon); opacity: 0.7; }
+  .quick-link svg:last-child { color: var(--text-muted); transition: transform 0.2s; }
+  .quick-link:hover svg:last-child { transform: translateX(3px); color: var(--neon); }
+
+  @media (max-width: 380px) {
+    .crew-grid { grid-template-columns: 1fr; }
+    .crew-photo-wrap { width: 80px; height: 80px; }
+  }
+</style>
