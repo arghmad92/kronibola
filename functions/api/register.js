@@ -1,5 +1,18 @@
 import { readSheet, appendRow, json } from './_sheets.js';
 
+const TG_BOT_TOKEN = '8660743894:AAG_Sj6N1NE2faGOXBmR77cBhdvf_xPaehw';
+const TG_CHAT_ID = '-5247564101';
+
+async function sendTelegramNotification(message) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TG_CHAT_ID, text: message, parse_mode: 'HTML' }),
+    });
+  } catch {}
+}
+
 function generateRefCode(date, name) {
   const dd = date.slice(8, 10);
   const mm = date.slice(5, 7);
@@ -40,6 +53,24 @@ export async function onRequest(context) {
 
     // Columns: Session Date, Player Name, Phone, Payment Status, Amount, Timestamp, Ref Code, Refund
     await appendRow(context.env, 'Registrations', [date, name, cleanPhone, status, fee, timestamp, refCode, '']);
+
+    // Send Telegram notification
+    const spotsLeft = maxPlayers - activeCount - (status === 'Waitlist' ? 0 : 1);
+    const emoji = status === 'Waitlist' ? '⏳' : '✅';
+    const sessionLabel = session ? session['Session Name'] : 'Game';
+    const tgMsg = [
+      `${emoji} <b>New Registration</b>`,
+      ``,
+      `Player: <b>${name}</b>`,
+      `Phone: ${phone}`,
+      `Session: ${sessionLabel} (${date})`,
+      `Status: <b>${status}</b>`,
+      `Ref: <code>${refCode}</code>`,
+      `Fee: RM ${fee}`,
+      ``,
+      spotsLeft > 0 ? `📊 ${spotsLeft} spot${spotsLeft > 1 ? 's' : ''} remaining` : `🔴 Game is FULL`,
+    ].join('\n');
+    await sendTelegramNotification(tgMsg);
 
     return json({ success: true, status, refCode });
   } catch (e) {
