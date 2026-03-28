@@ -552,8 +552,10 @@ import Layout from '../layouts/Layout.astro';
   .ac-day { color: var(--neon); text-transform: none; letter-spacing: 0; font-weight: 600; }
   .ac-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .ac-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+  @media (max-width: 400px) { .ac-row3 { grid-template-columns: 1fr 1fr; } }
 
-  .s-input { padding: 0.6rem 0.8rem; font-size: 0.82rem; border-radius: 10px; }
+  .s-input { padding: 0.6rem 0.8rem; font-size: 0.82rem; border-radius: 10px; width: 100%; min-width: 0; box-sizing: border-box; }
+  .admin-card { overflow: hidden; }
 
   /* Player Cards */
   .player-card-admin {
