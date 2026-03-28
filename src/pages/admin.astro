@@ -67,6 +67,36 @@ import Layout from '../layouts/Layout.astro';
             <option value="">Select a game...</option>
           </select>
         </div>
+        <!-- Add player form -->
+        <div class="add-player-box" id="addPlayerBox" style="display:none">
+          <div class="ap-row">
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Name</label>
+              <input type="text" class="form-input" id="apName" placeholder="Player name" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-input" id="apPhone" placeholder="0123456789" />
+            </div>
+          </div>
+          <div class="ap-row">
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Status</label>
+              <select class="form-select" id="apStatus">
+                <option value="Paid">Paid</option>
+                <option value="Pending">Pending</option>
+                <option value="Waitlist">Waitlist</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Fee (RM)</label>
+              <input type="number" class="form-input" id="apFee" value="28" />
+            </div>
+          </div>
+          <button class="btn btn--primary btn--sm" id="apConfirm" style="width:100%">ADD PLAYER</button>
+        </div>
+        <button class="btn btn--outline btn--sm" id="addPlayerBtn" style="width:100%;margin-bottom:0.8rem">+ ADD PLAYER MANUALLY</button>
+
         <div id="playersList" class="card-list"></div>
         <button class="btn btn--primary" id="savePlayersBtn" style="width:100%;margin-top:1rem">SAVE CHANGES</button>
       </div>
@@ -315,6 +345,55 @@ import Layout from '../layouts/Layout.astro';
       </div>`;
     }).join('');
   }
+
+  // --- ADD PLAYER MANUALLY ---
+  const addPlayerBox = document.getElementById('addPlayerBox')!;
+  document.getElementById('addPlayerBtn')!.addEventListener('click', () => {
+    addPlayerBox.style.display = addPlayerBox.style.display === 'none' ? '' : 'none';
+  });
+
+  document.getElementById('apConfirm')!.addEventListener('click', async () => {
+    const date = (document.getElementById('filterDate') as HTMLSelectElement).value;
+    if (!date) { alert('Select a game first.'); return; }
+
+    const name = (document.getElementById('apName') as HTMLInputElement).value.trim();
+    const phone = (document.getElementById('apPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const status = (document.getElementById('apStatus') as HTMLSelectElement).value;
+    const fee = (document.getElementById('apFee') as HTMLInputElement).value;
+
+    if (!name || !phone) { alert('Fill in name and phone.'); return; }
+
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const refCode = `KB-${date.slice(5, 7)}${date.slice(8, 10)}-${name[0].toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+
+    const newPlayer = {
+      'Session Date': date,
+      'Player Name': name,
+      Phone: "'" + phone,
+      'Payment Status': status,
+      Amount: fee,
+      Timestamp: timestamp,
+      'Ref Code': refCode,
+      Refund: '',
+    };
+
+    allPlayers.push(newPlayer);
+    renderPlayers(date);
+
+    // Clear form
+    (document.getElementById('apName') as HTMLInputElement).value = '';
+    (document.getElementById('apPhone') as HTMLInputElement).value = '';
+    addPlayerBox.style.display = 'none';
+
+    // Auto-save
+    try {
+      await fetch(`${API}/admin/players`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+        body: JSON.stringify({ players: allPlayers }),
+      });
+    } catch {}
+  });
 
   document.getElementById('savePlayersBtn')!.addEventListener('click', async () => {
     const btn = document.getElementById('savePlayersBtn') as HTMLButtonElement;
@@ -618,6 +697,15 @@ import Layout from '../layouts/Layout.astro';
   .rev-bar-head { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 0.3rem; color: var(--text-secondary); }
   .rev-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden; }
   .rev-bar-fill { height: 100%; background: linear-gradient(90deg, var(--neon-dim), var(--neon)); border-radius: 100px; transition: width 0.6s ease; }
+
+  /* Add player */
+  .add-player-box {
+    background: rgba(0,255,65,0.03); border: 1px dashed rgba(0,255,65,0.2);
+    border-radius: 14px; padding: 1rem; margin-bottom: 0.8rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .ap-row { display: flex; gap: 0.5rem; }
+  @media (max-width: 400px) { .ap-row { flex-direction: column; } }
 
   /* Notification cards */
   .notif-card {
