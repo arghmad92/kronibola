@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KroniBola — Merch & Kit Design Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #fff; }
+
+    .page {
+      width: 210mm; min-height: 297mm; margin: 0 auto;
+      padding: 20mm; position: relative; overflow: hidden;
+      page-break-after: always; background: #0a0a0a;
+    }
+
+    .page::before {
+      content: ''; position: absolute; top: -100px; right: -100px;
+      width: 400px; height: 400px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,255,65,0.06), transparent 70%);
+    }
+
+    .page::after {
+      content: ''; position: absolute; bottom: -80px; left: -80px;
+      width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,255,65,0.04), transparent 70%);
+    }
+
+    h1 { font-family: 'Space Grotesk', sans-serif; font-size: 32pt; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+    h2 { font-family: 'Space Grotesk', sans-serif; font-size: 18pt; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 12pt; }
+    h3 { font-family: 'Space Grotesk', sans-serif; font-size: 13pt; font-weight: 700; }
+    .neon { color: #00FF41; }
+    .muted { color: #666; }
+    .sub { color: #888; font-size: 9pt; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, #1a1a1a, transparent); margin: 16pt 0; }
+    .neon-line { height: 2px; background: linear-gradient(90deg, #00FF41, transparent); width: 60px; margin: 8pt 0 16pt; }
+
+    /* Cover page */
+    .cover { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+    .cover-logo { width: 120px; height: 120px; margin-bottom: 24pt; }
+    .cover h1 { font-size: 42pt; margin-bottom: 8pt; }
+    .cover-sub { font-size: 11pt; color: #666; letter-spacing: 0.15em; margin-bottom: 40pt; }
+    .cover-meta { font-size: 8pt; color: #444; letter-spacing: 0.1em; position: absolute; bottom: 20mm; }
+
+    /* Jersey page */
+    .jersey-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16pt; margin-top: 12pt; }
+    .jersey-card {
+      background: #111; border: 1px solid #1e1e1e; border-radius: 12px;
+      padding: 20pt; text-align: center; position: relative; overflow: hidden;
+    }
+    .jersey-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0,255,65,0.3), transparent);
+    }
+    .jersey-label { font-size: 7pt; color: #00FF41; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; margin-bottom: 8pt; }
+
+    /* Jersey illustration */
+    .jersey-illustration {
+      width: 140px; height: 170px; margin: 0 auto 12pt; position: relative;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .ji-home { background: linear-gradient(180deg, #0e0e0e, #080808); border: 1px solid #1a1a1a; }
+    .ji-away { background: linear-gradient(180deg, #00FF41, #00cc33); border: 1px solid #00aa2d; }
+    .ji-collar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 40px; height: 8px; border-bottom: 2px solid; border-radius: 0 0 20px 20px; }
+    .ji-collar-home { border-color: #00FF41; }
+    .ji-collar-away { border-color: #000; }
+    .ji-stripe-l, .ji-stripe-r { position: absolute; top: 40px; bottom: 10px; width: 2px; }
+    .ji-stripe-l { left: 8px; }
+    .ji-stripe-r { right: 8px; }
+    .ji-stripe-home { background: #00FF41; opacity: 0.5; }
+    .ji-stripe-away { background: #000; opacity: 0.3; }
+    .ji-number { font-family: 'Space Grotesk'; font-size: 60pt; font-weight: 900; opacity: 0.1; }
+    .ji-number-home { color: #00FF41; }
+    .ji-number-away { color: #000; }
+    .ji-crest { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); font-size: 18pt; }
+    .ji-hem { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; border-radius: 0 0 8px 8px; }
+    .ji-hem-home { background: #00FF41; opacity: 0.5; }
+    .ji-hem-away { background: #000; opacity: 0.3; }
+
+    .jersey-details { text-align: left; }
+    .jersey-details li { font-size: 8pt; color: #999; margin-bottom: 4pt; padding-left: 12pt; position: relative; }
+    .jersey-details li::before { content: ''; position: absolute; left: 0; top: 5pt; width: 4px; height: 4px; border-radius: 50%; background: #00FF41; }
+
+    /* Specs table */
+    .specs { margin-top: 12pt; }
+    .spec-row { display: flex; justify-content: space-between; padding: 6pt 0; border-bottom: 1px solid #1a1a1a; font-size: 8.5pt; }
+    .spec-row:last-child { border-bottom: none; }
+    .spec-label { color: #666; }
+    .spec-value { color: #fff; font-weight: 600; }
+
+    /* Merch grid */
+    .merch-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12pt; margin-top: 12pt; }
+    .merch-card {
+      background: #111; border: 1px solid #1e1e1e; border-radius: 10px;
+      padding: 16pt; text-align: center;
+    }
+    .merch-icon { font-size: 28pt; margin-bottom: 8pt; display: block; }
+    .merch-name { font-family: 'Space Grotesk'; font-size: 9pt; font-weight: 700; margin-bottom: 4pt; }
+    .merch-desc { font-size: 7pt; color: #666; line-height: 1.5; }
+
+    /* Color palette */
+    .palette { display: flex; gap: 12pt; margin-top: 12pt; }
+    .swatch {
+      flex: 1; height: 80px; border-radius: 10px; display: flex;
+      flex-direction: column; align-items: center; justify-content: flex-end; padding: 8pt;
+      font-size: 7pt; font-weight: 600; letter-spacing: 0.05em;
+    }
+    .swatch-name { margin-top: 4pt; }
+
+    /* Typography */
+    .font-sample { margin-top: 8pt; }
+    .font-row { display: flex; align-items: baseline; gap: 12pt; margin-bottom: 8pt; }
+    .font-name { font-size: 8pt; color: #666; min-width: 80pt; }
+    .font-preview { font-size: 18pt; font-weight: 700; }
+
+    /* Guidelines */
+    .guideline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; margin-top: 12pt; }
+    .guideline-card { background: #111; border: 1px solid #1e1e1e; border-radius: 10px; padding: 14pt; }
+    .guideline-card h3 { font-size: 10pt; margin-bottom: 6pt; }
+    .guideline-card p { font-size: 8pt; color: #888; line-height: 1.6; }
+
+    @media print {
+      body { background: #0a0a0a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="page cover">
+  <img src="../public/logo.png" class="cover-logo" alt="KroniBola">
+  <h1>KRONI<span class="neon">BOLA</span></h1>
+  <p class="cover-sub">MERCHANDISE & KIT DESIGN GUIDE</p>
+  <div class="divider" style="width:100px"></div>
+  <p style="color:#444;font-size:9pt;margin-top:12pt">Season 2025 · Malaysia</p>
+  <p class="cover-meta">SSM: 202603032902 (TR0336774-T) · kronibola.com</p>
+</div>
+
+<!-- PAGE 2: BRAND IDENTITY -->
+<div class="page">
+  <p class="sub">Brand Identity</p>
+  <h2>VISUAL <span class="neon">SYSTEM</span></h2>
+  <div class="neon-line"></div>
+
+  <h3>Color Palette</h3>
+  <div class="palette">
+    <div class="swatch" style="background:#0a0a0a;border:1px solid #1e1e1e;color:#666">
+      <span>#0A0A0A</span>
+      <span class="swatch-name">VOID BLACK</span>
+    </div>
+    <div class="swatch" style="background:#0e0e0e;border:1px solid #1e1e1e;color:#666">
+      <span>#0E0E0E</span>
+      <span class="swatch-name">CARBON</span>
+    </div>
+    <div class="swatch" style="background:#00FF41;color:#000">
+      <span>#00FF41</span>
+      <span class="swatch-name">NEON GREEN</span>
+    </div>
+    <div class="swatch" style="background:#00cc33;color:#000">
+      <span>#00CC33</span>
+      <span class="swatch-name">PITCH GREEN</span>
+    </div>
+    <div class="swatch" style="background:#111;border:1px solid #1e1e1e;color:#666">
+      <span>#111111</span>
+      <span class="swatch-name">SURFACE</span>
+    </div>
+  </div>
+
+  <div style="margin-top:20pt">
+    <h3>Typography</h3>
+    <div class="font-sample">
+      <div class="font-row">
+        <span class="font-name">Primary</span>
+        <span class="font-preview" style="font-family:'Space Grotesk'">KRONIBOLA</span>
+      </div>
+      <div class="font-row">
+        <span class="font-name">Secondary</span>
+        <span class="font-preview" style="font-family:'Inter';font-weight:400;font-size:14pt">Match Day Registration</span>
+      </div>
+      <div class="font-row">
+        <span class="font-name">Numbers</span>
+        <span class="font-preview" style="font-family:'Space Grotesk';font-size:36pt;color:#00FF41">10</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:20pt">
+    <h3>Design Principles</h3>
+    <div class="guideline-grid">
+      <div class="guideline-card">
+        <h3 style="color:#00FF41">Minimal</h3>
+        <p>Clean lines. No clutter. Let the black breathe and the neon accent do the talking.</p>
+      </div>
+      <div class="guideline-card">
+        <h3 style="color:#00FF41">Dark First</h3>
+        <p>Black is the primary. Neon green is the highlight — used sparingly for maximum impact.</p>
+      </div>
+      <div class="guideline-card">
+        <h3 style="color:#00FF41">Bold Type</h3>
+        <p>Space Grotesk, uppercase, tight tracking. Names and numbers should feel powerful.</p>
+      </div>
+      <div class="guideline-card">
+        <h3 style="color:#00FF41">Technical</h3>
+        <p>Subtle geometric details — thin stripes, angular cuts, precise placement.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: HOME KIT -->
+<div class="page">
+  <p class="sub">Match Day Kit</p>
+  <h2>HOME <span class="neon">KIT</span></h2>
+  <div class="neon-line"></div>
+
+  <div class="jersey-grid">
+    <div class="jersey-card">
+      <div class="jersey-label">FRONT</div>
+      <div class="jersey-illustration ji-home">
+        <div class="ji-collar ji-collar-home"></div>
+        <div class="ji-stripe-l ji-stripe-home"></div>
+        <div class="ji-stripe-r ji-stripe-home"></div>
+        <span class="ji-number ji-number-home">10</span>
+        <div class="ji-hem ji-hem-home"></div>
+      </div>
+      <ul class="jersey-details">
+        <li>Matte black body, breathable mesh fabric</li>
+        <li>Neon green V-neck collar trim</li>
+        <li>Thin neon side stripes</li>
+        <li>Shield crest on left chest</li>
+        <li>Sponsor area on center chest (if applicable)</li>
+        <li>Neon green hem accent line</li>
+      </ul>
+    </div>
+    <div class="jersey-card">
+      <div class="jersey-label">BACK</div>
+      <div class="jersey-illustration ji-home">
+        <div class="ji-collar ji-collar-home"></div>
+        <div class="ji-stripe-l ji-stripe-home"></div>
+        <div class="ji-stripe-r ji-stripe-home"></div>
+        <span class="ji-number ji-number-home" style="opacity:0.25;font-size:48pt;margin-top:20pt">10</span>
+        <div class="ji-hem ji-hem-home"></div>
+      </div>
+      <ul class="jersey-details">
+        <li>Player name: Space Grotesk Bold, uppercase, neon green</li>
+        <li>Number: 120pt, centered, neon green</li>
+        <li>KRONIBOLA wordmark at lower back (subtle)</li>
+        <li>Same side stripes as front</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="specs">
+    <h3 style="margin-bottom:8pt">Specifications</h3>
+    <div class="spec-row"><span class="spec-label">Material</span><span class="spec-value">100% recycled polyester, moisture-wicking</span></div>
+    <div class="spec-row"><span class="spec-label">Fit</span><span class="spec-value">Athletic fit, raglan sleeves</span></div>
+    <div class="spec-row"><span class="spec-label">Body Color</span><span class="spec-value">#0E0E0E Matte Black</span></div>
+    <div class="spec-row"><span class="spec-label">Accent Color</span><span class="spec-value">#00FF41 Neon Green</span></div>
+    <div class="spec-row"><span class="spec-label">Print Method</span><span class="spec-value">Sublimation (stripes, number) + Embroidery (crest)</span></div>
+    <div class="spec-row"><span class="spec-label">Collar</span><span class="spec-value">V-neck with neon green piping</span></div>
+    <div class="spec-row"><span class="spec-label">Shorts</span><span class="spec-value">Black, neon green side stripe, KB initials on left leg</span></div>
+    <div class="spec-row"><span class="spec-label">Socks</span><span class="spec-value">Black with neon green band at top + mid-calf</span></div>
+  </div>
+</div>
+
+<!-- PAGE 4: AWAY KIT -->
+<div class="page">
+  <p class="sub">Match Day Kit</p>
+  <h2>AWAY <span class="neon">KIT</span></h2>
+  <div class="neon-line"></div>
+
+  <div class="jersey-grid">
+    <div class="jersey-card">
+      <div class="jersey-label">FRONT</div>
+      <div class="jersey-illustration ji-away">
+        <div class="ji-collar ji-collar-away"></div>
+        <div class="ji-stripe-l ji-stripe-away"></div>
+        <div class="ji-stripe-r ji-stripe-away"></div>
+        <span class="ji-number ji-number-away">10</span>
+        <div class="ji-hem ji-hem-away"></div>
+      </div>
+      <ul class="jersey-details">
+        <li>Neon green body — inverted from home kit</li>
+        <li>Black V-neck collar trim</li>
+        <li>Thin black side stripes</li>
+        <li>Shield crest on left chest (black version)</li>
+        <li>All text and numbers in black</li>
+        <li>Black hem accent line</li>
+      </ul>
+    </div>
+    <div class="jersey-card">
+      <div class="jersey-label">BACK</div>
+      <div class="jersey-illustration ji-away">
+        <div class="ji-collar ji-collar-away"></div>
+        <div class="ji-stripe-l ji-stripe-away"></div>
+        <div class="ji-stripe-r ji-stripe-away"></div>
+        <span class="ji-number ji-number-away" style="opacity:0.2;font-size:48pt;margin-top:20pt">10</span>
+        <div class="ji-hem ji-hem-away"></div>
+      </div>
+      <ul class="jersey-details">
+        <li>Player name: Space Grotesk Bold, black</li>
+        <li>Number: 120pt, centered, black</li>
+        <li>KRONIBOLA wordmark at lower back (subtle, black)</li>
+        <li>Same layout as home — just inverted colors</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="specs">
+    <h3 style="margin-bottom:8pt">Specifications</h3>
+    <div class="spec-row"><span class="spec-label">Material</span><span class="spec-value">100% recycled polyester, moisture-wicking</span></div>
+    <div class="spec-row"><span class="spec-label">Fit</span><span class="spec-value">Athletic fit, raglan sleeves</span></div>
+    <div class="spec-row"><span class="spec-label">Body Color</span><span class="spec-value">#00FF41 Neon Green</span></div>
+    <div class="spec-row"><span class="spec-label">Accent Color</span><span class="spec-value">#0E0E0E Matte Black</span></div>
+    <div class="spec-row"><span class="spec-label">Paired With</span><span class="spec-value">Same black shorts and socks as home kit</span></div>
+  </div>
+</div>
+
+<!-- PAGE 5: MERCHANDISE -->
+<div class="page">
+  <p class="sub">Merchandise</p>
+  <h2>LIFESTYLE <span class="neon">COLLECTION</span></h2>
+  <div class="neon-line"></div>
+
+  <div class="merch-grid">
+    <div class="merch-card">
+      <span class="merch-icon">👕</span>
+      <div class="merch-name">Training Tee</div>
+      <div class="merch-desc">Black cotton tee. Centered shield logo + KRONIBOLA wordmark. Neon green collar trim. Relaxed fit.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">🧥</span>
+      <div class="merch-name">Zip Hoodie</div>
+      <div class="merch-desc">Black tech fleece. Small shield on left chest. KRONIBOLA on back. Neon green zipper pull + hem accent.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">🧢</span>
+      <div class="merch-name">Snapback Cap</div>
+      <div class="merch-desc">Black structured cap. Embroidered shield on front panel. Neon green brim edge. Adjustable snap.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">🧴</span>
+      <div class="merch-name">Water Bottle</div>
+      <div class="merch-desc">750ml matte black stainless steel. Neon green band with logo. Leak-proof sport cap. Insulated.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">🏋️</span>
+      <div class="merch-name">Gym Towel</div>
+      <div class="merch-desc">Black microfiber. Neon green border stripes. Centered KRONIBOLA wordmark. Compact and quick-dry.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">🧦</span>
+      <div class="merch-name">Grip Socks</div>
+      <div class="merch-desc">Black with neon green bands. Anti-slip grip pads. Mid-calf length. KB initials woven in.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">🎒</span>
+      <div class="merch-name">Drawstring Bag</div>
+      <div class="merch-desc">Black ripstop nylon. Large shield print. Neon green drawstrings. Boot compartment at bottom.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">🔑</span>
+      <div class="merch-name">Keychain</div>
+      <div class="merch-desc">Matte black metal tag. Laser-engraved shield logo. Neon green enamel fill. Gunmetal ring.</div>
+    </div>
+    <div class="merch-card">
+      <span class="merch-icon">📱</span>
+      <div class="merch-name">Phone Case</div>
+      <div class="merch-desc">Matte black TPU. Shield logo with subtle neon glow print. Available for iPhone + Samsung.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:20pt;text-align:center">
+    <p style="font-size:8pt;color:#444;letter-spacing:0.1em">ALL MERCHANDISE FOLLOWS THE BLACK + NEON GREEN PALETTE</p>
+    <p style="font-size:8pt;color:#444;letter-spacing:0.1em;margin-top:4pt">MINIMALIST · MODERN · TECHNICAL</p>
+  </div>
+</div>
+
+<!-- PAGE 6: NOTES -->
+<div class="page" style="display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+  <p class="sub" style="margin-bottom:16pt">For Manufacturers</p>
+  <h1 style="font-size:28pt">PRODUCTION <span class="neon">NOTES</span></h1>
+  <div class="neon-line" style="margin:12pt auto"></div>
+
+  <div style="max-width:400px;text-align:left;margin-top:20pt">
+    <div class="spec-row"><span class="spec-label">Brand</span><span class="spec-value">KroniBola</span></div>
+    <div class="spec-row"><span class="spec-label">SSM</span><span class="spec-value">202603032902 (TR0336774-T)</span></div>
+    <div class="spec-row"><span class="spec-label">Website</span><span class="spec-value">kronibola.com</span></div>
+    <div class="spec-row"><span class="spec-label">Instagram</span><span class="spec-value">@kronibola.my</span></div>
+    <div class="spec-row"><span class="spec-label">Primary Color</span><span class="spec-value">#0A0A0A (Pantone Black 6 C)</span></div>
+    <div class="spec-row"><span class="spec-label">Accent Color</span><span class="spec-value">#00FF41 (Pantone 802 C)</span></div>
+    <div class="spec-row"><span class="spec-label">Primary Font</span><span class="spec-value">Space Grotesk Bold</span></div>
+    <div class="spec-row"><span class="spec-label">Logo File</span><span class="spec-value">logo.png (vector version available)</span></div>
+    <div class="spec-row"><span class="spec-label">Crest Placement</span><span class="spec-value">Left chest, 8cm height</span></div>
+    <div class="spec-row"><span class="spec-label">Number Font</span><span class="spec-value">Space Grotesk 900, 15cm height</span></div>
+    <div class="spec-row"><span class="spec-label">Name Font</span><span class="spec-value">Space Grotesk 700, 4cm height</span></div>
+  </div>
+
+  <p style="font-size:7pt;color:#333;margin-top:40pt;letter-spacing:0.1em">&copy; 2025 KRONIBOLA · ALL RIGHTS RESERVED</p>
+</div>
+
+</body>
+</html>

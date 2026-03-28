@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1400" viewBox="0 0 1000 1400">
+
+  <!-- ====== TRAINING TEE ====== -->
+  <text x="250" y="40" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">TRAINING TEE</text>
+
+  <g transform="translate(50, 60)">
+    <!-- T-shirt shape -->
+    <path d="M120 60 L80 90 L30 80 L10 130 L60 150 L75 120 L80 380 L320 380 L325 120 L340 150 L390 130 L370 80 L320 90 L280 60 Z" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Round neck -->
+    <path d="M120 60 Q200 90 280 60" fill="#111" stroke="#00FF41" stroke-width="2"/>
+    <!-- Center logo -->
+    <g transform="translate(200, 170)">
+      <path d="M-25 0 L0 -15 L25 0 L25 32 L0 44 L-25 32 Z" fill="none" stroke="#00FF41" stroke-width="2"/>
+      <circle cx="0" cy="12" r="8" fill="none" stroke="#00FF41" stroke-width="1.5"/>
+      <path d="M-2 4 L1 12 L-2 12 L1 24" fill="none" stroke="#00FF41" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+    <!-- KRONIBOLA text below -->
+    <text x="200" y="240" font-family="Arial, sans-serif" font-size="14" fill="#00FF41" text-anchor="middle" font-weight="800" letter-spacing="5">KRONIBOLA</text>
+    <!-- EST. 2025 -->
+    <text x="200" y="258" font-family="Arial, sans-serif" font-size="9" fill="#444" text-anchor="middle" font-weight="600" letter-spacing="3">EST. 2025</text>
+  </g>
+
+  <!-- ====== HOODIE ====== -->
+  <text x="750" y="40" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">HOODIE</text>
+
+  <g transform="translate(530, 60)">
+    <!-- Hoodie shape -->
+    <path d="M120 50 L80 80 L20 70 L0 130 L55 155 L65 120 L70 400 L330 400 L335 120 L345 155 L400 130 L380 70 L320 80 L280 50 Z" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Hood -->
+    <path d="M120 50 Q140 10 200 5 Q260 10 280 50" fill="#111" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Hood inner -->
+    <path d="M130 48 Q150 18 200 14 Q250 18 270 48" fill="none" stroke="#222" stroke-width="1"/>
+    <!-- Drawstrings -->
+    <line x1="185" y1="55" x2="185" y2="100" stroke="#333" stroke-width="1"/>
+    <line x1="215" y1="55" x2="215" y2="100" stroke="#333" stroke-width="1"/>
+    <!-- Kangaroo pocket -->
+    <rect x="120" y="250" width="160" height="80" rx="10" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Center logo (small) -->
+    <g transform="translate(200, 160)">
+      <path d="M-18 0 L0 -11 L18 0 L18 23 L0 32 L-18 23 Z" fill="none" stroke="#00FF41" stroke-width="1.5"/>
+    </g>
+    <text x="200" y="210" font-family="Arial, sans-serif" font-size="12" fill="#00FF41" text-anchor="middle" font-weight="800" letter-spacing="4">KRONIBOLA</text>
+    <!-- Hem neon -->
+    <rect x="72" y="395" width="256" height="3" rx="1" fill="#00FF41" opacity="0.4"/>
+  </g>
+
+  <!-- ====== CAP ====== -->
+  <text x="250" y="520" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">SNAPBACK CAP</text>
+
+  <g transform="translate(100, 540)">
+    <!-- Cap crown -->
+    <path d="M50 120 Q50 30 150 20 Q250 10 300 20 Q350 30 350 120 Z" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Brim -->
+    <path d="M30 120 Q100 125 200 140 Q300 125 370 120 L350 120 Q280 115 200 125 Q120 115 50 120 Z" fill="#111" stroke="#1a1a1a" stroke-width="1"/>
+    <!-- Front panel logo -->
+    <g transform="translate(200, 70)">
+      <path d="M-16 0 L0 -10 L16 0 L16 20 L0 28 L-16 20 Z" fill="none" stroke="#00FF41" stroke-width="2"/>
+    </g>
+    <!-- Neon brim edge -->
+    <path d="M35 122 Q120 127 200 138 Q280 127 365 122" fill="none" stroke="#00FF41" stroke-width="2" opacity="0.6"/>
+  </g>
+
+  <!-- ====== WATER BOTTLE ====== -->
+  <text x="700" y="520" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">WATER BOTTLE</text>
+
+  <g transform="translate(640, 540)">
+    <!-- Bottle -->
+    <rect x="30" y="30" width="60" height="20" rx="5" fill="#1a1a1a" stroke="#222" stroke-width="1"/>
+    <rect x="20" y="50" width="80" height="200" rx="10" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Band -->
+    <rect x="20" y="100" width="80" height="40" rx="0" fill="#111"/>
+    <!-- Logo on band -->
+    <g transform="translate(60, 120) scale(0.6)">
+      <path d="M-16 0 L0 -10 L16 0 L16 20 L0 28 L-16 20 Z" fill="none" stroke="#00FF41" stroke-width="2"/>
+    </g>
+    <!-- KRONIBOLA vertical -->
+    <text x="60" y="190" font-family="Arial, sans-serif" font-size="8" fill="#00FF41" text-anchor="middle" font-weight="700" letter-spacing="2" opacity="0.5">KRONIBOLA</text>
+    <!-- Neon ring -->
+    <rect x="20" y="98" width="80" height="2" fill="#00FF41" opacity="0.4"/>
+    <rect x="20" y="140" width="80" height="2" fill="#00FF41" opacity="0.4"/>
+  </g>
+
+  <!-- ====== TOWEL ====== -->
+  <text x="250" y="820" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">GYM TOWEL</text>
+
+  <g transform="translate(50, 840)">
+    <rect x="0" y="0" width="400" height="160" rx="6" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Neon border stripe -->
+    <rect x="0" y="0" width="400" height="4" rx="2" fill="#00FF41" opacity="0.5"/>
+    <rect x="0" y="156" width="400" height="4" rx="2" fill="#00FF41" opacity="0.5"/>
+    <!-- Center logo + text -->
+    <g transform="translate(200, 55)">
+      <path d="M-20 0 L0 -12 L20 0 L20 25 L0 35 L-20 25 Z" fill="none" stroke="#00FF41" stroke-width="2" opacity="0.6"/>
+    </g>
+    <text x="200" y="115" font-family="Arial, sans-serif" font-size="18" fill="#00FF41" text-anchor="middle" font-weight="800" letter-spacing="8" opacity="0.4">KRONIBOLA</text>
+    <text x="200" y="135" font-family="Arial, sans-serif" font-size="9" fill="#333" text-anchor="middle" letter-spacing="3">EST. 2025 · MALAYSIA</text>
+  </g>
+
+  <!-- ====== SOCKS ====== -->
+  <text x="700" y="820" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">FOOTBALL SOCKS</text>
+
+  <g transform="translate(640, 840)">
+    <!-- Sock shape -->
+    <path d="M30 0 L90 0 L90 200 Q90 240 70 260 L100 280 L90 300 L40 270 Q20 250 30 220 L30 0 Z" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Top band -->
+    <rect x="30" y="0" width="60" height="20" rx="0" fill="#111"/>
+    <rect x="30" y="0" width="60" height="3" fill="#00FF41" opacity="0.6"/>
+    <!-- Mid stripe -->
+    <rect x="30" y="80" width="60" height="3" fill="#00FF41" opacity="0.4"/>
+    <rect x="30" y="90" width="60" height="3" fill="#00FF41" opacity="0.2"/>
+    <!-- KB logo -->
+    <text x="60" y="55" font-family="Arial, sans-serif" font-size="14" fill="#00FF41" text-anchor="middle" font-weight="800" opacity="0.3">KB</text>
+  </g>
+
+  <!-- ====== STICKER PACK ====== -->
+  <text x="250" y="1090" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">STICKER PACK</text>
+
+  <g transform="translate(50, 1110)">
+    <!-- Sticker 1: Logo -->
+    <circle cx="50" cy="50" r="45" fill="#0e0e0e" stroke="#00FF41" stroke-width="2"/>
+    <g transform="translate(50, 40)">
+      <path d="M-14 0 L0 -9 L14 0 L14 18 L0 25 L-14 18 Z" fill="none" stroke="#00FF41" stroke-width="1.5"/>
+    </g>
+    <text x="50" y="75" font-family="Arial, sans-serif" font-size="7" fill="#00FF41" text-anchor="middle" font-weight="700" letter-spacing="2">KRONIBOLA</text>
+
+    <!-- Sticker 2: KB -->
+    <rect x="120" y="5" width="90" height="90" rx="12" fill="#0e0e0e" stroke="#00FF41" stroke-width="2"/>
+    <text x="165" y="60" font-family="Arial, sans-serif" font-size="36" fill="#00FF41" text-anchor="middle" font-weight="900">KB</text>
+    <text x="165" y="78" font-family="Arial, sans-serif" font-size="7" fill="#444" text-anchor="middle" letter-spacing="2">EST. 2025</text>
+
+    <!-- Sticker 3: Ball -->
+    <circle cx="290" cy="50" r="45" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="2"/>
+    <text x="290" y="45" font-family="Arial, sans-serif" font-size="30" text-anchor="middle">⚽</text>
+    <text x="290" y="72" font-family="Arial, sans-serif" font-size="8" fill="#00FF41" text-anchor="middle" font-weight="700" letter-spacing="1">GAME DAY</text>
+
+    <!-- Sticker 4: Lightning -->
+    <rect x="355" y="5" width="90" height="90" rx="12" fill="#00FF41"/>
+    <text x="400" y="55" font-family="Arial, sans-serif" font-size="36" fill="#000" text-anchor="middle" font-weight="900">⚡</text>
+    <text x="400" y="78" font-family="Arial, sans-serif" font-size="8" fill="#000" text-anchor="middle" font-weight="700" letter-spacing="1">KRONIBOLA</text>
+  </g>
+
+  <!-- ====== KEYCHAIN ====== -->
+  <text x="700" y="1090" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">KEYCHAIN</text>
+
+  <g transform="translate(660, 1110)">
+    <!-- Ring -->
+    <circle cx="40" cy="15" r="12" fill="none" stroke="#666" stroke-width="2"/>
+    <!-- Connector -->
+    <rect x="35" y="25" width="10" height="15" rx="2" fill="#444"/>
+    <!-- Tag -->
+    <rect x="10" y="40" width="60" height="80" rx="8" fill="#0e0e0e" stroke="#00FF41" stroke-width="1.5"/>
+    <!-- Logo -->
+    <g transform="translate(40, 65)">
+      <path d="M-12 0 L0 -8 L12 0 L12 15 L0 22 L-12 15 Z" fill="none" stroke="#00FF41" stroke-width="1.5"/>
+    </g>
+    <text x="40" y="100" font-family="Arial, sans-serif" font-size="6" fill="#00FF41" text-anchor="middle" font-weight="700" letter-spacing="1.5">KRONIBOLA</text>
+  </g>
+
+  <!-- Footer note -->
+  <text x="500" y="1370" font-family="Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle">All designs use Black (#0E0E0E) + Neon Green (#00FF41) color palette</text>
+  <text x="500" y="1390" font-family="Arial, sans-serif" font-size="12" fill="#444" text-anchor="middle">Fonts: Space Grotesk Bold · Minimalistic modern aesthetic</text>
+</svg>

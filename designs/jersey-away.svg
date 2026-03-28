@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="750" viewBox="0 0 800 750">
+  <defs>
+    <linearGradient id="awayBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00FF41"/>
+      <stop offset="100%" stop-color="#00cc33"/>
+    </linearGradient>
+  </defs>
+
+  <text x="400" y="40" font-family="Arial, sans-serif" font-size="18" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="4">AWAY JERSEY — FRONT</text>
+
+  <!-- Jersey body - neon green -->
+  <path d="M260 120 L190 180 L120 170 L80 240 L140 280 L160 250 L170 700 L630 700 L640 250 L660 280 L720 240 L680 170 L610 180 L540 120 Z" fill="url(#awayBody)" stroke="#00aa2d" stroke-width="2"/>
+
+  <!-- Collar - V-neck with black trim -->
+  <path d="M260 120 L400 200 L540 120" fill="none" stroke="#000" stroke-width="4"/>
+
+  <!-- Sleeve cuff black bands -->
+  <rect x="132" y="268" width="38" height="5" rx="2" fill="#000"/>
+  <rect x="630" y="268" width="38" height="5" rx="2" fill="#000"/>
+
+  <!-- Side stripe - thin black line -->
+  <line x1="175" y1="300" x2="175" y2="695" stroke="#000" stroke-width="2" opacity="0.4"/>
+  <line x1="625" y1="300" x2="625" y2="695" stroke="#000" stroke-width="2" opacity="0.4"/>
+
+  <!-- Subtle diagonal texture -->
+  <path d="M170 400 L300 350 L300 360 L170 410 Z" fill="#000" opacity="0.05"/>
+  <path d="M630 400 L500 350 L500 360 L630 410 Z" fill="#000" opacity="0.05"/>
+
+  <!-- Logo - black shield -->
+  <path d="M370 260 L400 245 L430 260 L430 300 L400 315 L370 300 Z" fill="none" stroke="#000" stroke-width="2.5"/>
+  <circle cx="400" cy="280" r="10" fill="none" stroke="#000" stroke-width="1.5"/>
+  <path d="M398 268 L402 278 L397 278 L401 292" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Club name -->
+  <text x="400" y="345" font-family="Arial, sans-serif" font-size="11" fill="#000" text-anchor="middle" font-weight="700" letter-spacing="6" opacity="0.7">KRONIBOLA</text>
+
+  <!-- Number ghost -->
+  <text x="400" y="540" font-family="Arial, sans-serif" font-size="140" fill="#000" text-anchor="middle" font-weight="900" opacity="0.08">10</text>
+
+  <!-- Hem accent -->
+  <rect x="172" y="693" width="456" height="3" rx="1" fill="#000" opacity="0.3"/>
+</svg>

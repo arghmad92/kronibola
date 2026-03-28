@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <!-- HOME SHORTS -->
+  <text x="200" y="40" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">HOME SHORTS</text>
+
+  <g transform="translate(50, 60)">
+    <!-- Left leg -->
+    <path d="M40 0 L260 0 L260 20 Q260 30 250 30 L250 320 Q250 340 230 340 L130 340 Q120 340 110 320 L60 180 Q40 140 40 120 Z" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- Right leg -->
+    <path d="M280 0 L40 0" fill="none" stroke="none"/>
+
+    <!-- Waistband -->
+    <rect x="40" y="0" width="220" height="25" rx="4" fill="#111"/>
+    <!-- Drawstring -->
+    <path d="M140 12 Q150 18 160 12" fill="none" stroke="#333" stroke-width="1"/>
+
+    <!-- Side neon stripe -->
+    <line x1="55" y1="30" x2="115" y2="310" stroke="#00FF41" stroke-width="2.5" opacity="0.7"/>
+
+    <!-- Small logo on left leg -->
+    <g transform="translate(160, 120) scale(0.5)">
+      <path d="M-20 0 L0 -12 L20 0 L20 25 L0 35 L-20 25 Z" fill="none" stroke="#00FF41" stroke-width="2" opacity="0.4"/>
+    </g>
+
+    <!-- KB text -->
+    <text x="165" y="200" font-family="Arial, sans-serif" font-size="18" fill="#00FF41" text-anchor="middle" font-weight="800" opacity="0.15" letter-spacing="2">KB</text>
+  </g>
+
+  <!-- AWAY SHORTS -->
+  <text x="600" y="40" font-family="Arial, sans-serif" font-size="16" fill="#666" text-anchor="middle" font-weight="700" letter-spacing="3">AWAY SHORTS</text>
+
+  <g transform="translate(450, 60)">
+    <path d="M40 0 L260 0 L260 20 Q260 30 250 30 L250 320 Q250 340 230 340 L130 340 Q120 340 110 320 L60 180 Q40 140 40 120 Z" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="1.5"/>
+    <rect x="40" y="0" width="220" height="25" rx="4" fill="#111"/>
+    <path d="M140 12 Q150 18 160 12" fill="none" stroke="#333" stroke-width="1"/>
+
+    <!-- Neon green stripe -->
+    <line x1="55" y1="30" x2="115" y2="310" stroke="#00FF41" stroke-width="2.5" opacity="0.7"/>
+
+    <!-- Small logo -->
+    <g transform="translate(160, 120) scale(0.5)">
+      <path d="M-20 0 L0 -12 L20 0 L20 25 L0 35 L-20 25 Z" fill="none" stroke="#00FF41" stroke-width="2" opacity="0.4"/>
+    </g>
+
+    <text x="165" y="200" font-family="Arial, sans-serif" font-size="18" fill="#00FF41" text-anchor="middle" font-weight="800" opacity="0.15" letter-spacing="2">KB</text>
+  </g>
+
+  <!-- Note -->
+  <text x="400" y="460" font-family="Arial, sans-serif" font-size="12" fill="#555" text-anchor="middle">Both kits use black shorts with neon green side stripe</text>
+</svg>

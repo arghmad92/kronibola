@@ -1,7 +1,7 @@
 import { readSheet, appendRow, json } from './_sheets.js';
 
 const TG_BOT_TOKEN = '8660743894:AAG_Sj6N1NE2faGOXBmR77cBhdvf_xPaehw';
-const TG_CHAT_ID = '-5247564101';
+const TG_CHAT_ID = '-1003700189180';
 
 async function sendTelegramNotification(message) {
   try {
