@@ -282,10 +282,24 @@ import Layout from '../layouts/Layout.astro';
       statusMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value);
     });
 
+    // Track status changes for notifications
+    const changedPlayers: { name: string; phone: string; oldStatus: string; newStatus: string }[] = [];
+
     const updated = allPlayers.map((p: any) => {
       if (p['Session Date'] === date) {
         if (delNames.has(p['Player Name'])) return null;
-        if (statusMap.has(p['Player Name'])) p['Payment Status'] = statusMap.get(p['Player Name']);
+        if (statusMap.has(p['Player Name'])) {
+          const newStatus = statusMap.get(p['Player Name'])!;
+          if (newStatus !== p['Payment Status']) {
+            changedPlayers.push({
+              name: p['Player Name'],
+              phone: String(p.Phone || '').replace("'", '').trim(),
+              oldStatus: p['Payment Status'],
+              newStatus,
+            });
+          }
+          p['Payment Status'] = newStatus;
+        }
       }
       return p;
     }).filter(Boolean);
@@ -299,7 +313,33 @@ import Layout from '../layouts/Layout.astro';
       allPlayers = updated as any[];
       renderPlayers(date);
       btn.textContent = 'SAVED!';
-      setTimeout(() => { btn.textContent = 'SAVE CHANGES'; btn.disabled = false; }, 2000);
+      setTimeout(() => { btn.textContent = 'SAVE CHANGES'; btn.disabled = false; }, 3000);
+
+      // Show WhatsApp notification links for changed players
+      if (changedPlayers.length > 0) {
+        const notifyHtml = changedPlayers.map((cp) => {
+          const statusMsgs: Record<string, string> = {
+            Paid: `Hi ${cp.name}, your payment for the game on ${date} has been confirmed! See you on the pitch!`,
+            Pending: `Hi ${cp.name}, a slot has opened for the game on ${date}. Please pay to confirm your spot.`,
+            Rejected: `Hi ${cp.name}, your registration for the game on ${date} has been cancelled.`,
+            Waitlist: `Hi ${cp.name}, you've been moved to the waitlist for the game on ${date}. We'll notify you if a slot opens.`,
+          };
+          const msg = statusMsgs[cp.newStatus] || `Hi ${cp.name}, your status for the game on ${date} has been updated to: ${cp.newStatus}.`;
+          const waLink = cp.phone ? `https://wa.me/6${cp.phone}?text=${encodeURIComponent(msg)}` : '#';
+          return `<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+            <span style="flex:1;font-size:0.82rem"><strong>${cp.name}</strong> → <span class="badge badge--${cp.newStatus.toLowerCase()}">${cp.newStatus}</span></span>
+            <a href="${waLink}" target="_blank" class="btn btn--wa" style="padding:0.4rem 0.8rem;font-size:0.72rem">Notify</a>
+          </div>`;
+        }).join('');
+
+        const wrap = document.getElementById('playersTable')!;
+        const notifyBox = document.createElement('div');
+        notifyBox.className = 'alert alert--success';
+        notifyBox.style.marginTop = '1rem';
+        notifyBox.innerHTML = `<div><strong style="display:block;margin-bottom:0.5rem">Notify players of status changes:</strong>${notifyHtml}</div>`;
+        wrap.parentElement!.appendChild(notifyBox);
+        setTimeout(() => notifyBox.remove(), 15000);
+      }
     } catch { btn.textContent = 'ERROR'; btn.disabled = false; }
   });
 

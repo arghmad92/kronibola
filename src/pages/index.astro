@@ -46,6 +46,14 @@ import Layout from '../layouts/Layout.astro';
       <p class="lineup-empty" id="lineupEmpty" style="display:none">No players yet. Be the first!</p>
     </div>
 
+    <!-- Check Status -->
+    <div id="checkStatusSection" style="display:none" class="share-section">
+      <button class="btn btn--outline" id="checkStatusBtn" style="width:100%">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        CHECK MY STATUS
+      </button>
+    </div>
+
     <!-- Share section -->
     <div id="shareSection" style="display:none" class="share-section">
       <button class="btn btn--ghost" id="shareBtn" style="width:100%">
@@ -370,6 +378,13 @@ import Layout from '../layouts/Layout.astro';
           doneTitle.innerHTML = "YOU'RE <span class='neon-text'>IN!</span>";
           doneSub.textContent = 'Slot confirmed. See you on the pitch!';
         }
+        // Populate receipt
+        document.getElementById('rcptName')!.textContent = name;
+        document.getElementById('rcptSession')!.textContent = currentSession['Session Name'];
+        document.getElementById('rcptDate')!.textContent = `${currentSession.Date} · ${currentSession.Time}`;
+        document.getElementById('rcptStatus')!.textContent = wl ? 'Waitlist' : 'Pending';
+        document.getElementById('rcptFee')!.textContent = `RM ${currentSession.Fee}`;
+
         const msg = wl
           ? `Hi Admin, I joined WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}.`
           : `Hi Admin, I registered for ${currentSession['Session Name']} on ${currentSession.Date}. Name: ${name}.`;
@@ -445,12 +460,81 @@ import Layout from '../layouts/Layout.astro';
     URL.revokeObjectURL(link.href);
   });
 
+  // --- Check Status Modal ---
+  const statusModal = document.getElementById('statusModal')!;
+  document.getElementById('checkStatusBtn')!.addEventListener('click', () => { statusModal.style.display = ''; });
+  document.getElementById('statusClose')!.addEventListener('click', () => { statusModal.style.display = 'none'; });
+  statusModal.addEventListener('click', (e) => { if (e.target === statusModal) statusModal.style.display = 'none'; });
+
+  document.getElementById('statusCheck')!.addEventListener('click', async () => {
+    const phone = (document.getElementById('statusPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const result = document.getElementById('statusResult')!;
+    if (!phone || phone.length < 10) { result.innerHTML = '<div class="alert alert--error">Enter a valid phone number.</div>'; return; }
+
+    result.innerHTML = '<p style="color:var(--text-muted);text-align:center">Checking...</p>';
+
+    try {
+      const res = await fetch(`${API}/status?phone=${encodeURIComponent(phone)}`);
+      const data = await res.json();
+      const regs = data.registrations || [];
+
+      if (!regs.length) {
+        result.innerHTML = '<div class="alert alert--info">No registrations found for this number.</div>';
+        return;
+      }
+
+      result.innerHTML = regs.map((r: any) => {
+        const statusClass = (r.status || 'pending').toLowerCase();
+        return `<div class="status-card">
+          <div class="status-card-header">
+            <span class="status-card-name">${r.name}</span>
+            <span class="badge badge--${statusClass}">${r.status}</span>
+          </div>
+          <div class="status-card-details">
+            <strong>${r.sessionName}</strong><br>
+            ${r.date} · ${r.time} · ${r.location}<br>
+            Fee: RM ${r.fee}
+          </div>
+        </div>`;
+      }).join('');
+    } catch { result.innerHTML = '<div class="alert alert--error">Failed to check. Try again.</div>'; }
+  });
+
+  // Show check status section when sessions load
+  const checkSection = document.getElementById('checkStatusSection')!;
+
+  // --- Phone lookup on registration (auto-fill name) ---
+  const regPhoneInput = document.getElementById('regPhone') as HTMLInputElement;
+  const regNameInput = document.getElementById('regName') as HTMLInputElement;
+  let lookupTimeout: any;
+
+  regPhoneInput.addEventListener('input', () => {
+    clearTimeout(lookupTimeout);
+    const phone = regPhoneInput.value.replace(/[-\s]/g, '');
+    if (phone.length >= 10) {
+      lookupTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch(`${API}/status?phone=${encodeURIComponent(phone)}`);
+          const data = await res.json();
+          if (data.knownName && !regNameInput.value) {
+            regNameInput.value = data.knownName;
+            regNameInput.style.borderColor = 'var(--neon)';
+            setTimeout(() => { regNameInput.style.borderColor = ''; }, 2000);
+          }
+        } catch {}
+      }, 500);
+    }
+  });
+
   function showErr(el: HTMLElement, msg: string) {
     el.style.display = '';
     el.innerHTML = `<div class="alert alert--error">${msg}</div>`;
   }
 
   init();
+
+  // Show check status after init
+  setTimeout(() => { checkSection.style.display = ''; }, 500);
 </script>
 
 <style>

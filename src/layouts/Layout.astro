@@ -106,11 +106,36 @@ const { title, description = 'KroniBola — Football pickup game registration', 
           <div class="done-icon">&#9917;</div>
           <h3 class="modal-title" id="doneTitle">YOU'RE <span class="neon-text">IN!</span></h3>
           <p class="modal-sub" id="doneSub">Slot confirmed. See you on the pitch!</p>
+          <!-- Confirmation receipt -->
+          <div class="receipt" id="receiptCard">
+            <div class="receipt-header">REGISTRATION RECEIPT</div>
+            <div class="receipt-row"><span>Player</span><span id="rcptName">—</span></div>
+            <div class="receipt-row"><span>Session</span><span id="rcptSession">—</span></div>
+            <div class="receipt-row"><span>Date</span><span id="rcptDate">—</span></div>
+            <div class="receipt-row"><span>Status</span><span id="rcptStatus">—</span></div>
+            <div class="receipt-row"><span>Fee</span><span id="rcptFee">—</span></div>
+            <p class="receipt-note">Screenshot this as your proof of registration</p>
+          </div>
           <a href="#" class="btn btn--wa" id="waBtn" target="_blank" style="width:100%">NOTIFY ADMIN (WHATSAPP)</a>
           <button class="btn btn--outline" id="modalDone" style="width:100%;margin-top:0.5rem">CLOSE</button>
         </div>
 
         <div id="regError" style="display:none;margin-top:0.8rem"></div>
+      </div>
+    </div>
+
+    <!-- Check Status Modal -->
+    <div class="modal-overlay" id="statusModal" style="display:none">
+      <div class="modal">
+        <button class="modal-close" id="statusClose">&times;</button>
+        <h3 class="modal-title">CHECK <span class="neon-text">STATUS</span></h3>
+        <p class="modal-sub">Enter your phone number to see your registrations</p>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" class="form-input" id="statusPhone" placeholder="e.g. 0123456789" />
+        </div>
+        <button class="btn btn--primary" id="statusCheck" style="width:100%;margin-top:0.8rem">CHECK</button>
+        <div id="statusResult" style="margin-top:1rem"></div>
       </div>
     </div>
   </body>
@@ -380,6 +405,39 @@ const { title, description = 'KroniBola — Football pickup game registration', 
 
   .page-title { font-size: 1.4rem; letter-spacing: 0.04em; }
   .page-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  /* Receipt card */
+  .receipt {
+    background: rgba(0,255,65,0.04); border: 1px dashed rgba(0,255,65,0.2);
+    border-radius: 14px; padding: 1rem; margin-bottom: 1rem;
+  }
+  .receipt-header {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.68rem; font-weight: 700;
+    color: var(--neon); letter-spacing: 0.15em; text-align: center;
+    margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border);
+  }
+  .receipt-row {
+    display: flex; justify-content: space-between; padding: 0.35rem 0;
+    font-size: 0.82rem;
+  }
+  .receipt-row span:first-child { color: var(--text-muted); font-weight: 500; }
+  .receipt-row span:last-child { color: var(--text); font-weight: 600; text-align: right; }
+  .receipt-note {
+    font-size: 0.68rem; color: var(--text-muted); text-align: center;
+    margin-top: 0.8rem; font-style: italic;
+  }
+
+  /* Status results */
+  .status-card {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1rem; margin-bottom: 0.6rem;
+  }
+  .status-card-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;
+  }
+  .status-card-name { font-weight: 700; font-size: 0.9rem; }
+  .status-card-details { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+  .status-card-details strong { color: var(--text-secondary); }
 
   /* Responsive desktop */
   @media (min-width: 641px) {
