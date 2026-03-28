@@ -48,6 +48,34 @@ const crew = [
       <a href="https://wa.me/60126183827" target="_blank" class="btn btn--wa" style="width:100%">MESSAGE US</a>
     </div>
 
+    <!-- Social Media -->
+    <div class="social-section">
+      <h2 class="social-title">FOLLOW <span class="neon-text">US</span></h2>
+      <div class="social-links">
+        <a href="https://www.instagram.com/kronibola.my" target="_blank" rel="noopener" class="social-link glass">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          <div>
+            <span class="sl-name">Instagram</span>
+            <span class="sl-handle">@kronibola.my</span>
+          </div>
+        </a>
+        <a href="https://www.tiktok.com/@kronibola.my" target="_blank" rel="noopener" class="social-link glass">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.72a8.19 8.19 0 0 0 4.76 1.52V6.79a4.84 4.84 0 0 1-1-.1z"/></svg>
+          <div>
+            <span class="sl-name">TikTok</span>
+            <span class="sl-handle">@kronibola.my</span>
+          </div>
+        </a>
+        <a href="https://www.threads.net/@kronibola.my" target="_blank" rel="noopener" class="social-link glass">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007C5.461 23.926.052 18.514.052 11.73v-.162C.171 4.988 5.488-.05 12.074.002c3.16.025 6.019 1.262 8.1 3.397 2.06 2.114 3.197 4.95 3.197 7.982-.012 4.936-2.869 7.758-5.483 7.758-1.576 0-2.726-.752-3.172-2.044-.378.864-1.084 1.476-2.063 1.782-.34.107-.705.162-1.084.162-2.163 0-3.815-1.88-3.815-4.343 0-2.502 1.537-4.263 3.748-4.33 1.07-.033 1.997.341 2.693 1.05l.043-.658h2.076l-.68 7.244c-.066.677.211 1.064.765 1.064.978 0 2.754-1.587 2.762-5.514.008-2.56-.959-4.888-2.665-6.53A8.97 8.97 0 0 0 12.074 2.2c-5.46-.044-9.914 4.29-9.914 9.652v.134c.073 5.396 4.49 9.798 9.88 9.862h.162l-.016 2.152zm.302-8.293c.503-.014.903-.2 1.193-.553.315-.383.46-.94.46-1.655 0-1.2-.653-2.09-1.553-2.09-.422 0-.79.184-1.075.538-.316.394-.466.958-.466 1.647 0 1.243.631 2.128 1.44 2.113z"/></svg>
+          <div>
+            <span class="sl-name">Threads</span>
+            <span class="sl-handle">@kronibola.my</span>
+          </div>
+        </a>
+      </div>
+    </div>
+
     <!-- Quick links to Gallery and Rules -->
     <div class="quick-links">
       <a href="/gallery" class="quick-link glass">
@@ -207,6 +235,19 @@ const crew = [
     margin-bottom: 1rem;
     position: relative;
   }
+
+  /* Social Media */
+  .social-section { margin: 1.5rem 0; }
+  .social-title { font-size: 1rem; font-family: 'Space Grotesk', sans-serif; margin-bottom: 0.8rem; }
+  .social-links { display: flex; flex-direction: column; gap: 0.5rem; }
+  .social-link {
+    display: flex; align-items: center; gap: 0.8rem; padding: 0.9rem 1rem;
+    color: inherit; transition: all 0.2s; border-left: 3px solid transparent;
+  }
+  .social-link:hover { border-left-color: var(--neon); background: rgba(0,255,65,0.03); }
+  .social-link svg { color: var(--neon); opacity: 0.8; flex-shrink: 0; }
+  .sl-name { display: block; font-weight: 700; font-size: 0.85rem; }
+  .sl-handle { display: block; font-size: 0.72rem; color: var(--text-muted); }
 
   .quick-links { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
   .quick-link {
