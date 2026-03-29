@@ -61,6 +61,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="tab-panel" id="tab-players">
         <div class="panel-top">
           <h3 class="panel-title">MANAGE <span class="neon-text">PLAYERS</span></h3>
+          <button class="btn btn--outline btn--sm" id="refreshPlayersBtn">Refresh</button>
         </div>
         <div class="form-group" style="margin-bottom:0.8rem">
           <select class="form-select" id="filterDate" style="width:100%">
@@ -284,6 +285,13 @@ import Layout from '../layouts/Layout.astro';
       if (dates.length) { sel.value = dates[0] as string; renderPlayers(dates[0] as string); }
     } catch {}
   }
+
+  document.getElementById('refreshPlayersBtn')!.addEventListener('click', async () => {
+    const btn = document.getElementById('refreshPlayersBtn') as HTMLButtonElement;
+    btn.disabled = true; btn.textContent = '...';
+    await loadAllPlayers();
+    btn.textContent = 'Refresh'; btn.disabled = false;
+  });
 
   document.getElementById('filterDate')!.addEventListener('change', () => {
     renderPlayers((document.getElementById('filterDate') as HTMLSelectElement).value);
