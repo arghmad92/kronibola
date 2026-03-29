@@ -4,9 +4,14 @@ interface Props {
   description?: string;
   activeTab?: string;
   hideNav?: boolean;
+  noindex?: boolean;
 }
 
-const { title, description = 'KroniBola — Football pickup game registration', activeTab = 'home', hideNav = false } = Astro.props;
+const { title, description = 'KroniBola — Football pickup game registration in KL & Selangor. Join weekly futsal sessions, register online, and track your stats.', activeTab = 'home', hideNav = false, noindex = false } = Astro.props;
+
+const siteUrl = 'https://kronibola.com';
+const ogImage = `${siteUrl}/logo.png`;
+const canonicalUrl = Astro.url.href;
 ---
 
 <!doctype html>
@@ -15,9 +20,27 @@ const { title, description = 'KroniBola — Football pickup game registration', 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <meta name="theme-color" content="#00FF41" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content="KroniBola" />
+    <meta property="og:locale" content="en_MY" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="manifest" href="/manifest.json" />
@@ -25,6 +48,28 @@ const { title, description = 'KroniBola — Football pickup game registration', 
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>{title}</title>
+
+    <!-- JSON-LD Structured Data -->
+    {Astro.url.pathname === '/' && (
+      <script type="application/ld+json" set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "SportsOrganization",
+        "name": "KroniBola",
+        "url": siteUrl,
+        "logo": ogImage,
+        "description": "Weekly football pickup games in KL & Selangor. Register online, track stats, and join the crew.",
+        "sport": "Football",
+        "location": {
+          "@type": "Place",
+          "name": "KL & Selangor, Malaysia"
+        },
+        "sameAs": [
+          "https://www.instagram.com/kronibola.my",
+          "https://www.tiktok.com/@kronibola.my",
+          "https://www.threads.net/@kronibola.my"
+        ]
+      })} />
+    )}
   </head>
   <body>
     <!-- Animated background -->
