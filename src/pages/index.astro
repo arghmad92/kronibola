@@ -139,7 +139,7 @@ import Layout from '../layouts/Layout.astro';
           </div>
           <div class="mc-row">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>${s.Time}</span>
+            <span>${formatTime(s.Time)}</span>
           </div>
         </div>
         <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.Location)}" target="_blank" rel="noopener" class="mc-maps-btn" onclick="event.stopPropagation()">
@@ -275,6 +275,25 @@ import Layout from '../layouts/Layout.astro';
   }
 
   // --- Countdown ---
+  function formatTime(raw: string): string {
+    if (!raw) return '—';
+    // Format "830pm-10pm" → "8:30 PM – 10:00 PM", "5pm-630pm" → "5:00 PM – 6:30 PM"
+    const parts = raw.split('-').map(s => s.trim());
+    const formatted = parts.map(p => {
+      const m = p.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)?$/i);
+      if (!m) return p;
+      let hrs = parseInt(m[1]);
+      let mins = parseInt(m[2] || '0');
+      const period = (m[3] || '').toLowerCase();
+      // Handle "830" as 8:30
+      if (!m[2] && hrs > 24) { mins = hrs % 100; hrs = Math.floor(hrs / 100); }
+      const suffix = period || (hrs >= 12 ? 'pm' : 'am');
+      const displayHr = hrs > 12 ? hrs - 12 : (hrs === 0 ? 12 : hrs);
+      return `${displayHr}:${String(mins).padStart(2, '0')} ${suffix.toUpperCase()}`;
+    });
+    return formatted.join(' – ');
+  }
+
   function parseTime(timeStr: string): { hours: number; minutes: number } | null {
     if (!timeStr) return null;
     // Take the start time (before any dash): "830pm-10pm" → "830pm"
