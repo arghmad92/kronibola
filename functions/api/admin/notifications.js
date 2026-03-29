@@ -2,14 +2,7 @@ import { json, getGoogleToken } from '../_sheets.js';
 
 const HEADERS = ['Timestamp', 'Player Name', 'Phone', 'Status', 'Session Date', 'Message', 'Sent By'];
 
-function parseCreds(raw) {
-  try { return JSON.parse(raw); } catch {
-    return JSON.parse(raw.replace(/\n/g, '\\n').replace(/\r/g, ''));
-  }
-}
-
 async function getRawSheet(env) {
-  const creds = parseCreds(env.GCP_CREDENTIALS);
   const token = await getGoogleToken(env, 'https://www.googleapis.com/auth/spreadsheets');
   const spreadsheetId = env.SPREADSHEET_ID;
 
