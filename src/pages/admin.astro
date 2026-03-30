@@ -39,6 +39,40 @@ import Layout from '../layouts/Layout.astro';
     </div>
 
     <div id="adminContent" style="display:none">
+      <!-- Stats Dashboard -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="stat-value" id="statSessions">-</div>
+          <div class="stat-label">Sessions Played</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="stat-value" id="statTotalPlayers">-</div>
+          <div class="stat-label">Total Registrations</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="stat-value" id="statUnique">-</div>
+          <div class="stat-label">Unique Players</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="stat-value" id="statRevenue">-</div>
+          <div class="stat-label">Total Revenue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>
+          <div class="stat-value" id="statAvg">-</div>
+          <div class="stat-label">Avg Players/Game</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+          <div class="stat-value" id="statMvp">-</div>
+          <div class="stat-label">Most Active Player</div>
+        </div>
+      </div>
+
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab active" data-tab="schedule">Schedule</button>
@@ -135,6 +169,63 @@ import Layout from '../layouts/Layout.astro';
   let sessionsData: any[] = [];
   let allPlayers: any[] = [];
 
+  // --- STATS DASHBOARD ---
+  async function loadStats() {
+    try {
+      const [sessRes, plRes] = await Promise.all([
+        fetch(`${API}/admin/sessions`, { headers: { Authorization: adminToken } }),
+        fetch(`${API}/admin/players`, { headers: { Authorization: adminToken } }),
+      ]);
+      const sessions = (await sessRes.json()).sessions || [];
+      const players = (await plRes.json()).players || [];
+
+      // Only count confirmed players (Paid status, not Rejected/Waitlist)
+      const confirmed = players.filter((p: any) => p['Payment Status'] === 'Paid');
+
+      // Sessions played (Closed status)
+      const closedSessions = sessions.filter((s: any) => s.Status === 'Closed');
+      document.getElementById('statSessions')!.textContent = String(closedSessions.length);
+
+      // Total registrations
+      document.getElementById('statTotalPlayers')!.textContent = String(confirmed.length);
+
+      // Unique players by phone
+      const uniquePhones = new Set(confirmed.map((p: any) => String(p.Phone || '').replace(/\D/g, '')).filter(Boolean));
+      document.getElementById('statUnique')!.textContent = String(uniquePhones.size);
+
+      // Total revenue (sum of Amount for Paid players)
+      const totalRev = confirmed.reduce((sum: number, p: any) => sum + (parseFloat(p.Amount) || 0), 0);
+      document.getElementById('statRevenue')!.textContent = `RM${totalRev.toLocaleString()}`;
+
+      // Average players per closed session
+      if (closedSessions.length > 0) {
+        const avg = (confirmed.length / closedSessions.length).toFixed(1);
+        document.getElementById('statAvg')!.textContent = avg;
+      } else {
+        document.getElementById('statAvg')!.textContent = '-';
+      }
+
+      // Most active player (most sessions by phone)
+      const phoneCounts: Record<string, { name: string; count: number }> = {};
+      for (const p of confirmed) {
+        const phone = String(p.Phone || '').replace(/\D/g, '');
+        if (!phone) continue;
+        if (!phoneCounts[phone]) phoneCounts[phone] = { name: p['Player Name'] || 'Unknown', count: 0 };
+        phoneCounts[phone].count++;
+      }
+      const sorted = Object.values(phoneCounts).sort((a, b) => b.count - a.count);
+      if (sorted.length > 0) {
+        const mvp = sorted[0];
+        document.getElementById('statMvp')!.textContent = mvp.name;
+        document.getElementById('statMvp')!.title = `${mvp.count} sessions`;
+      } else {
+        document.getElementById('statMvp')!.textContent = '-';
+      }
+    } catch {
+      // Silently fail — stats show "-"
+    }
+  }
+
   // --- LOGIN ---
   document.getElementById('loginForm')!.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -147,7 +238,7 @@ import Layout from '../layouts/Layout.astro';
         adminToken = data.token;
         document.getElementById('loginGate')!.style.display = 'none';
         document.getElementById('adminContent')!.style.display = '';
-        loadSchedule(); loadAllPlayers(); loadRevenue(); loadNotifs();
+        loadSchedule(); loadAllPlayers(); loadRevenue(); loadNotifs(); loadStats();
       } else { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>'; }
     } catch { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>'; }
   });
@@ -593,6 +684,48 @@ import Layout from '../layouts/Layout.astro';
   .login-card { max-width: 380px; margin: 3rem auto; padding: 2rem; text-align: center; }
   .login-icon { color: var(--neon); margin-bottom: 0.8rem; }
   .login-card h2 { margin-bottom: 1.2rem; font-size: 1.2rem; }
+
+  /* Stats Dashboard */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin: 1rem 0 0;
+  }
+  .stat-card {
+    background: rgba(0, 255, 65, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover {
+    border-color: rgba(0, 255, 65, 0.3);
+  }
+  .stat-icon {
+    color: var(--neon);
+    margin-bottom: 0.4rem;
+    opacity: 0.7;
+  }
+  .stat-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neon);
+    line-height: 1.2;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+  }
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-value { font-size: 1.25rem; }
+  }
 
   .tabs { display: flex; gap: 0; margin: 1rem 0 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
   .tab {
