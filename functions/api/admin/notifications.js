@@ -3,6 +3,12 @@ import { readSheet, appendRow, writeSheet, json } from '../_sheets.js';
 const HEADERS = ['Timestamp', 'Player Name', 'Phone', 'Status', 'Session Date', 'Message', 'Sent By'];
 
 export async function onRequest(context) {
+  // Auth check
+  const authHeader = context.request.headers.get('Authorization');
+  if (!authHeader) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
   const method = context.request.method;
 
   if (method === 'GET') {

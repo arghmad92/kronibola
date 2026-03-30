@@ -25,8 +25,27 @@ export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
 
   try {
-    const { date, name, phone, fee, sessionName } = await context.request.json();
-    if (!date || !name || !phone) return json({ error: 'Missing fields' }, 400);
+    const body = await context.request.json();
+    let { date, name, phone, fee, sessionName } = body;
+
+    // Validate name
+    if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
+    name = name.trim();
+    if (name.length < 2 || name.length > 100) return json({ error: 'Name must be between 2 and 100 characters' }, 400);
+
+    // Validate phone
+    if (!phone || typeof phone !== 'string') return json({ error: 'Phone number is required' }, 400);
+    if (!/^[\d\s\-+]+$/.test(phone)) return json({ error: 'Phone number contains invalid characters' }, 400);
+    const cleanedPhone = phone.replace(/[\s\-+]/g, '');
+    if (cleanedPhone.length < 10 || cleanedPhone.length > 15) return json({ error: 'Phone number must be 10-15 digits' }, 400);
+
+    // Validate date
+    if (!date || typeof date !== 'string' || !date.trim()) return json({ error: 'Session date is required' }, 400);
+
+    // Validate fee
+    const feeNum = Number(fee);
+    if (fee === undefined || fee === null || fee === '' || isNaN(feeNum)) return json({ error: 'Fee must be a valid number' }, 400);
+    if (feeNum < 0 || feeNum > 500) return json({ error: 'Fee must be between 0 and 500' }, 400);
 
     // Check duplicates
     const regs = await readSheet(context.env, 'Registrations');

@@ -1,10 +1,17 @@
 import { readSheet, json } from './_sheets.js';
 
+// NOTE: Rate limiting should be configured via Cloudflare WAF rules in the dashboard.
+// Recommended: set a rate limit of 20 requests per minute per IP on /api/status
+// to prevent abuse and excessive Google Sheets API calls.
+
 export async function onRequest(context) {
   const url = new URL(context.request.url);
   const phone = (url.searchParams.get('phone') || '').replace(/[-\s']/g, '');
 
-  if (!phone || phone.length < 10) return json({ error: 'Invalid phone number' }, 400);
+  // Validate phone: must be digits only after cleaning, 10-15 characters
+  if (!phone || !/^\d+$/.test(phone) || phone.length < 10 || phone.length > 15) {
+    return json({ error: 'Invalid phone number. Must be 10-15 digits.' }, 400);
+  }
 
   try {
     const all = await readSheet(context.env, 'Registrations');

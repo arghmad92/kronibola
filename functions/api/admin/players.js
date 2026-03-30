@@ -1,6 +1,12 @@
 import { readSheet, writeSheet, json } from '../_sheets.js';
 
 export async function onRequest(context) {
+  // Auth check
+  const authHeader = context.request.headers.get('Authorization');
+  if (!authHeader) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
   const method = context.request.method;
 
   if (method === 'GET') {
