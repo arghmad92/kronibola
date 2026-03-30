@@ -71,6 +71,21 @@ import Layout from '../layouts/Layout.astro';
           <div class="stat-value" id="statMvp">-</div>
           <div class="stat-label">Most Active Player</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+          <div class="stat-value" id="statRetention">-</div>
+          <div class="stat-label">Retention Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div class="stat-value" id="statNoshow">-</div>
+          <div class="stat-label">No-shows / Overdue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="stat-value" id="statPeakDay">-</div>
+          <div class="stat-label">Most Popular Day</div>
+        </div>
       </div>
 
       <!-- Tabs -->
@@ -220,6 +235,33 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('statMvp')!.title = `${mvp.count} sessions`;
       } else {
         document.getElementById('statMvp')!.textContent = '-';
+      }
+
+      // Retention rate (players who came back 2+ times)
+      const returning = Object.values(phoneCounts).filter(p => p.count >= 2).length;
+      const totalUnique = Object.keys(phoneCounts).length;
+      if (totalUnique > 0) {
+        const rate = Math.round((returning / totalUnique) * 100);
+        document.getElementById('statRetention')!.textContent = `${rate}%`;
+        document.getElementById('statRetention')!.title = `${returning} of ${totalUnique} players returned`;
+      }
+
+      // No-shows / Overdue count
+      const noshows = players.filter((p: any) => ['Overdue', 'Rejected'].includes(p['Payment Status']));
+      document.getElementById('statNoshow')!.textContent = String(noshows.length);
+
+      // Most popular day of week
+      const dayCounts: Record<string, number> = {};
+      for (const s of closedSessions) {
+        const d = new Date(s.Date);
+        if (isNaN(d.getTime())) continue;
+        const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+        dayCounts[day] = (dayCounts[day] || 0) + 1;
+      }
+      const peakDay = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0];
+      if (peakDay) {
+        document.getElementById('statPeakDay')!.textContent = peakDay[0];
+        document.getElementById('statPeakDay')!.title = `${peakDay[1]} sessions on ${peakDay[0]}`;
       }
     } catch {
       // Silently fail — stats show "-"

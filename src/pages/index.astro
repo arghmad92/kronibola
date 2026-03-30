@@ -20,6 +20,11 @@ import Layout from '../layouts/Layout.astro';
   </header>
 
   <main class="container">
+    <!-- Intro -->
+    <div class="intro-section">
+      <p class="intro-text">We're a crew of football lovers who organise weekly pickup games around <strong>KL & Selangor</strong>. No tryouts, no commitments — just show up, pay, and play. Whether you're a seasoned baller or just looking to stay active, you're welcome here.</p>
+    </div>
+
     <!-- Loading state -->
     <div id="loadingState" class="loading-state">
       <div class="loader"></div>
@@ -695,6 +700,23 @@ import Layout from '../layouts/Layout.astro';
   .admin-btn:hover { border-color: var(--neon); color: var(--neon); }
 
   /* Loading */
+  .intro-section {
+    padding: 0.8rem 0 0.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+  .intro-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-weight: 300;
+    text-align: center;
+  }
+  .intro-text strong {
+    color: var(--neon);
+    font-weight: 500;
+  }
+
   .loading-state { text-align: center; padding: 4rem 0; color: var(--text-muted); }
   .loader {
     width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--neon);
