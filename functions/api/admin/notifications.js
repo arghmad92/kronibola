@@ -1,13 +1,13 @@
 import { readSheet, appendRow, writeSheet, json } from '../_sheets.js';
+import { verifyToken } from './auth.js';
 
 const HEADERS = ['Timestamp', 'Player Name', 'Phone', 'Status', 'Session Date', 'Message', 'Sent By'];
 
 export async function onRequest(context) {
   // Auth check
-  const authHeader = context.request.headers.get('Authorization');
-  if (!authHeader) {
-    return json({ error: 'Unauthorized' }, 401);
-  }
+  const token = context.request.headers.get('Authorization') || '';
+  const valid = await verifyToken(token, context.env.ADMIN_PASSWORD);
+  if (!valid) return json({ error: 'Unauthorized' }, 401);
 
   const method = context.request.method;
 

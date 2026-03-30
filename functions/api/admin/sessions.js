@@ -1,11 +1,11 @@
 import { readSheet, writeSheet, json } from '../_sheets.js';
+import { verifyToken } from './auth.js';
 
 export async function onRequest(context) {
   // Auth check
-  const authHeader = context.request.headers.get('Authorization');
-  if (!authHeader) {
-    return json({ error: 'Unauthorized' }, 401);
-  }
+  const token = context.request.headers.get('Authorization') || '';
+  const valid = await verifyToken(token, context.env.ADMIN_PASSWORD);
+  if (!valid) return json({ error: 'Unauthorized' }, 401);
 
   const method = context.request.method;
 
