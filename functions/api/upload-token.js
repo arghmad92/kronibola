@@ -5,14 +5,14 @@ export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
 
   const secret = context.env.ADMIN_PASSWORD || 'kronibola';
-  const payload = JSON.stringify({ purpose: 'upload', iat: Date.now() });
+  const payloadB64 = btoa(JSON.stringify({ purpose: 'upload', iat: Date.now() }));
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadB64));
   const sigStr = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const token = btoa(payload) + '.' + sigStr;
+  const token = payloadB64 + '.' + sigStr;
 
   return json({ token });
 }
