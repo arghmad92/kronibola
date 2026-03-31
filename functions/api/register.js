@@ -1,14 +1,19 @@
 import { readSheet, appendRow, json } from './_sheets.js';
 
-const TG_BOT_TOKEN = '8660743894:AAG_Sj6N1NE2faGOXBmR77cBhdvf_xPaehw';
-const TG_CHAT_ID = '-1003700189180';
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(text || '').replace(/[&<>"']/g, m => map[m]);
+}
 
-async function sendTelegramNotification(message) {
+async function sendTelegramNotification(env, message) {
+  const token = env.TG_BOT_TOKEN;
+  const chatId = env.TG_CHAT_ID;
+  if (!token || !chatId) return;
   try {
-    await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TG_CHAT_ID, text: message, parse_mode: 'HTML' }),
+      body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
     });
   } catch {}
 }
@@ -82,22 +87,23 @@ export async function onRequest(context) {
     const tgMsg = [
       `${emoji} <b>New Registration</b>`,
       ``,
-      `👤 Player: <b>${name}</b>`,
-      `📱 Phone: ${phone}`,
-      `🏟 Session: <b>${sessionLabel}</b>`,
-      `📅 Date: ${date}`,
-      sessionTime ? `⏰ Time: ${sessionTime}` : '',
-      sessionLoc ? `📍 Location: ${sessionLoc}` : '',
+      `👤 Player: <b>${escapeHtml(name)}</b>`,
+      `📱 Phone: ${escapeHtml(phone)}`,
+      `🏟 Session: <b>${escapeHtml(sessionLabel)}</b>`,
+      `📅 Date: ${escapeHtml(date)}`,
+      sessionTime ? `⏰ Time: ${escapeHtml(sessionTime)}` : '',
+      sessionLoc ? `📍 Location: ${escapeHtml(sessionLoc)}` : '',
       `💳 Status: <b>${status}</b>`,
       `🔖 Ref: <code>${refCode}</code>`,
       `💰 Fee: RM ${fee}`,
       ``,
       spotsLeft > 0 ? `📊 <b>${spotsLeft}</b> spot${spotsLeft > 1 ? 's' : ''} remaining out of ${maxPlayers}` : `🔴 Game is <b>FULL</b> (${maxPlayers}/${maxPlayers})`,
     ].filter(Boolean).join('\n');
-    await sendTelegramNotification(tgMsg);
+    await sendTelegramNotification(context.env, tgMsg);
 
     return json({ success: true, status, refCode });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    console.error('Registration error:', e);
+    return json({ error: 'An error occurred. Please try again.' }, 500);
   }
 }

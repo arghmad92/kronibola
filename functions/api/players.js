@@ -36,6 +36,7 @@ export async function onRequest(context) {
     const players = date ? all.filter((p) => String(p['Session Date']) === date) : all;
     return json({ players });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    console.error('Players error:', e);
+    return json({ error: 'An error occurred. Please try again.' }, 500);
   }
 }

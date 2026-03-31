@@ -1,41 +1,70 @@
 import { json } from './_sheets.js';
-
-const TG_BOT_TOKEN = '8660743894:AAG_Sj6N1NE2faGOXBmR77cBhdvf_xPaehw';
-const TG_CHAT_ID = '-1003700189180';
+import { verifyUploadToken } from './upload-token.js';
 
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
 
   try {
-    const { refCode, playerName, imageData, mimeType } = await context.request.json();
+    const { refCode, playerName, imageData, mimeType, uploadToken } = await context.request.json();
     if (!imageData || !refCode) return json({ error: 'Missing receipt data' }, 400);
 
+    // Verify upload token (Option F)
+    const secret = context.env.ADMIN_PASSWORD || 'kronibola';
+    const validToken = await verifyUploadToken(uploadToken, secret);
+    if (!validToken) return json({ error: 'Invalid or expired upload session. Please refresh the page.' }, 403);
+
+    // Validate MIME type (Option G)
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedMimes.includes(mimeType)) {
+      return json({ error: 'Only JPG, PNG, and WebP images are allowed' }, 400);
+    }
+
+    // Validate file size — base64 is ~33% larger than raw, so 6.7MB base64 ≈ 5MB file
     const base64 = imageData.replace(/^data:[^;]+;base64,/, '');
+    if (base64.length > 6.7 * 1024 * 1024) {
+      return json({ error: 'File too large. Maximum size is 5MB.' }, 400);
+    }
+
     const binaryStr = atob(base64);
     const bytes = new Uint8Array(binaryStr.length);
     for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
-    const ext = (mimeType || 'image/jpeg').includes('png') ? 'png' : 'jpg';
-    const fileName = `${refCode}_${playerName || 'receipt'}.${ext}`;
-    const caption = `🧾 Payment Receipt\n\nPlayer: ${playerName}\nRef: ${refCode}`;
+    // Validate magic bytes (file signature)
+    if (bytes.length < 4) return json({ error: 'Invalid file' }, 400);
+    const isJPEG = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+    const isPNG = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+    const isWEBP = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
+    if (!isJPEG && !isPNG && !isWEBP) {
+      return json({ error: 'File does not appear to be a valid image' }, 400);
+    }
+
+    const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : 'jpg';
+    const safeName = (playerName || 'player').replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 50);
+    const safeRef = (refCode || '').replace(/[^a-zA-Z0-9\-]/g, '').slice(0, 20);
+    const fileName = `${safeRef}_${safeName}.${ext}`;
+    const caption = `🧾 Payment Receipt\n\nPlayer: ${safeName}\nRef: ${safeRef}`;
+
+    // Telegram credentials from environment variables
+    const TG_BOT_TOKEN = context.env.TG_BOT_TOKEN;
+    const TG_CHAT_ID = context.env.TG_CHAT_ID;
+    if (!TG_BOT_TOKEN || !TG_CHAT_ID) {
+      console.error('Telegram credentials not configured');
+      return json({ error: 'Upload service unavailable' }, 500);
+    }
 
     // Build multipart form data for Telegram sendPhoto
     const boundary = '----TgBound' + Date.now();
-
-    // Create form parts as text
     const chatIdPart = `--${boundary}\r\nContent-Disposition: form-data; name="chat_id"\r\n\r\n${TG_CHAT_ID}\r\n`;
     const captionPart = `--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${caption}\r\n`;
-    const fileHeader = `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="${fileName}"\r\nContent-Type: ${mimeType || 'image/jpeg'}\r\n\r\n`;
+    const fileHeader = `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="${fileName}"\r\nContent-Type: ${mimeType}\r\n\r\n`;
     const ending = `\r\n--${boundary}--\r\n`;
 
-    // Encode text parts
     const enc = new TextEncoder();
     const chatIdBytes = enc.encode(chatIdPart);
     const captionBytes = enc.encode(captionPart);
     const fileHeaderBytes = enc.encode(fileHeader);
     const endingBytes = enc.encode(ending);
 
-    // Combine all parts into single buffer
     const totalLen = chatIdBytes.length + captionBytes.length + fileHeaderBytes.length + bytes.length + endingBytes.length;
     const body = new Uint8Array(totalLen);
     let offset = 0;
@@ -52,13 +81,14 @@ export async function onRequest(context) {
     });
 
     const tgResult = await tgRes.json();
-
     if (!tgResult.ok) {
-      return json({ error: tgResult.description || 'Telegram upload failed' }, 500);
+      console.error('Telegram error:', tgResult.description);
+      return json({ error: 'Receipt upload failed. Please try again.' }, 500);
     }
 
     return json({ success: true });
   } catch (e) {
-    return json({ error: e.message }, 500);
+    console.error('Upload error:', e);
+    return json({ error: 'An error occurred. Please try again.' }, 500);
   }
 }

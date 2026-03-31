@@ -183,6 +183,12 @@ import Layout from '../layouts/Layout.astro';
   let sessionsData: any[] = [];
   let allPlayers: any[] = [];
 
+  // XSS protection — escape HTML in user-supplied data
+  function esc(text: any): string {
+    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(text || '').replace(/[&<>"']/g, m => map[m]);
+  }
+
   // --- STATS DASHBOARD ---
   async function loadStats() {
     try {
@@ -443,26 +449,27 @@ import Layout from '../layouts/Layout.astro';
       const status = p['Payment Status'] || 'Pending';
       const isOverdue = status === 'Overdue';
       const color = statusColors[status] || '#666';
+      const playerName = esc(p['Player Name']);
       const initial = (p['Player Name'] || '?')[0].toUpperCase();
       const waMsg = encodeURIComponent(`Hi ${p['Player Name']}, this is regarding your registration (Ref: ${ref}) for the game on ${date}. `);
-      const waLink = phone ? `https://wa.me/6${phone}?text=${waMsg}` : '#';
+      const waLink = phone ? `https://wa.me/6${esc(phone)}?text=${waMsg}` : '#';
 
       return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
         <div class="pca-top">
-          <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">${initial}</div>
+          <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">${esc(initial)}</div>
           <div class="pca-info">
-            <span class="pca-name">${p['Player Name']}</span>
-            <span class="pca-phone">${phone}</span>
-            ${ref ? `<span class="pca-ref">${ref}</span>` : ''}
+            <span class="pca-name">${playerName}</span>
+            <span class="pca-phone">${esc(phone)}</span>
+            ${ref ? `<span class="pca-ref">${esc(ref)}</span>` : ''}
           </div>
           <div class="pca-check">
-            <input type="checkbox" class="player-del" data-name="${p['Player Name']}" title="Select to delete" />
+            <input type="checkbox" class="player-del" data-name="${playerName}" title="Select to delete" />
           </div>
         </div>
         <div class="pca-controls">
           <div class="pca-field">
             <label>Status</label>
-            <select class="form-select p-status" data-name="${p['Player Name']}">
+            <select class="form-select p-status" data-name="${playerName}">
               <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
               <option value="Overdue" ${status === 'Overdue' ? 'selected' : ''}>Overdue</option>
               <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
@@ -472,7 +479,7 @@ import Layout from '../layouts/Layout.astro';
           </div>
           <div class="pca-field">
             <label>Refund</label>
-            <select class="form-select p-refund" data-name="${p['Player Name']}">
+            <select class="form-select p-refund" data-name="${playerName}">
               <option value="" ${!refund ? 'selected' : ''}>—</option>
               <option value="Pending Refund" ${refund === 'Pending Refund' ? 'selected' : ''}>Pending</option>
               <option value="Refunded" ${refund === 'Refunded' ? 'selected' : ''}>Done</option>
@@ -623,14 +630,14 @@ import Layout from '../layouts/Layout.astro';
       return `<div class="notif-card">
         <div class="notif-top">
           <div class="notif-info">
-            <span class="notif-name">${log['Player Name']}</span>
-            <span class="notif-meta">${log['Session Date'] || ''} · ${timeAgo}</span>
+            <span class="notif-name">${esc(log['Player Name'])}</span>
+            <span class="notif-meta">${esc(log['Session Date'] || '')} · ${esc(timeAgo)}</span>
           </div>
-          <span class="badge" style="background:${color}20;color:${color};font-size:0.58rem">${log.Status || '—'}</span>
+          <span class="badge" style="background:${color}20;color:${color};font-size:0.58rem">${esc(log.Status || '—')}</span>
         </div>
-        <p class="notif-msg">${(log.Message || '').replace(/\n/g, '<br>').slice(0, 200)}${(log.Message || '').length > 200 ? '...' : ''}</p>
+        <p class="notif-msg">${esc((log.Message || '').slice(0, 200))}${(log.Message || '').length > 200 ? '...' : ''}</p>
         <div class="notif-actions">
-          <span class="notif-sent-by">${log['Sent By'] || 'Admin'}</span>
+          <span class="notif-sent-by">${esc(log['Sent By'] || 'Admin')}</span>
           <a href="${waLink}" target="_blank" class="notif-resend">Resend</a>
         </div>
       </div>`;

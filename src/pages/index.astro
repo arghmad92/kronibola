@@ -92,6 +92,18 @@ import Layout from '../layouts/Layout.astro';
 <script>
   const API = '/api';
   const ADMIN_WA = '60126183827';
+  let uploadToken = '';
+
+  // Fetch upload token on page load (valid 30 min, auto-refreshed)
+  async function fetchUploadToken() {
+    try {
+      const res = await fetch(`${API}/upload-token`, { method: 'POST' });
+      const data = await res.json();
+      if (data.token) uploadToken = data.token;
+    } catch {}
+  }
+  fetchUploadToken();
+  setInterval(fetchUploadToken, 25 * 60 * 1000); // Refresh every 25 min
   let sessions: any[] = [];
   let currentSession: any = null;
   let players: any[] = [];
@@ -438,7 +450,7 @@ import Layout from '../layouts/Layout.astro';
             await fetch(`${API}/upload-receipt`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refCode, playerName: name, imageData: receiptData.base64, mimeType: receiptData.mimeType }),
+              body: JSON.stringify({ refCode, playerName: name, imageData: receiptData.base64, mimeType: receiptData.mimeType, uploadToken }),
             });
           } catch {}
           receiptData = null;
@@ -622,7 +634,7 @@ import Layout from '../layouts/Layout.astro';
               const res = await fetch(`${API}/upload-receipt`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refCode, playerName, imageData: reader.result, mimeType: file.type }),
+                body: JSON.stringify({ refCode, playerName, imageData: reader.result, mimeType: file.type, uploadToken }),
               });
               const data = await res.json();
               if (data.success) {
