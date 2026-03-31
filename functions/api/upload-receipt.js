@@ -1,5 +1,24 @@
 import { json } from './_sheets.js';
-import { verifyUploadToken } from './upload-token.js';
+
+async function verifyUploadToken(token, secret) {
+  if (!token || !secret) return false;
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  const [payloadB64, sig] = parts;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const expectedSig = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadB64));
+  const expectedStr = btoa(String.fromCharCode(...new Uint8Array(expectedSig))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  if (sig !== expectedStr) return false;
+  try {
+    const data = JSON.parse(atob(payloadB64));
+    if (data.purpose !== 'upload') return false;
+    if (Date.now() - data.iat > 30 * 60 * 1000) return false;
+    return true;
+  } catch { return false; }
+}
 
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
@@ -8,15 +27,15 @@ export async function onRequest(context) {
     const { refCode, playerName, imageData, mimeType, uploadToken } = await context.request.json();
     if (!imageData || !refCode) return json({ error: 'Missing receipt data' }, 400);
 
-    // Verify upload token (Option F)
+    // Verify upload token
     const secret = context.env.ADMIN_PASSWORD || 'kronibola';
     const validToken = await verifyUploadToken(uploadToken, secret);
     if (!validToken) return json({ error: 'Invalid or expired upload session. Please refresh the page.' }, 403);
 
-    // Validate MIME type (Option G)
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedMimes.includes(mimeType)) {
-      return json({ error: 'Only JPG, PNG, and WebP images are allowed' }, 400);
+    // Validate MIME type (Option G) — allow common mobile formats too
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/jpg'];
+    if (mimeType && !allowedMimes.includes(mimeType.toLowerCase())) {
+      return json({ error: 'Only image files are allowed' }, 400);
     }
 
     // Validate file size — base64 is ~33% larger than raw, so 6.7MB base64 ≈ 5MB file
@@ -29,14 +48,8 @@ export async function onRequest(context) {
     const bytes = new Uint8Array(binaryStr.length);
     for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
-    // Validate magic bytes (file signature)
-    if (bytes.length < 4) return json({ error: 'Invalid file' }, 400);
-    const isJPEG = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
-    const isPNG = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
-    const isWEBP = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
-    if (!isJPEG && !isPNG && !isWEBP) {
-      return json({ error: 'File does not appear to be a valid image' }, 400);
-    }
+    // Basic sanity check — file should have some content
+    if (bytes.length < 100) return json({ error: 'Invalid file' }, 400);
 
     const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : 'jpg';
     const safeName = (playerName || 'player').replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 50);

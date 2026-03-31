@@ -447,12 +447,21 @@ import Layout from '../layouts/Layout.astro';
           uploadStatus.style.display = '';
           uploadStatus.innerHTML = '<div class="alert alert--info" style="font-size:0.78rem">Uploading receipt...</div>';
           try {
-            await fetch(`${API}/upload-receipt`, {
+            // Ensure we have an upload token
+            if (!uploadToken) await fetchUploadToken();
+            const uploadRes = await fetch(`${API}/upload-receipt`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ refCode, playerName: name, imageData: receiptData.base64, mimeType: receiptData.mimeType, uploadToken }),
             });
-          } catch {}
+            const uploadData = await uploadRes.json();
+            if (!uploadData.success) {
+              console.error('Receipt upload failed:', uploadData.error);
+              uploadStatus.innerHTML = `<div class="alert alert--error" style="font-size:0.78rem">Receipt upload failed. You can resend it later via Check Status.</div>`;
+            }
+          } catch (err) {
+            console.error('Receipt upload error:', err);
+          }
           receiptData = null;
         }
 
