@@ -634,7 +634,13 @@ import Layout from '../layouts/Layout.astro';
             <strong>${r.sessionName}</strong><br>
             ${r.date} · ${r.time} · ${r.location}<br>
             Fee: RM ${r.fee}${refCode ? ` · Ref: ${refCode}` : ''}
-            ${r.carPlate ? `<br>Car Plate: <strong>${r.carPlate}</strong>${r.requireCarPlate ? ' <span style="font-size:0.7rem;color:var(--text-muted)">(Contact admin to change)</span>' : ''}` : ''}
+            ${r.carPlate || r.requireCarPlate ? `
+              <div class="status-carplate" style="margin-top:0.5rem;display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap">
+                <span style="font-size:0.78rem;color:var(--text-muted)">🚗 Car Plate:</span>
+                <input type="text" class="form-input status-plate-input" value="${r.carPlate || ''}" placeholder="e.g. ABC1234" data-ref="${refCode}" data-date="${r.date}" data-name="${r.name}" style="flex:1;min-width:100px;max-width:160px;padding:0.35rem 0.6rem;font-size:0.78rem;text-transform:uppercase" />
+                <button class="btn btn--primary btn--sm status-plate-save" style="padding:0.3rem 0.8rem;font-size:0.7rem">Save</button>
+              </div>
+            ` : ''}
           </div>
           ${needsReceipt ? `
             <div class="status-upload" style="margin-top:0.6rem">
@@ -652,6 +658,44 @@ import Layout from '../layouts/Layout.astro';
       // Save latest car plate to localStorage for auto-fill
       const latestPlate = regs.find((r: any) => r.carPlate);
       if (latestPlate) localStorage.setItem('kronibola_carplate', latestPlate.carPlate);
+
+      // Handle car plate save from status cards
+      result.querySelectorAll('.status-plate-save').forEach((btn: Element) => {
+        btn.addEventListener('click', async () => {
+          const saveBtn = btn as HTMLButtonElement;
+          const input = saveBtn.parentElement!.querySelector('.status-plate-input') as HTMLInputElement;
+          const refCode = input.dataset.ref || '';
+          const plate = input.value.replace(/\s/g, '').toUpperCase();
+          if (!plate) { alert('Please enter a car plate number'); return; }
+
+          saveBtn.disabled = true;
+          saveBtn.textContent = '...';
+          try {
+            const res = await fetch(`${API}/update-plate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refCode, carPlate: plate }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              saveBtn.textContent = 'Saved!';
+              saveBtn.style.background = 'var(--neon)';
+              saveBtn.style.color = '#000';
+              input.value = data.carPlate;
+              localStorage.setItem('kronibola_carplate', data.carPlate);
+              setTimeout(() => { saveBtn.textContent = 'Save'; saveBtn.style.background = ''; saveBtn.style.color = ''; saveBtn.disabled = false; }, 2000);
+            } else {
+              alert(data.error || 'Failed to update');
+              saveBtn.textContent = 'Save';
+              saveBtn.disabled = false;
+            }
+          } catch {
+            alert('Connection error. Please try again.');
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+          }
+        });
+      });
 
       // Handle receipt uploads from status cards
       result.querySelectorAll('.status-receipt-input').forEach((input: Element) => {
