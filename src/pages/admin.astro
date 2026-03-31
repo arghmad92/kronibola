@@ -73,7 +73,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="ap-row">
             <div class="form-group" style="flex:1">
               <label class="form-label">Name</label>
-              <input type="text" class="form-input" id="apName" placeholder="Player name" />
+              <input type="text" class="form-input" id="apName" placeholder="Player name" style="text-transform:capitalize" autocapitalize="words" />
             </div>
             <div class="form-group" style="flex:1">
               <label class="form-label">Phone</label>
@@ -559,7 +559,7 @@ import Layout from '../layouts/Layout.astro';
     const date = (document.getElementById('filterDate') as HTMLSelectElement).value;
     if (!date) { alert('Select a game first.'); return; }
 
-    const name = (document.getElementById('apName') as HTMLInputElement).value.trim();
+    const name = (document.getElementById('apName') as HTMLInputElement).value.trim().replace(/\s+/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     const phone = (document.getElementById('apPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
     const status = (document.getElementById('apStatus') as HTMLSelectElement).value;
     const fee = (document.getElementById('apFee') as HTMLInputElement).value;

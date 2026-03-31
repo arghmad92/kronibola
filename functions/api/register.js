@@ -35,7 +35,7 @@ export async function onRequest(context) {
 
     // Validate name
     if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
-    name = name.trim();
+    name = name.trim().replace(/\s+/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     if (name.length < 2 || name.length > 100) return json({ error: 'Name must be between 2 and 100 characters' }, 400);
 
     // Validate phone
