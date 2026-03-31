@@ -35,9 +35,11 @@ export async function onRequest(context) {
         fee: m.Amount,
         timestamp: m.Timestamp,
         refCode: m['Ref Code'] || '',
+        carPlate: m['Car Plate'] || '',
         sessionName: session ? session['Session Name'] : '',
         location: session ? session.Location : '',
         time: session ? session.Time : '',
+        requireCarPlate: session ? session['Require Car Plate'] === 'Yes' : false,
       };
     });
 

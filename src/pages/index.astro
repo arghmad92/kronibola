@@ -211,6 +211,17 @@ import Layout from '../layouts/Layout.astro';
       c.classList.toggle('active', i === idx);
     });
 
+    // Show/hide car plate field based on session requirement
+    const carPlateGroup = document.getElementById('carPlateGroup')!;
+    const regCarPlate = document.getElementById('regCarPlate') as HTMLInputElement;
+    if (currentSession['Require Car Plate'] === 'Yes') {
+      carPlateGroup.style.display = '';
+      const saved = localStorage.getItem('kronibola_carplate');
+      if (saved && !regCarPlate.value) regCarPlate.value = saved;
+    } else {
+      carPlateGroup.style.display = 'none';
+    }
+
     lineupEl.style.display = '';
     shareEl.style.display = '';
     loadPlayers(currentSession.Date);
@@ -397,6 +408,16 @@ import Layout from '../layouts/Layout.astro';
 
     if (!name || !phone) { showErr(errEl, 'Fill in both fields.'); return; }
     if (!/^\d{10,13}$/.test(phone)) { showErr(errEl, 'Invalid phone number.'); return; }
+
+    // Validate car plate if required
+    if (currentSession && currentSession['Require Car Plate'] === 'Yes') {
+      const plate = (document.getElementById('regCarPlate') as HTMLInputElement).value.replace(/\s/g, '').toUpperCase();
+      if (!plate) { showErr(errEl, 'Car plate number is required.'); return; }
+      if (plate.length < 2 || plate.length > 10 || !/^[A-Z0-9]+$/.test(plate) || !/[A-Z]/.test(plate) || !/[0-9]/.test(plate)) {
+        showErr(errEl, 'Invalid car plate. Must be 2-10 alphanumeric characters with at least 1 letter and 1 digit.'); return;
+      }
+    }
+
     if (players.some((p: any) => p['Player Name'].toLowerCase().trim() === name.toLowerCase())) {
       showErr(errEl, `"${name}" is already taken!`); return;
     }
@@ -407,13 +428,16 @@ import Layout from '../layouts/Layout.astro';
   async function submitRegistration() {
     const name = (document.getElementById('regName') as HTMLInputElement).value.trim();
     const phone = (document.getElementById('regPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const carPlate = (document.getElementById('regCarPlate') as HTMLInputElement).value.replace(/\s/g, '').toUpperCase();
     const errEl = document.getElementById('regError')!;
 
     try {
+      const regBody: any = { date: currentSession.Date, name, phone, fee: currentSession.Fee, sessionName: currentSession['Session Name'] };
+      if (carPlate) regBody.carPlate = carPlate;
       const res = await fetch(`${API}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: currentSession.Date, name, phone, fee: currentSession.Fee, sessionName: currentSession['Session Name'] }),
+        body: JSON.stringify(regBody),
       });
       const data = await res.json();
       if (data.success) {
@@ -440,6 +464,9 @@ import Layout from '../layouts/Layout.astro';
           ? `Hi Admin, I've joined the WAITLIST for ${currentSession['Session Name']} on ${currentSession.Date} at ${currentSession.Location}.\n\nName: ${name}\nRef: ${refCode}\n\nPlease notify me if a slot opens up.`
           : `Hi Admin, I've registered and paid for ${currentSession['Session Name']} on ${currentSession.Date} at ${currentSession.Location}.\n\nName: ${name}\nRef: ${refCode}\nFee: RM ${currentSession.Fee}\n\nReceipt uploaded on the app. Please verify my payment.`;
         (document.getElementById('waBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`;
+
+        // Save car plate to localStorage for auto-fill
+        if (carPlate) localStorage.setItem('kronibola_carplate', carPlate);
 
         // Upload receipt (mandatory for non-waitlist)
         if (receiptData) {
@@ -607,6 +634,7 @@ import Layout from '../layouts/Layout.astro';
             <strong>${r.sessionName}</strong><br>
             ${r.date} · ${r.time} · ${r.location}<br>
             Fee: RM ${r.fee}${refCode ? ` · Ref: ${refCode}` : ''}
+            ${r.carPlate ? `<br>Car Plate: <strong>${r.carPlate}</strong>${r.requireCarPlate ? ' <span style="font-size:0.7rem;color:var(--text-muted)">(Contact admin to change)</span>' : ''}` : ''}
           </div>
           ${needsReceipt ? `
             <div class="status-upload" style="margin-top:0.6rem">
@@ -620,6 +648,10 @@ import Layout from '../layouts/Layout.astro';
           ` : ''}
         </div>`;
       }).join('');
+
+      // Save latest car plate to localStorage for auto-fill
+      const latestPlate = regs.find((r: any) => r.carPlate);
+      if (latestPlate) localStorage.setItem('kronibola_carplate', latestPlate.carPlate);
 
       // Handle receipt uploads from status cards
       result.querySelectorAll('.status-receipt-input').forEach((input: Element) => {

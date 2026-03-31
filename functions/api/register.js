@@ -31,7 +31,7 @@ export async function onRequest(context) {
 
   try {
     const body = await context.request.json();
-    let { date, name, phone, fee, sessionName } = body;
+    let { date, name, phone, fee, sessionName, carPlate } = body;
 
     // Validate name
     if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
@@ -70,13 +70,26 @@ export async function onRequest(context) {
       (r) => String(r['Session Date']) === date && ['Paid', 'Pending', 'Overdue'].includes(r['Payment Status'])
     ).length;
 
+    // Validate car plate if session requires it
+    const requiresCarPlate = session && session['Require Car Plate'] === 'Yes';
+    let cleanedCarPlate = '';
+    if (requiresCarPlate) {
+      if (!carPlate || typeof carPlate !== 'string') return json({ error: 'Car plate number is required for this session' }, 400);
+      cleanedCarPlate = carPlate.replace(/\s/g, '').toUpperCase();
+      if (cleanedCarPlate.length < 2 || cleanedCarPlate.length > 10) return json({ error: 'Car plate must be 2-10 characters' }, 400);
+      if (!/^[A-Z0-9]+$/.test(cleanedCarPlate)) return json({ error: 'Car plate must contain only letters and numbers' }, 400);
+      if (!/[A-Z]/.test(cleanedCarPlate) || !/[0-9]/.test(cleanedCarPlate)) return json({ error: 'Car plate must contain at least 1 letter and 1 digit' }, 400);
+    } else if (carPlate && typeof carPlate === 'string') {
+      cleanedCarPlate = carPlate.replace(/\s/g, '').toUpperCase();
+    }
+
     const status = activeCount >= maxPlayers ? 'Waitlist' : 'Pending';
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const cleanPhone = "'" + phone.replace(/[-\s]/g, '');
     const refCode = generateRefCode(date, name);
 
-    // Columns: Session Date, Player Name, Phone, Payment Status, Amount, Timestamp, Ref Code, Refund
-    await appendRow(context.env, 'Registrations', [date, name, cleanPhone, status, fee, timestamp, refCode, '']);
+    // Columns: Session Date, Player Name, Phone, Payment Status, Amount, Timestamp, Ref Code, Refund, Car Plate
+    await appendRow(context.env, 'Registrations', [date, name, cleanPhone, status, fee, timestamp, refCode, '', cleanedCarPlate]);
 
     // Send Telegram notification
     const spotsLeft = maxPlayers - activeCount - (status === 'Waitlist' ? 0 : 1);
@@ -96,6 +109,7 @@ export async function onRequest(context) {
       `💳 Status: <b>${status}</b>`,
       `🔖 Ref: <code>${refCode}</code>`,
       `💰 Fee: RM ${fee}`,
+      cleanedCarPlate ? `🚗 Car Plate: <b>${escapeHtml(cleanedCarPlate)}</b>` : '',
       ``,
       spotsLeft > 0 ? `📊 <b>${spotsLeft}</b> spot${spotsLeft > 1 ? 's' : ''} remaining out of ${maxPlayers}` : `🔴 Game is <b>FULL</b> (${maxPlayers}/${maxPlayers})`,
     ].filter(Boolean).join('\n');

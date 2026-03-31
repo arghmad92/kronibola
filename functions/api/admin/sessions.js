@@ -21,7 +21,7 @@ export async function onRequest(context) {
   if (method === 'POST') {
     try {
       const { sessions } = await context.request.json();
-      const headers = ['Session Name', 'Date', 'Time', 'Location', 'Fee', 'Status', 'Max Players'];
+      const headers = ['Session Name', 'Date', 'Time', 'Location', 'Fee', 'Status', 'Max Players', 'Require Car Plate'];
       await writeSheet(context.env, 'Sessions', sessions, headers);
       return json({ success: true });
     } catch (e) {

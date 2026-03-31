@@ -171,6 +171,11 @@ const canonicalUrl = Astro.url.href;
             <label class="form-label">Phone Number</label>
             <input type="tel" class="form-input" id="regPhone" placeholder="e.g. 0123456789" />
           </div>
+          <div class="form-group" id="carPlateGroup" style="display:none">
+            <label class="form-label">Car Plate Number</label>
+            <input type="text" class="form-input" id="regCarPlate" placeholder="e.g. ABC1234" style="text-transform:uppercase" />
+            <p class="form-hint" style="color:var(--orange);font-size:0.72rem;margin-top:0.3rem">Failing to register your car plate number will result in denied entry for parking.</p>
+          </div>
           <button class="btn btn--primary" id="toStep2" style="width:100%">NEXT</button>
         </div>
 
