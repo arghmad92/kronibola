@@ -121,7 +121,7 @@ import Layout from '../layouts/Layout.astro';
     try {
       const res = await fetch(`${API}/sessions`);
       const data = await res.json();
-      sessions = (data.sessions || []).filter((s: any) => s.Status === 'Open');
+      sessions = (data.sessions || []).filter((s: any) => s.Status === 'Open').sort((a: any, b: any) => (a.Date || '').localeCompare(b.Date || ''));
 
       loadingEl.style.display = 'none';
 
