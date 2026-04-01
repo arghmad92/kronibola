@@ -797,6 +797,7 @@ import Layout from '../layouts/Layout.astro';
     position: sticky; top: 0; z-index: 100;
     background: rgba(6,6,6,0.92); backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border);
+    padding-top: env(safe-area-inset-top, 0px);
   }
   .header::after {
     content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 1px;

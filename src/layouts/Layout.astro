@@ -524,6 +524,7 @@ const canonicalUrl = Astro.url.href;
   /* Page header shared */
   .page-header {
     padding: 1.2rem 0 1rem;
+    padding-top: calc(1.2rem + env(safe-area-inset-top, 0px));
     border-bottom: 1px solid var(--border);
     position: relative;
   }
