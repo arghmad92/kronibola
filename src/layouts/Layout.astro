@@ -148,6 +148,21 @@ const canonicalUrl = Astro.url.href;
       </nav>
     )}
 
+    <!-- PWA: keep internal links within the app shell -->
+    <script is:inline>
+      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+        document.addEventListener('click', function(e) {
+          var link = e.target.closest('a[href]');
+          if (!link) return;
+          var href = link.getAttribute('href');
+          if (href && href.startsWith('/') && !link.getAttribute('target')) {
+            e.preventDefault();
+            window.location.href = href;
+          }
+        });
+      }
+    </script>
+
     <!-- Registration Modal -->
     <div class="modal-overlay" id="regModal" style="display:none">
       <div class="modal">
