@@ -575,14 +575,14 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('shareWaFilling')!.addEventListener('click', () => {
     const d = getShareData();
     if (!d) return;
-    const msg = `🔥 SLOTS FILLING UP!\n\n🏟 ${d.sessionName}\n📅 ${d.date}${d.time ? `\n⏰ ${d.time}` : ''}${d.loc ? `\n📍 ${d.loc}` : ''}\n👥 Only ${d.slotsLeft} slot${d.slotsLeft !== 1 ? 's' : ''} left!${d.wazeLink ? `\n🗺️ ${d.wazeLink}` : ''}\n\nDon't miss out 👉 kronibola.com`;
+    const msg = `🔥 SLOTS FILLING UP!\n\n🏟 ${d.sessionName}\n📅 ${d.date}${d.time ? `\n⏰ ${d.time}` : ''}${d.loc ? `\n📍 ${d.loc}` : ''}\n👥 Only *${d.slotsLeft} slot${d.slotsLeft !== 1 ? 's' : ''}* left!\n\nDon't miss out 👉 kronibola.com`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   });
 
   document.getElementById('shareWaLast')!.addEventListener('click', () => {
     const d = getShareData();
     if (!d) return;
-    const msg = `🚨 LAST ${d.slotsLeft} SLOT${d.slotsLeft !== 1 ? 'S' : ''}!\n\n🏟 ${d.sessionName} — ${d.date}${d.time ? `\n⏰ ${d.time}` : ''}${d.wazeLink ? `\n🗺️ ${d.wazeLink}` : ''}\n\nSiapa cepat dia dapat 👉 kronibola.com`;
+    const msg = `🚨 LAST *${d.slotsLeft} SLOT${d.slotsLeft !== 1 ? 'S' : ''}*!\n\n🏟 ${d.sessionName} — ${d.date}${d.time ? `\n⏰ ${d.time}` : ''}\n\nSiapa cepat dia dapat 👉 kronibola.com`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   });
 
