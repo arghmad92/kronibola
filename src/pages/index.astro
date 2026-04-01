@@ -425,7 +425,16 @@ import Layout from '../layouts/Layout.astro';
     showStep(2);
   });
 
+  let isSubmitting = false;
   async function submitRegistration() {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    // Disable both confirm buttons
+    const step3Btn = document.getElementById('toStep3') as HTMLButtonElement;
+    const wlBtn = document.getElementById('confirmWaitlist') as HTMLButtonElement;
+    if (step3Btn) { step3Btn.disabled = true; step3Btn.textContent = 'SUBMITTING...'; }
+    if (wlBtn) { wlBtn.disabled = true; wlBtn.textContent = 'SUBMITTING...'; }
+
     const name = (document.getElementById('regName') as HTMLInputElement).value.trim();
     const phone = (document.getElementById('regPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
     const carPlate = (document.getElementById('regCarPlate') as HTMLInputElement).value.replace(/\s/g, '').toUpperCase();
@@ -495,8 +504,16 @@ import Layout from '../layouts/Layout.astro';
         showStep(3);
       } else {
         showErr(errEl, data.error || 'Registration failed.');
+        isSubmitting = false;
+        if (step3Btn) { step3Btn.disabled = false; step3Btn.textContent = 'CONFIRM'; }
+        if (wlBtn) { wlBtn.disabled = false; wlBtn.textContent = 'JOIN WAITLIST'; }
       }
-    } catch { showErr(errEl, 'Network error.'); }
+    } catch {
+      showErr(errEl, 'Network error.');
+      isSubmitting = false;
+      if (step3Btn) { step3Btn.disabled = false; step3Btn.textContent = 'CONFIRM'; }
+      if (wlBtn) { wlBtn.disabled = false; wlBtn.textContent = 'JOIN WAITLIST'; }
+    }
   }
 
   document.getElementById('toStep3')!.addEventListener('click', () => {
