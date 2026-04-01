@@ -326,8 +326,8 @@ import Layout from '../layouts/Layout.astro';
     if (!timeStr) return null;
     // Take the start time (before any dash): "830pm-10pm" → "830pm"
     const start = timeStr.split('-')[0].trim();
-    // Match patterns: "830pm", "8:30pm", "8:30 PM", "20:30", "8pm"
-    const match = start.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)?$/i);
+    // Match patterns: "830pm", "8:30pm", "8.30pm", "8:30 PM", "20:30", "8pm"
+    const match = start.match(/^(\d{1,2})[:.]?(\d{2})?\s*(am|pm)?$/i);
     if (!match) return null;
     let hours = parseInt(match[1]);
     const minutes = parseInt(match[2] || '0');
