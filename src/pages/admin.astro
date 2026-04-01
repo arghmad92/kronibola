@@ -636,17 +636,25 @@ import Layout from '../layouts/Layout.astro';
       setTimeout(() => { btn.textContent = 'SAVE CHANGES'; btn.disabled = false; }, 3000);
 
       if (changedPlayers.length > 0) {
+        // Get session details for richer messages
+        const session = sessionsData.find((s: any) => s.Date === date);
+        const sessionName = session ? session['Session Name'] : 'Game';
+        const sessionTime = session ? session.Time : '';
+        const sessionLoc = session ? session.Location : '';
+        const wazeLink = sessionLoc ? `https://waze.com/ul?q=${encodeURIComponent(sessionLoc)}` : '';
+        const gameDetails = `📅 ${date}${sessionTime ? `\n⏰ ${sessionTime}` : ''}${sessionLoc ? `\n📍 ${sessionLoc}` : ''}${wazeLink ? `\n🗺️ ${wazeLink}` : ''}`;
+
         const wrap = document.getElementById('playersList')!;
         const box = document.createElement('div');
         box.className = 'notify-box';
         box.innerHTML = `<p class="notify-title">Notify players:</p>` +
           changedPlayers.map(cp => {
             const msgs: Record<string, string> = {
-              Paid: `Hi ${cp.name}! ✅ Your payment for the KroniBola game on ${date} has been confirmed. You're in! See you on the pitch. ⚽\n\nJoin our WhatsApp group if you haven't: https://chat.whatsapp.com/FsLEE1Bko9a9fGXd88UPgS`,
-              Pending: `Hi ${cp.name}! 🎉 Good news — a slot has opened up for the KroniBola game on ${date}.\n\nTo confirm your spot:\n1. Pay via Maybank MAE (scan QR at kronibola.com)\n2. Go to kronibola.com\n3. Tap "CHECK MY STATUS"\n4. Enter your phone number\n5. Upload your payment receipt\n\nPlease do this ASAP or your slot may be given to the next player.`,
-              Rejected: `Hi ${cp.name}, unfortunately your registration for the KroniBola game on ${date} has been cancelled. If you believe this is a mistake, please contact us via kronibola.com.`,
-              Waitlist: `Hi ${cp.name}, you've been moved to the waitlist for the KroniBola game on ${date}. We'll notify you immediately if a slot opens up.\n\n⚠️ Please do NOT pay yet — only pay when we confirm a slot for you.`,
-              Overdue: `Hi ${cp.name}, ⚠️ your payment for the KroniBola game on ${date} is overdue.\n\nTo keep your slot:\n1. Pay via Maybank MAE (scan QR at kronibola.com)\n2. Go to kronibola.com → tap "CHECK MY STATUS"\n3. Enter your phone number and upload your receipt\n\nPlease do this ASAP or your slot will be given to the next player.`,
+              Paid: `Hi ${cp.name}! ✅ Your payment for *${sessionName}* has been confirmed. You're in!\n\n${gameDetails}\n\nSee you on the pitch! ⚽\n\nJoin our WhatsApp group if you haven't: https://chat.whatsapp.com/FsLEE1Bko9a9fGXd88UPgS`,
+              Pending: `Hi ${cp.name}! 🎉 Good news — a slot has opened up for *${sessionName}*!\n\n${gameDetails}\n\nTo confirm your spot:\n1. Pay via Maybank MAE (scan QR at kronibola.com)\n2. Go to kronibola.com\n3. Tap "CHECK MY STATUS"\n4. Enter your phone number\n5. Upload your payment receipt\n\nPlease do this ASAP or your slot may be given to the next player.`,
+              Rejected: `Hi ${cp.name}, unfortunately your registration for *${sessionName}* on ${date} has been cancelled. If you believe this is a mistake, please contact us via kronibola.com.`,
+              Waitlist: `Hi ${cp.name}, you've been moved to the waitlist for *${sessionName}* on ${date}. We'll notify you immediately if a slot opens up.\n\n⚠️ Please do NOT pay yet — only pay when we confirm a slot for you.`,
+              Overdue: `Hi ${cp.name}, ⚠️ your payment for *${sessionName}* is overdue.\n\n${gameDetails}\n\nTo keep your slot:\n1. Pay via Maybank MAE (scan QR at kronibola.com)\n2. Go to kronibola.com → tap "CHECK MY STATUS"\n3. Enter your phone number and upload your receipt\n\nPlease do this ASAP or your slot will be given to the next player.`,
             };
             const msg = msgs[cp.newStatus] || `Hi ${cp.name}, your status for ${date} is now: ${cp.newStatus}.`;
             const link = cp.phone ? `https://wa.me/6${cp.phone}?text=${encodeURIComponent(msg)}` : '#';
