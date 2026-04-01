@@ -68,6 +68,15 @@ import Layout from '../layouts/Layout.astro';
             <option value="">Select a game...</option>
           </select>
         </div>
+        <!-- Share to WhatsApp -->
+        <div id="shareWaSection" style="display:none;margin-bottom:0.8rem">
+          <div class="share-wa-btns">
+            <button class="btn btn--wa btn--sm" id="shareWaOpen">🟢 Open</button>
+            <button class="btn btn--wa btn--sm" id="shareWaFilling">🔥 Filling Up</button>
+            <button class="btn btn--wa btn--sm" id="shareWaLast">🚨 Last Slots</button>
+            <button class="btn btn--wa btn--sm" id="shareWaFull">🔴 Full</button>
+          </div>
+        </div>
         <!-- Add player form -->
         <div class="add-player-box" id="addPlayerBox" style="display:none">
           <div class="ap-row">
@@ -100,6 +109,7 @@ import Layout from '../layouts/Layout.astro';
 
         <div id="playersList" class="card-list"></div>
         <button class="btn btn--primary" id="savePlayersBtn" style="width:100%;margin-top:1rem">SAVE CHANGES</button>
+
         <div id="carPlateSection" style="display:none">
           <div class="panel-top" style="margin-top:1rem">
             <h3 class="panel-title">CAR <span class="neon-text">PLATES</span></h3>
@@ -455,6 +465,7 @@ import Layout from '../layouts/Layout.astro';
     if (!filtered.length) {
       wrap.innerHTML = '<p class="empty-msg">No players for this game.</p>';
       document.getElementById('carPlateSection')!.style.display = 'none';
+      document.getElementById('shareWaSection')!.style.display = 'none';
       return;
     }
 
@@ -533,7 +544,54 @@ import Layout from '../layouts/Layout.astro';
     } else {
       carPlateSection.style.display = 'none';
     }
+
+    // Share to WhatsApp section — always show when players exist
+    document.getElementById('shareWaSection')!.style.display = '';
   }
+
+  // --- SHARE TO WHATSAPP ---
+  function getShareData() {
+    const date = (document.getElementById('filterDate') as HTMLSelectElement).value;
+    const session = sessionsData.find((s: any) => s.Date === date);
+    if (!session) return null;
+    const sessionName = session['Session Name'] || 'Game';
+    const time = session.Time || '';
+    const loc = session.Location || '';
+    const fee = session.Fee || '';
+    const max = parseInt(session['Max Players']) || 20;
+    const active = allPlayers.filter((p: any) => p['Session Date'] === date && ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])).length;
+    const slotsLeft = Math.max(0, max - active);
+    const wazeLink = loc ? `https://waze.com/ul?q=${encodeURIComponent(loc)}` : '';
+    return { sessionName, date, time, loc, fee, max, active, slotsLeft, wazeLink };
+  }
+
+  document.getElementById('shareWaOpen')!.addEventListener('click', () => {
+    const d = getShareData();
+    if (!d) return;
+    const msg = `⚽ GAME ON! 🟢\n\n🏟 ${d.sessionName}\n📅 ${d.date}${d.time ? `\n⏰ ${d.time}` : ''}${d.loc ? `\n📍 ${d.loc}` : ''}\n💰 RM${d.fee}/pax\n👥 ${d.max} slots available${d.wazeLink ? `\n🗺️ ${d.wazeLink}` : ''}\n\nRegister now 👉 kronibola.com\n\nFirst come first serve. Jangan lepas! 🔥`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  });
+
+  document.getElementById('shareWaFilling')!.addEventListener('click', () => {
+    const d = getShareData();
+    if (!d) return;
+    const msg = `🔥 SLOTS FILLING UP!\n\n🏟 ${d.sessionName}\n📅 ${d.date}${d.time ? `\n⏰ ${d.time}` : ''}${d.loc ? `\n📍 ${d.loc}` : ''}\n👥 Only ${d.slotsLeft} slot${d.slotsLeft !== 1 ? 's' : ''} left!${d.wazeLink ? `\n🗺️ ${d.wazeLink}` : ''}\n\nDon't miss out 👉 kronibola.com`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  });
+
+  document.getElementById('shareWaLast')!.addEventListener('click', () => {
+    const d = getShareData();
+    if (!d) return;
+    const msg = `🚨 LAST ${d.slotsLeft} SLOT${d.slotsLeft !== 1 ? 'S' : ''}!\n\n🏟 ${d.sessionName} — ${d.date}${d.time ? `\n⏰ ${d.time}` : ''}${d.wazeLink ? `\n🗺️ ${d.wazeLink}` : ''}\n\nSiapa cepat dia dapat 👉 kronibola.com`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  });
+
+  document.getElementById('shareWaFull')!.addEventListener('click', () => {
+    const d = getShareData();
+    if (!d) return;
+    const msg = `🔴 GAME FULL!\n\n🏟 ${d.sessionName} — ${d.date}\n👥 ${d.max}/${d.max} players confirmed\n\nWaitlist still open 👉 kronibola.com\nNext game loading soon... ⏳`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  });
 
   // --- COPY CAR PLATES ---
   document.getElementById('copyPlatesBtn')!.addEventListener('click', () => {
@@ -1003,6 +1061,14 @@ import Layout from '../layouts/Layout.astro';
   .notif-resend:hover { text-decoration: underline; }
 
   /* Car Plate Section */
+  .share-wa-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .share-wa-btns .btn { font-size: 0.72rem; padding: 0.6rem 0.5rem; white-space: nowrap; }
+
   .car-plate-item {
     padding: 0.6rem 0.8rem;
     background: var(--card);
