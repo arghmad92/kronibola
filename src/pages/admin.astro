@@ -51,7 +51,10 @@ import Layout from '../layouts/Layout.astro';
       <div class="tab-panel active" id="tab-schedule">
         <div class="panel-top">
           <h3 class="panel-title">UPCOMING <span class="neon-text">GAMES</span></h3>
-          <button class="btn btn--primary btn--sm" id="addSessionBtn">+ ADD</button>
+          <div style="display:flex;gap:0.4rem">
+            <button class="btn btn--outline btn--sm" id="autoCloseBtn" title="Close all played sessions">AUTO-CLOSE</button>
+            <button class="btn btn--primary btn--sm" id="addSessionBtn">+ ADD</button>
+          </div>
         </div>
         <div id="scheduleList" class="card-list"></div>
         <button class="btn btn--primary" id="saveScheduleBtn" style="width:100%;margin-top:1rem">SAVE SCHEDULE</button>
@@ -420,6 +423,22 @@ import Layout from '../layouts/Layout.astro';
       });
     });
   }
+
+  document.getElementById('autoCloseBtn')!.addEventListener('click', async () => {
+    const btn = document.getElementById('autoCloseBtn') as HTMLButtonElement;
+    btn.disabled = true; btn.textContent = 'CLOSING...';
+    try {
+      const res = await fetch(`${API}/cron-autoclose`, { method: 'POST', headers: { Authorization: adminToken } });
+      const data = await res.json();
+      if (data.success && data.closed > 0) {
+        btn.textContent = `CLOSED ${data.closed}`;
+        loadSchedule();
+      } else {
+        btn.textContent = 'NO CHANGES';
+      }
+      setTimeout(() => { btn.textContent = 'AUTO-CLOSE'; btn.disabled = false; }, 2000);
+    } catch { btn.textContent = 'ERROR'; setTimeout(() => { btn.textContent = 'AUTO-CLOSE'; btn.disabled = false; }, 2000); }
+  });
 
   document.getElementById('addSessionBtn')!.addEventListener('click', () => {
     sessionsData.push({ 'Session Name': '', Date: '', Time: '', Location: '', Fee: 10, Status: 'Open', 'Max Players': 15, 'Require Car Plate': 'No' });

@@ -89,11 +89,25 @@ import Layout from '../layouts/Layout.astro';
     <div class="current-section">
       <h2 class="section-title">OUR <span class="neon-text">PARTNERS</span></h2>
       <div class="sponsors-grid" id="sponsorsGrid">
-        <div class="sponsor-empty glass">
-          <span class="empty-icon">&#127942;</span>
-          <p>Your brand could be here.</p>
-          <p class="empty-sub">Be the first to partner with KroniBola!</p>
+
+        <div class="sponsor-card glass">
+          <div class="sponsor-logo-wrap sponsor-logo--boostplus">
+            <img src="/sponsor-boostplus.jpeg" alt="Boost+" class="sponsor-logo" />
+          </div>
+          <h4 class="sponsor-name">Boost+</h4>
+          <p class="sponsor-desc">Official hydration partner. Electrolyte tablets keeping our players fuelled every session.</p>
+          <span class="sponsor-tier-badge tier-badge--neon">SEASON PARTNER</span>
         </div>
+
+        <div class="sponsor-card glass">
+          <div class="sponsor-logo-wrap sponsor-logo--efs">
+            <img src="/sponsor-efs.png" alt="EFS SureGrip" class="sponsor-logo" />
+          </div>
+          <h4 class="sponsor-name">EFS SureGrip</h4>
+          <p class="sponsor-desc">Anti-slip grip socks for first 10 registered players. Premium performance gear on the pitch.</p>
+          <span class="sponsor-tier-badge">GAME SPONSOR</span>
+        </div>
+
       </div>
     </div>
 
@@ -177,13 +191,34 @@ import Layout from '../layouts/Layout.astro';
   .current-section { padding: 1.5rem 0; }
   .sponsors-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
 
-  .sponsor-empty {
-    grid-column: span 2; padding: 2.5rem 1rem; text-align: center;
-    border-style: dashed; border-color: var(--border-light);
+  .sponsor-card {
+    padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+    text-align: center; transition: transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.4s ease both;
   }
-  .empty-icon { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
-  .sponsor-empty p { font-size: 0.88rem; color: var(--text-secondary); }
-  .empty-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+  .sponsor-card:nth-child(1) { animation-delay: 0s; }
+  .sponsor-card:nth-child(2) { animation-delay: 0.1s; }
+  .sponsor-card:hover { transform: translateY(-2px); border-color: rgba(0,255,65,0.2); }
+
+  .sponsor-logo-wrap {
+    width: 80px; height: 80px; border-radius: 50%; overflow: hidden;
+    display: flex; justify-content: center; align-items: center;
+    border: 2px solid var(--border);
+  }
+  .sponsor-logo--boostplus { background: #C8FF00; }
+  .sponsor-logo--efs { background: #ffffff; }
+  .sponsor-logo { width: 100%; height: 100%; object-fit: cover; }
+  .sponsor-logo--efs .sponsor-logo { width: 70%; height: auto; object-fit: contain; }
+
+  .sponsor-name {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight: 700; color: #fff;
+  }
+  .sponsor-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
+  .sponsor-tier-badge {
+    display: inline-block; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em;
+    padding: 0.2rem 0.6rem; border-radius: 6px; margin-top: 0.2rem;
+    background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border);
+  }
 
   /* CTA */
   .sponsor-cta {

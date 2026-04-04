@@ -1,3 +1,10 @@
 name = "kronibola"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "./dist"
+
+# Auto-close played sessions every 30 minutes
+# Note: Cron triggers require a separate Workers deployment.
+# For Cloudflare Pages, use the manual API endpoint /api/cron-autoclose
+# or deploy _scheduled.js as a standalone Worker with:
+#   [triggers]
+#   crons = ["*/30 * * * *"]

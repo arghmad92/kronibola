@@ -492,11 +492,11 @@ import Layout from '../layouts/Layout.astro';
             });
             const uploadData = await uploadRes.json();
             if (!uploadData.success) {
-              console.error('Receipt upload failed:', uploadData.error);
+              // Receipt upload failed — user sees inline error message
               uploadStatus.innerHTML = `<div class="alert alert--error" style="font-size:0.78rem">Receipt upload failed. You can resend it later via Check Status.</div>`;
             }
           } catch (err) {
-            console.error('Receipt upload error:', err);
+            // Receipt upload network error — silently handled
           }
           receiptData = null;
         }
