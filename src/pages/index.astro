@@ -902,10 +902,12 @@ import Layout from '../layouts/Layout.astro';
   }
 
   :global(.match-card.active .mc-countdown),
-  :global(.match-card.active .mc-slots),
   :global(.match-card.active .mc-register),
   :global(.match-card.active .mc-maps-btn) {
     display: flex !important;
+  }
+  :global(.match-card.active .mc-slots) {
+    display: block !important;
   }
 
   :global(.match-card.active .mc-register) {
