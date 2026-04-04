@@ -461,9 +461,33 @@ import Layout from '../layouts/Layout.astro';
       const res = await fetch(`${API}/admin/players`, { headers: { Authorization: adminToken } });
       allPlayers = (await res.json()).players || [];
       const dates = [...new Set(allPlayers.map((p: any) => p['Session Date']))];
+
+      // Split into open and closed sessions
+      const openDates = dates.filter(d => sessionsData.some((s: any) => s.Date === d && s.Status === 'Open'));
+      const closedDates = dates.filter(d => !openDates.includes(d));
+
+      // Sort each group by date descending (newest first)
+      const sortDesc = (a: string, b: string) => b.localeCompare(a);
+      openDates.sort(sortDesc);
+      closedDates.sort(sortDesc);
+
       const sel = document.getElementById('filterDate') as HTMLSelectElement;
-      sel.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
-      if (dates.length) { sel.value = dates[0] as string; renderPlayers(dates[0] as string); }
+      let html = '';
+      if (openDates.length) {
+        html += `<optgroup label="Upcoming">`;
+        html += openDates.map(d => `<option value="${d}">${d}</option>`).join('');
+        html += `</optgroup>`;
+      }
+      if (closedDates.length) {
+        html += `<optgroup label="Past Games">`;
+        html += closedDates.map(d => `<option value="${d}">${d}</option>`).join('');
+        html += `</optgroup>`;
+      }
+      sel.innerHTML = html;
+
+      // Default to first open game, or first closed if none open
+      const defaultDate = openDates[0] || closedDates[0];
+      if (defaultDate) { sel.value = defaultDate as string; renderPlayers(defaultDate as string); }
     } catch {}
   }
 
@@ -480,7 +504,14 @@ import Layout from '../layouts/Layout.astro';
 
   function renderPlayers(date: string) {
     const wrap = document.getElementById('playersList')!;
-    const filtered = allPlayers.filter((p: any) => p['Session Date'] === date);
+    const filtered = allPlayers
+      .filter((p: any) => p['Session Date'] === date)
+      .sort((a: any, b: any) => {
+        // Latest registered first
+        const tA = a.Timestamp || '';
+        const tB = b.Timestamp || '';
+        return tB.localeCompare(tA);
+      });
     if (!filtered.length) {
       wrap.innerHTML = '<p class="empty-msg">No players for this game.</p>';
       document.getElementById('carPlateSection')!.style.display = 'none';
