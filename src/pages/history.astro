@@ -71,8 +71,10 @@ import Layout from '../layouts/Layout.astro';
             <svg class="hc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="hc-expand">
-            <div class="hc-divider"></div>
-            <div class="hc-player-grid">${playerGrid}</div>
+            <div>
+              <div class="hc-divider"></div>
+              <div class="hc-player-grid">${playerGrid}</div>
+            </div>
           </div>
         </div>`;
       }).join('');
@@ -126,7 +128,8 @@ import Layout from '../layouts/Layout.astro';
   :global(.hc-date) { font-size: 0.72rem; color: var(--text-secondary); display: block; }
   :global(.hc-players) { font-size: 0.68rem; color: var(--neon); font-weight: 600; }
 
-  :global(.history-card) { cursor: pointer; transition: border-color 0.2s; }
+  :global(.history-card) { cursor: pointer; transition: border-color 0.2s, overflow 0s 0.35s; }
+  :global([data-expanded="true"].history-card) { overflow: visible; transition: border-color 0.2s, overflow 0s; }
   :global(.history-card:hover) { border-color: rgba(0,255,65,0.15); }
 
   :global(.hc-summary) { display: flex; align-items: center; justify-content: space-between; }
@@ -144,11 +147,12 @@ import Layout from '../layouts/Layout.astro';
   :global([data-expanded="true"] .hc-chevron) { transform: rotate(180deg); }
 
   :global(.hc-expand) {
-    max-height: 0; overflow: hidden; opacity: 0;
-    transition: max-height 0.35s ease, opacity 0.25s ease;
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows 0.35s ease, opacity 0.25s ease;
   }
+  :global(.hc-expand > *) { overflow: hidden; }
   :global([data-expanded="true"] .hc-expand) {
-    max-height: 600px; opacity: 1;
+    grid-template-rows: 1fr; opacity: 1;
   }
 
   :global(.hc-divider) {
