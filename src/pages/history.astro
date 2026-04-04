@@ -41,7 +41,18 @@ import Layout from '../layouts/Layout.astro';
         }).join('');
         const extra = gamePlayers.length > 10 ? `<span class="h-more">+${gamePlayers.length - 10}</span>` : '';
 
-        return `<div class="history-card glass" style="animation-delay:${si * 0.08}s">
+        // Full player grid for expanded view
+        const playerGrid = gamePlayers.map((p: any, i: number) => {
+          const name = p['Player Name'] || 'Unknown';
+          const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+          const c = colors[i % colors.length];
+          return `<div class="hc-player">
+            <div class="hc-player-avatar" style="background:${c}20;color:${c};border-color:${c}40">${initials}</div>
+            <span class="hc-player-name">${name}</span>
+          </div>`;
+        }).join('');
+
+        return `<div class="history-card glass" style="animation-delay:${si * 0.08}s" data-expanded="false">
           <div class="hc-accent"></div>
           <div class="hc-top">
             <div>
@@ -55,9 +66,24 @@ import Layout from '../layouts/Layout.astro';
               <span class="hc-players">${gamePlayers.length} players</span>
             </div>
           </div>
-          <div class="hc-avatars">${avatars}${extra}</div>
+          <div class="hc-summary">
+            <div class="hc-avatars">${avatars}${extra}</div>
+            <svg class="hc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="hc-expand">
+            <div class="hc-divider"></div>
+            <div class="hc-player-grid">${playerGrid}</div>
+          </div>
         </div>`;
       }).join('');
+
+      // Click to expand/collapse
+      list.querySelectorAll('.history-card').forEach((card: Element) => {
+        card.addEventListener('click', () => {
+          const expanded = card.getAttribute('data-expanded') === 'true';
+          card.setAttribute('data-expanded', expanded ? 'false' : 'true');
+        });
+      });
     } catch {
       document.getElementById('loading')!.innerHTML = '<p style="color:var(--red)">Failed to load.</p>';
     }
@@ -100,10 +126,55 @@ import Layout from '../layouts/Layout.astro';
   :global(.hc-date) { font-size: 0.72rem; color: var(--text-secondary); display: block; }
   :global(.hc-players) { font-size: 0.68rem; color: var(--neon); font-weight: 600; }
 
-  :global(.hc-avatars) { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; }
+  :global(.history-card) { cursor: pointer; transition: border-color 0.2s; }
+  :global(.history-card:hover) { border-color: rgba(0,255,65,0.15); }
+
+  :global(.hc-summary) { display: flex; align-items: center; justify-content: space-between; }
+  :global(.hc-avatars) { display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap; flex: 1; }
   :global(.h-avatar) {
     width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-size: 0.62rem; font-weight: 800; border: 1.5px solid; font-family: 'Space Grotesk';
   }
   :global(.h-more) { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.2rem; font-weight: 600; }
+
+  :global(.hc-chevron) {
+    color: var(--text-muted); flex-shrink: 0; margin-left: 0.5rem;
+    transition: transform 0.3s ease;
+  }
+  :global([data-expanded="true"] .hc-chevron) { transform: rotate(180deg); }
+
+  :global(.hc-expand) {
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.25s ease;
+  }
+  :global([data-expanded="true"] .hc-expand) {
+    max-height: 600px; opacity: 1;
+  }
+
+  :global(.hc-divider) {
+    height: 1px; background: var(--border); margin: 0.8rem 0;
+  }
+
+  :global(.hc-player-grid) {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 0.4rem;
+  }
+
+  :global(.hc-player) {
+    display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+    padding: 0.6rem 0.3rem; border-radius: 12px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  }
+
+  :global(.hc-player-avatar) {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800; border: 2px solid;
+    font-family: 'Space Grotesk';
+  }
+
+  :global(.hc-player-name) {
+    font-size: 0.62rem; font-weight: 600; color: var(--text-secondary);
+    text-align: center; line-height: 1.2; max-width: 80px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 </style>
