@@ -16,7 +16,7 @@ export async function onRequest(context) {
     const data = await res.json();
     if (data.error) return json({ error: data.error.message }, 500);
 
-    const photos = (data.files || []).map((f) => ({
+    const photos = (data.files || []).slice(0, 12).map((f) => ({
       id: f.id,
       name: f.name,
       date: f.createdTime ? f.createdTime.split('T')[0] : '',

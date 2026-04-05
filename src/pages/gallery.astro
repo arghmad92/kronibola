@@ -6,13 +6,19 @@ import Layout from '../layouts/Layout.astro';
   <header class="page-header">
     <div class="container">
       <h1 class="page-title">PHOTO <span class="neon-text">GALLERY</span></h1>
-      <p class="page-sub">Moments from the pitch</p>
+      <p class="page-sub">Highlights from the pitch</p>
     </div>
   </header>
 
   <main class="container">
     <div id="loading" class="loading"><div class="loader"></div></div>
     <div id="galleryGrid" class="gallery-grid"></div>
+    <div id="viewAllWrap" style="display:none" class="view-all-wrap">
+      <a href="https://drive.google.com/drive/folders/1YRyVk8whpJeSntTYYfLDvHbb1pbCLiJd?usp=sharing" target="_blank" class="btn btn--primary view-all-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        VIEW ALL PHOTOS
+      </a>
+    </div>
     <p id="empty" style="display:none" class="empty">No photos yet. Check back after game day!</p>
   </main>
 
@@ -37,6 +43,7 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('empty')!.style.display = '';
         return;
       }
+      document.getElementById('viewAllWrap')!.style.display = '';
 
       const grid = document.getElementById('galleryGrid')!;
       grid.innerHTML = photos.map((p: any, i: number) => `
@@ -125,6 +132,9 @@ import Layout from '../layouts/Layout.astro';
   .lightbox-img { max-width: 90vw; max-height: 75vh; border-radius: 16px; object-fit: contain; transform: scale(0.95); transition: transform 0.3s; }
   .lightbox.active .lightbox-img { transform: scale(1); }
   .lightbox-caption { margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary); text-align: center; max-width: 500px; }
+
+  .view-all-wrap { text-align: center; padding: 0.5rem 0 2rem; }
+  .view-all-btn { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
 
   @media (max-width: 360px) { .gallery-grid { columns: 1; } }
   @media (min-width: 641px) { .gallery-grid { columns: 3; } }
