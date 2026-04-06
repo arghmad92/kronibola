@@ -90,8 +90,33 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <div class="form-group">
           <label class="form-label">Size & Quantity</label>
-          <p class="form-hint" style="margin-bottom:0.4rem">Select quantity for each size you want</p>
-          <div class="size-picker" id="sizePicker"></div>
+          <div class="add-size-row">
+            <select class="form-select" id="addSize" style="flex:2">
+              <option value="XXS">XXS</option>
+              <option value="XS">XS</option>
+              <option value="S">S</option>
+              <option value="M" selected>M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="2XL">2XL</option>
+              <option value="3XL">3XL</option>
+              <option value="4XL">4XL</option>
+              <option value="5XL">5XL</option>
+              <option value="6XL">6XL</option>
+              <option value="7XL">7XL</option>
+              <option value="8XL">8XL</option>
+            </select>
+            <select class="form-select" id="addQty" style="flex:1">
+              <option value="1">×1</option>
+              <option value="2">×2</option>
+              <option value="3">×3</option>
+              <option value="4">×4</option>
+              <option value="5">×5</option>
+            </select>
+            <button type="button" class="btn btn--outline btn--sm" id="addSizeBtn">ADD</button>
+          </div>
+          <div class="size-chips" id="sizeChips"></div>
+          <p class="size-empty" id="sizeEmpty">No sizes added yet</p>
         </div>
         <div class="form-group">
           <label class="form-label">Delivery</label>
@@ -281,44 +306,46 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('closeReceipt')!.addEventListener('click', () => closeModal(orderModal));
   orderModal.addEventListener('click', (e) => { if (e.target === orderModal) closeModal(orderModal); });
 
-  // --- Size picker ---
-  const ALL_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
-  const sizePicker = document.getElementById('sizePicker')!;
+  // --- Size chips ---
+  let orderItems: { size: string; qty: number }[] = [];
+  const chipsEl = document.getElementById('sizeChips')!;
+  const emptyEl = document.getElementById('sizeEmpty')!;
 
-  sizePicker.innerHTML = ALL_SIZES.map(s => `
-    <div class="sp-row" data-size="${s}">
-      <span class="sp-size">${s}</span>
-      <div class="sp-qty">
-        <button type="button" class="sp-btn sp-minus" data-size="${s}">−</button>
-        <span class="sp-count" id="qty-${s}">0</span>
-        <button type="button" class="sp-btn sp-plus" data-size="${s}">+</button>
-      </div>
-    </div>
-  `).join('');
-
-  function getSizeOrders(): { size: string; qty: number }[] {
-    return ALL_SIZES
-      .map(s => ({ size: s, qty: parseInt(document.getElementById(`qty-${s}`)!.textContent || '0') }))
-      .filter(o => o.qty > 0);
-  }
-
-  function getTotalQty(): number {
-    return getSizeOrders().reduce((sum, o) => sum + o.qty, 0);
-  }
-
-  sizePicker.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest('.sp-btn') as HTMLElement | null;
-    if (!btn) return;
-    const size = btn.dataset.size!;
-    const countEl = document.getElementById(`qty-${size}`)!;
-    let val = parseInt(countEl.textContent || '0');
-    if (btn.classList.contains('sp-plus') && val < 5) val++;
-    if (btn.classList.contains('sp-minus') && val > 0) val--;
-    countEl.textContent = String(val);
-    const row = btn.closest('.sp-row')!;
-    if (val > 0) row.classList.add('sp-row--active'); else row.classList.remove('sp-row--active');
+  function renderChips() {
+    if (!orderItems.length) {
+      chipsEl.innerHTML = '';
+      emptyEl.style.display = '';
+    } else {
+      emptyEl.style.display = 'none';
+      chipsEl.innerHTML = orderItems.map((item, i) =>
+        `<span class="size-chip">${item.size} <span class="chip-qty">×${item.qty}</span><button type="button" class="chip-remove" data-idx="${i}">×</button></span>`
+      ).join('');
+    }
     updateTotal();
+  }
+
+  document.getElementById('addSizeBtn')!.addEventListener('click', () => {
+    const size = (document.getElementById('addSize') as HTMLSelectElement).value;
+    const qty = parseInt((document.getElementById('addQty') as HTMLSelectElement).value) || 1;
+    const existing = orderItems.find(o => o.size === size);
+    if (existing) {
+      existing.qty = Math.min(existing.qty + qty, 5);
+    } else {
+      orderItems.push({ size, qty });
+    }
+    renderChips();
   });
+
+  chipsEl.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.chip-remove') as HTMLElement | null;
+    if (!btn) return;
+    const idx = parseInt(btn.dataset.idx || '0');
+    orderItems.splice(idx, 1);
+    renderChips();
+  });
+
+  function getSizeOrders() { return orderItems; }
+  function getTotalQty() { return orderItems.reduce((sum, o) => sum + o.qty, 0); }
 
   // --- Delivery & Total calculation ---
   const totalEl = document.getElementById('orderTotal')!;
@@ -594,29 +621,27 @@ import Layout from '../layouts/Layout.astro';
   /* Form row */
   .form-row { display: flex; gap: 0.6rem; }
 
-  /* Size picker */
-  :global(.size-picker) { display: flex; flex-direction: column; gap: 0.3rem; }
-  :global(.sp-row) {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.5rem 0.8rem; border-radius: 10px;
-    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
-    transition: border-color 0.2s, background 0.2s;
+  /* Add size row */
+  .add-size-row { display: flex; gap: 0.4rem; align-items: center; }
+
+  /* Size chips */
+  :global(.size-chips) { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+  :global(.size-chip) {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.4rem 0.7rem; border-radius: 10px;
+    background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.2);
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.78rem; font-weight: 700;
+    color: var(--neon); animation: chipIn 0.2s ease;
   }
-  :global(.sp-row--active) { border-color: rgba(0,255,65,0.25); background: rgba(0,255,65,0.04); }
-  :global(.sp-size) { font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700; min-width: 40px; }
-  :global(.sp-qty) { display: flex; align-items: center; gap: 0.6rem; }
-  :global(.sp-btn) {
-    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04); color: var(--text-secondary);
-    font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
+  @keyframes chipIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
+  :global(.chip-qty) { color: var(--text-secondary); font-weight: 600; }
+  :global(.chip-remove) {
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    font-size: 0.9rem; padding: 0 0.15rem; line-height: 1; margin-left: 0.1rem;
+    transition: color 0.15s;
   }
-  :global(.sp-btn:hover) { border-color: var(--neon); color: var(--neon); background: rgba(0,255,65,0.06); }
-  :global(.sp-count) {
-    font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 700;
-    min-width: 18px; text-align: center; color: var(--text-secondary);
-  }
-  :global(.sp-row--active .sp-count) { color: var(--neon); }
+  :global(.chip-remove:hover) { color: var(--red); }
+  .size-empty { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.4rem; }
 
   /* Delivery options */
   .delivery-options { display: flex; flex-direction: column; gap: 0.4rem; }
