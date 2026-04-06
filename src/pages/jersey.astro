@@ -186,6 +186,16 @@ import Layout from '../layouts/Layout.astro';
   const PRICE = 50;
   const ADMIN_WA = '60126183827';
   let receiptData: { base64: string; mimeType: string } | null = null;
+  let uploadToken = '';
+
+  async function fetchUploadToken() {
+    try {
+      const res = await fetch('/api/upload-token', { method: 'POST' });
+      const data = await res.json();
+      if (data.token) uploadToken = data.token;
+    } catch {}
+  }
+  fetchUploadToken();
 
   // XSS protection
   function esc(text: any): string {
@@ -316,6 +326,19 @@ import Layout from '../layouts/Layout.astro';
 
       const refCode = data.refCode;
       const total = data.total;
+
+      // Upload receipt image
+      if (receiptData) {
+        try {
+          if (!uploadToken) await fetchUploadToken();
+          await fetch('/api/upload-receipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refCode, playerName: name, imageData: receiptData.base64, mimeType: receiptData.mimeType, uploadToken }),
+          });
+        } catch {}
+        receiptData = null;
+      }
 
       // Fill receipt
       document.getElementById('rcptRef')!.textContent = refCode;
