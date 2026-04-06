@@ -5,6 +5,18 @@ function escapeHtml(text) {
   return String(text || '').replace(/[&<>"']/g, m => map[m]);
 }
 
+// Strip HTML tags and dangerous characters
+function sanitize(text) {
+  return String(text || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim();
+}
+
+// Prevent Google Sheets formula injection
+function sheetSafe(value) {
+  const s = String(value || '');
+  if (/^[=+\-@\t\r]/.test(s)) return "'" + s;
+  return s;
+}
+
 async function sendTelegramNotification(env, message) {
   const token = env.TG_BOT_TOKEN;
   const chatId = env.TG_CHAT_ID;
@@ -35,8 +47,9 @@ export async function onRequest(context) {
 
     // Validate name
     if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
-    name = name.trim().replace(/\s+/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    name = sanitize(name).replace(/\s+/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     if (name.length < 2 || name.length > 100) return json({ error: 'Name must be between 2 and 100 characters' }, 400);
+    if (!/^[a-zA-Z\s'.@\-]+$/.test(name)) return json({ error: 'Name contains invalid characters' }, 400);
 
     // Validate phone
     if (!phone || typeof phone !== 'string') return json({ error: 'Phone number is required' }, 400);
@@ -46,6 +59,7 @@ export async function onRequest(context) {
 
     // Validate date
     if (!date || typeof date !== 'string' || !date.trim()) return json({ error: 'Session date is required' }, 400);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) return json({ error: 'Invalid date format' }, 400);
 
     // Validate fee
     const feeNum = Number(fee);
@@ -89,7 +103,7 @@ export async function onRequest(context) {
     const refCode = generateRefCode(date, name);
 
     // Columns: Session Date, Player Name, Phone, Payment Status, Amount, Timestamp, Ref Code, Refund, Car Plate
-    await appendRow(context.env, 'Registrations', [date, name, cleanPhone, status, fee, timestamp, refCode, '', cleanedCarPlate]);
+    await appendRow(context.env, 'Registrations', [date, sheetSafe(name), cleanPhone, status, fee, timestamp, refCode, '', cleanedCarPlate]);
 
     // Send Telegram notification
     const spotsLeft = maxPlayers - activeCount - (status === 'Waitlist' ? 0 : 1);

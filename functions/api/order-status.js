@@ -4,7 +4,7 @@ export async function onRequest(context) {
   try {
     const url = new URL(context.request.url);
     const phone = (url.searchParams.get('phone') || '').replace(/[\s\-+'"]/g, '');
-    if (!phone || phone.length < 10) return json({ error: 'Valid phone number required' }, 400);
+    if (!phone || !/^\d+$/.test(phone) || phone.length < 10 || phone.length > 15) return json({ error: 'Valid phone number required (10-15 digits)' }, 400);
 
     const orders = await readSheet(context.env, 'Orders');
     const matches = orders.filter((o) => {

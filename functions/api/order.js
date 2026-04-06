@@ -5,6 +5,18 @@ function escapeHtml(text) {
   return String(text || '').replace(/[&<>"']/g, m => map[m]);
 }
 
+// Strip HTML tags and dangerous characters
+function sanitize(text) {
+  return String(text || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim();
+}
+
+// Prevent Google Sheets formula injection — prefix dangerous first chars
+function sheetSafe(value) {
+  const s = String(value || '');
+  if (/^[=+\-@\t\r]/.test(s)) return "'" + s;
+  return s;
+}
+
 async function sendTelegramNotification(env, message) {
   const token = env.TG_BOT_TOKEN;
   const chatId = env.TG_CHAT_ID;
@@ -40,8 +52,9 @@ export async function onRequest(context) {
 
     // Validate name
     if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
-    name = name.trim().replace(/\s+/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    name = sanitize(name).replace(/\s+/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     if (name.length < 2 || name.length > 100) return json({ error: 'Name must be between 2 and 100 characters' }, 400);
+    if (!/^[a-zA-Z\s'.@\-]+$/.test(name)) return json({ error: 'Name contains invalid characters' }, 400);
 
     // Validate phone
     if (!phone || typeof phone !== 'string') return json({ error: 'Phone number is required' }, 400);
@@ -57,8 +70,9 @@ export async function onRequest(context) {
     if (qty < 1 || qty > 5) return json({ error: 'Quantity must be between 1 and 5' }, 400);
 
     // Validate delivery
+    if (delivery && !['pickup', 'postage'].includes(delivery)) return json({ error: 'Invalid delivery option' }, 400);
     const isPostage = delivery === 'postage';
-    const cleanAddress = isPostage ? (address || '').trim() : '';
+    const cleanAddress = isPostage ? sanitize(address).slice(0, 500) : '';
     if (isPostage && cleanAddress.length < 10) return json({ error: 'Full address required for postage delivery' }, 400);
 
     const total = PRICE * qty + (isPostage ? POSTAGE : 0);
@@ -69,7 +83,7 @@ export async function onRequest(context) {
     const deliveryLabel = isPostage ? 'Postage' : 'Pickup';
 
     // Columns: Order Date, Player Name, Phone, Size, Quantity, Total, Payment Status, Timestamp, Ref Code, Delivery, Address
-    await appendRow(context.env, 'Orders', [orderDate, name, phoneForSheet, size, qty, total, 'Pending', timestamp, refCode, deliveryLabel, cleanAddress]);
+    await appendRow(context.env, 'Orders', [orderDate, sheetSafe(name), phoneForSheet, size, qty, total, 'Pending', timestamp, refCode, deliveryLabel, sheetSafe(cleanAddress)]);
 
     // Send Telegram notification
     const tgMsg = [
