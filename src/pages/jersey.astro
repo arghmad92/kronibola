@@ -51,7 +51,7 @@ import Layout from '../layouts/Layout.astro';
   </main>
 
   <!-- Order Modal -->
-  <div class="modal-overlay" id="orderModal">
+  <div class="modal-overlay" id="orderModal" style="display:none">
     <div class="modal glass">
       <button class="modal-close" id="modalClose">&times;</button>
 
@@ -154,7 +154,7 @@ import Layout from '../layouts/Layout.astro';
   </div>
 
   <!-- Status Modal -->
-  <div class="modal-overlay" id="statusModal">
+  <div class="modal-overlay" id="statusModal" style="display:none">
     <div class="modal glass">
       <button class="modal-close" id="statusClose">&times;</button>
       <h3 class="modal-title">CHECK <span class="neon-text">ORDER</span></h3>
@@ -201,11 +201,11 @@ import Layout from '../layouts/Layout.astro';
   }
 
   function openModal(modal: HTMLElement) {
-    modal.classList.add('active');
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   }
   function closeModal(modal: HTMLElement) {
-    modal.classList.remove('active');
+    modal.style.display = 'none';
     document.body.style.overflow = '';
   }
 
