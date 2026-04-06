@@ -28,7 +28,7 @@ function generateOrderRef(name) {
 }
 
 const VALID_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
-const PRICE = 50;
+const PRICE = 48;
 const POSTAGE = 10;
 
 export async function onRequest(context) {

@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Jersey — KroniBola" description="Order your official KroniBola home jersey. RM 50 per jersey, sizes S to 3XL." activeTab="jersey">
+<Layout title="Jersey — KroniBola" description="Order your official KroniBola home jersey. RM 48 per jersey, sizes S to 3XL." activeTab="jersey">
   <header class="page-header">
     <div class="container">
       <h1 class="page-title">OFFICIAL <span class="neon-text">JERSEY</span></h1>
@@ -51,7 +51,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
 
     <!-- Order CTA -->
-    <button class="btn btn--primary order-cta" id="orderBtn">ORDER NOW — RM 50</button>
+    <button class="btn btn--primary order-cta" id="orderBtn">ORDER NOW — RM 48</button>
 
     <!-- Check order status -->
     <button class="btn btn--outline status-btn" id="checkStatusBtn">CHECK ORDER STATUS</button>
@@ -128,12 +128,12 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <div class="order-summary">
           <div class="order-breakdown" id="orderBreakdown">
-            <div class="order-line"><span>Jersey</span><span id="jerseySubtotal">RM 50</span></div>
+            <div class="order-line"><span>Jersey</span><span id="jerseySubtotal">RM 48</span></div>
             <div class="order-line" id="postageLine" style="display:none"><span>Postage</span><span>RM 10</span></div>
           </div>
           <div class="order-total-row">
             <span>Total</span>
-            <span class="order-total neon-text" id="orderTotal">RM 50</span>
+            <span class="order-total neon-text" id="orderTotal">RM 48</span>
           </div>
         </div>
         <div id="orderError" style="display:none"></div>
@@ -143,7 +143,7 @@ import Layout from '../layouts/Layout.astro';
       <!-- Step 2: Payment -->
       <div class="modal-page" id="step2">
         <h3 class="modal-title">MAKE <span class="neon-text">PAYMENT</span></h3>
-        <p class="modal-sub" id="payTotalLabel">Total: RM 50</p>
+        <p class="modal-sub" id="payTotalLabel">Total: RM 48</p>
         <img src="/pay.webp" alt="Payment QR" class="qr-img" />
         <a href="https://www.maybank2u.com.my" target="_blank" class="btn btn--mae" style="width:100%">Open Maybank MAE</a>
 
@@ -205,7 +205,7 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  const PRICE = 50;
+  const PRICE = 48;
   const ADMIN_WA = '60126183827';
   let receiptData: { base64: string; mimeType: string } | null = null;
   let uploadToken = '';
