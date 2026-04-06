@@ -88,35 +88,10 @@ import Layout from '../layouts/Layout.astro';
           <label class="form-label" for="orderPhone">Phone Number</label>
           <input type="tel" class="form-input" id="orderPhone" placeholder="01X-XXXXXXX" required />
         </div>
-        <div class="form-row">
-          <div class="form-group" style="flex:1">
-            <label class="form-label" for="orderSize">Size</label>
-            <select class="form-select" id="orderSize" style="width:100%">
-              <option value="XXS">XXS</option>
-              <option value="XS">XS</option>
-              <option value="S">S</option>
-              <option value="M" selected>M</option>
-              <option value="L">L</option>
-              <option value="XL">XL</option>
-              <option value="2XL">2XL</option>
-              <option value="3XL">3XL</option>
-              <option value="4XL">4XL</option>
-              <option value="5XL">5XL</option>
-              <option value="6XL">6XL</option>
-              <option value="7XL">7XL</option>
-              <option value="8XL">8XL</option>
-            </select>
-          </div>
-          <div class="form-group" style="flex:1">
-            <label class="form-label" for="orderQty">Quantity</label>
-            <select class="form-select" id="orderQty" style="width:100%">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
-          </div>
+        <div class="form-group">
+          <label class="form-label">Size & Quantity</label>
+          <p class="form-hint" style="margin-bottom:0.4rem">Select quantity for each size you want</p>
+          <div class="size-picker" id="sizePicker"></div>
         </div>
         <div class="form-group">
           <label class="form-label">Delivery</label>
@@ -306,8 +281,46 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('closeReceipt')!.addEventListener('click', () => closeModal(orderModal));
   orderModal.addEventListener('click', (e) => { if (e.target === orderModal) closeModal(orderModal); });
 
+  // --- Size picker ---
+  const ALL_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
+  const sizePicker = document.getElementById('sizePicker')!;
+
+  sizePicker.innerHTML = ALL_SIZES.map(s => `
+    <div class="sp-row" data-size="${s}">
+      <span class="sp-size">${s}</span>
+      <div class="sp-qty">
+        <button type="button" class="sp-btn sp-minus" data-size="${s}">−</button>
+        <span class="sp-count" id="qty-${s}">0</span>
+        <button type="button" class="sp-btn sp-plus" data-size="${s}">+</button>
+      </div>
+    </div>
+  `).join('');
+
+  function getSizeOrders(): { size: string; qty: number }[] {
+    return ALL_SIZES
+      .map(s => ({ size: s, qty: parseInt(document.getElementById(`qty-${s}`)!.textContent || '0') }))
+      .filter(o => o.qty > 0);
+  }
+
+  function getTotalQty(): number {
+    return getSizeOrders().reduce((sum, o) => sum + o.qty, 0);
+  }
+
+  sizePicker.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('.sp-btn') as HTMLElement | null;
+    if (!btn) return;
+    const size = btn.dataset.size!;
+    const countEl = document.getElementById(`qty-${size}`)!;
+    let val = parseInt(countEl.textContent || '0');
+    if (btn.classList.contains('sp-plus') && val < 5) val++;
+    if (btn.classList.contains('sp-minus') && val > 0) val--;
+    countEl.textContent = String(val);
+    const row = btn.closest('.sp-row')!;
+    if (val > 0) row.classList.add('sp-row--active'); else row.classList.remove('sp-row--active');
+    updateTotal();
+  });
+
   // --- Delivery & Total calculation ---
-  const qtySelect = document.getElementById('orderQty') as HTMLSelectElement;
   const totalEl = document.getElementById('orderTotal')!;
   const addressGroup = document.getElementById('addressGroup')!;
   const postageLine = document.getElementById('postageLine')!;
@@ -319,17 +332,16 @@ import Layout from '../layouts/Layout.astro';
   }
 
   function updateTotal() {
-    const qty = parseInt(qtySelect.value) || 1;
+    const totalQty = getTotalQty();
     const isPostage = getDelivery() === 'postage';
-    const subtotal = PRICE * qty;
+    const subtotal = PRICE * totalQty;
     const total = subtotal + (isPostage ? POSTAGE : 0);
-    jerseySubtotal.textContent = `RM ${subtotal}`;
+    jerseySubtotal.textContent = totalQty > 0 ? `RM ${subtotal}` : 'RM 0';
     postageLine.style.display = isPostage ? '' : 'none';
     totalEl.textContent = `RM ${total}`;
     addressGroup.style.display = isPostage ? '' : 'none';
   }
 
-  qtySelect.addEventListener('change', updateTotal);
   document.querySelectorAll('input[name="delivery"]').forEach(r => r.addEventListener('change', updateTotal));
 
   // --- Step 1 → Step 2 ---
@@ -340,13 +352,15 @@ import Layout from '../layouts/Layout.astro';
 
     if (!name || !phone) { showErr(errEl, 'Fill in both fields.'); return; }
     if (!/^\d{10,13}$/.test(phone)) { showErr(errEl, 'Invalid phone number.'); return; }
+    const orders = getSizeOrders();
+    if (!orders.length) { showErr(errEl, 'Select at least one size.'); return; }
     const delivery = getDelivery();
     const address = (document.getElementById('orderAddress') as HTMLTextAreaElement).value.trim();
     if (delivery === 'postage' && address.length < 10) { showErr(errEl, 'Please enter your full address for postage.'); return; }
 
     errEl.style.display = 'none';
-    const qty = parseInt(qtySelect.value) || 1;
-    const total = PRICE * qty + (delivery === 'postage' ? POSTAGE : 0);
+    const totalQty = getTotalQty();
+    const total = PRICE * totalQty + (delivery === 'postage' ? POSTAGE : 0);
     document.getElementById('payTotalLabel')!.textContent = `Total: RM ${total}`;
     showStep(2);
   });
@@ -377,8 +391,8 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('confirmOrder')!.addEventListener('click', async () => {
     const name = (document.getElementById('orderName') as HTMLInputElement).value.trim();
     const phone = (document.getElementById('orderPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
-    const size = (document.getElementById('orderSize') as HTMLSelectElement).value;
-    const quantity = parseInt(qtySelect.value) || 1;
+    const items = getSizeOrders();
+    const quantity = getTotalQty();
     const delivery = getDelivery();
     const address = (document.getElementById('orderAddress') as HTMLTextAreaElement).value.trim();
 
@@ -397,7 +411,7 @@ import Layout from '../layouts/Layout.astro';
       const res = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, size, quantity, delivery, address }),
+        body: JSON.stringify({ name, phone, items, delivery, address }),
       });
       const data = await res.json();
 
@@ -426,9 +440,11 @@ import Layout from '../layouts/Layout.astro';
       }
 
       // Fill receipt
+      const sizesSummary = items.map((o: any) => `${o.size} ×${o.qty}`).join(', ');
+
       document.getElementById('rcptRef')!.textContent = refCode;
       document.getElementById('rcptName')!.textContent = name;
-      document.getElementById('rcptSize')!.textContent = size;
+      document.getElementById('rcptSize')!.textContent = sizesSummary;
       document.getElementById('rcptQty')!.textContent = String(quantity);
       document.getElementById('rcptDelivery')!.textContent = delivery === 'postage' ? 'Postage (+RM 10)' : 'Pickup on game day';
       document.getElementById('rcptTotal')!.textContent = `RM ${total}`;
@@ -437,7 +453,7 @@ import Layout from '../layouts/Layout.astro';
       // WhatsApp button
       const deliveryText = delivery === 'postage' ? `Delivery: Postage\nAddress: ${address}` : 'Delivery: Pickup on game day';
       const waMsg = encodeURIComponent(
-        `Hi Admin, I've ordered a KroniBola jersey.\n\nName: ${name}\nSize: ${size}\nQty: ${quantity}\n${deliveryText}\nTotal: RM ${total}\nRef: ${refCode}\n\nReceipt uploaded on the app. Please verify my payment.`
+        `Hi Admin, I've ordered KroniBola jerseys.\n\nName: ${name}\nSizes: ${sizesSummary}\nTotal Qty: ${quantity}\n${deliveryText}\nTotal: RM ${total}\nRef: ${refCode}\n\nReceipt uploaded on the app. Please verify my payment.`
       );
       (document.getElementById('rcptWaBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${waMsg}`;
 
@@ -577,6 +593,30 @@ import Layout from '../layouts/Layout.astro';
 
   /* Form row */
   .form-row { display: flex; gap: 0.6rem; }
+
+  /* Size picker */
+  :global(.size-picker) { display: flex; flex-direction: column; gap: 0.3rem; }
+  :global(.sp-row) {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 0.8rem; border-radius: 10px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  :global(.sp-row--active) { border-color: rgba(0,255,65,0.25); background: rgba(0,255,65,0.04); }
+  :global(.sp-size) { font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700; min-width: 40px; }
+  :global(.sp-qty) { display: flex; align-items: center; gap: 0.6rem; }
+  :global(.sp-btn) {
+    width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04); color: var(--text-secondary);
+    font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  :global(.sp-btn:hover) { border-color: var(--neon); color: var(--neon); background: rgba(0,255,65,0.06); }
+  :global(.sp-count) {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 700;
+    min-width: 18px; text-align: center; color: var(--text-secondary);
+  }
+  :global(.sp-row--active .sp-count) { color: var(--neon); }
 
   /* Delivery options */
   .delivery-options { display: flex; flex-direction: column; gap: 0.4rem; }

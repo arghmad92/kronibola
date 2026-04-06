@@ -54,7 +54,7 @@ export async function onRequest(context) {
     }
 
     const body = await context.request.json();
-    let { name, phone, size, quantity, delivery, address } = body;
+    let { name, phone, items, delivery, address } = body;
 
     // Validate name
     if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
@@ -68,12 +68,17 @@ export async function onRequest(context) {
     const cleanPhone = phone.replace(/[\s\-+]/g, '');
     if (cleanPhone.length < 10 || cleanPhone.length > 15) return json({ error: 'Phone number must be 10-15 digits' }, 400);
 
-    // Validate size
-    if (!size || !VALID_SIZES.includes(size)) return json({ error: 'Invalid size. Choose from: S, M, L, XL, 2XL, 3XL' }, 400);
-
-    // Validate quantity
-    const qty = parseInt(quantity) || 1;
-    if (qty < 1 || qty > 5) return json({ error: 'Quantity must be between 1 and 5' }, 400);
+    // Validate items (array of { size, qty })
+    if (!Array.isArray(items) || items.length === 0) return json({ error: 'Select at least one size' }, 400);
+    let totalQty = 0;
+    for (const item of items) {
+      if (!item.size || !VALID_SIZES.includes(item.size)) return json({ error: `Invalid size: ${item.size}` }, 400);
+      const q = parseInt(item.qty) || 0;
+      if (q < 1 || q > 5) return json({ error: `Quantity for ${item.size} must be 1-5` }, 400);
+      totalQty += q;
+    }
+    if (totalQty > 20) return json({ error: 'Maximum 20 jerseys per order' }, 400);
+    const sizesSummary = items.map(i => `${i.size} ×${i.qty}`).join(', ');
 
     // Validate delivery
     if (delivery && !['pickup', 'postage'].includes(delivery)) return json({ error: 'Invalid delivery option' }, 400);
@@ -81,7 +86,7 @@ export async function onRequest(context) {
     const cleanAddress = isPostage ? sanitize(address).slice(0, 500) : '';
     if (isPostage && cleanAddress.length < 10) return json({ error: 'Full address required for postage delivery' }, 400);
 
-    const total = PRICE * qty + (isPostage ? POSTAGE : 0);
+    const total = PRICE * totalQty + (isPostage ? POSTAGE : 0);
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const orderDate = new Date().toISOString().slice(0, 10);
     const refCode = generateOrderRef(name);
@@ -89,7 +94,7 @@ export async function onRequest(context) {
     const deliveryLabel = isPostage ? 'Postage' : 'Pickup';
 
     // Columns: Order Date, Player Name, Phone, Size, Quantity, Total, Payment Status, Timestamp, Ref Code, Delivery, Address
-    await appendRow(context.env, 'Orders', [orderDate, sheetSafe(name), phoneForSheet, size, qty, total, 'Pending', timestamp, refCode, deliveryLabel, sheetSafe(cleanAddress)]);
+    await appendRow(context.env, 'Orders', [orderDate, sheetSafe(name), phoneForSheet, sizesSummary, totalQty, total, 'Pending', timestamp, refCode, deliveryLabel, sheetSafe(cleanAddress)]);
 
     // Send Telegram notification
     const tgMsg = [
@@ -97,8 +102,8 @@ export async function onRequest(context) {
       ``,
       `👤 Name: <b>${escapeHtml(name)}</b>`,
       `📱 Phone: ${escapeHtml(cleanPhone)}`,
-      `📏 Size: <b>${size}</b>`,
-      `🔢 Qty: <b>${qty}</b>`,
+      `📏 Sizes: <b>${sizesSummary}</b>`,
+      `🔢 Total Qty: <b>${totalQty}</b>`,
       `🚚 Delivery: <b>${deliveryLabel}</b>`,
       isPostage ? `📍 Address: ${escapeHtml(cleanAddress)}` : '',
       `💰 Total: <b>RM ${total}</b>`,
