@@ -20,7 +20,7 @@ export async function onRequest(context) {
   if (method === 'POST') {
     try {
       const { orders } = await context.request.json();
-      const headers = ['Order Date', 'Player Name', 'Phone', 'Size', 'Quantity', 'Total', 'Payment Status', 'Timestamp', 'Ref Code'];
+      const headers = ['Order Date', 'Player Name', 'Phone', 'Size', 'Quantity', 'Total', 'Payment Status', 'Timestamp', 'Ref Code', 'Delivery', 'Address'];
       await writeSheet(context.env, 'Orders', orders, headers);
       return json({ success: true });
     } catch (e) {

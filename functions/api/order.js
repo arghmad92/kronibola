@@ -29,13 +29,14 @@ function generateOrderRef(name) {
 
 const VALID_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
 const PRICE = 50;
+const POSTAGE = 10;
 
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
 
   try {
     const body = await context.request.json();
-    let { name, phone, size, quantity } = body;
+    let { name, phone, size, quantity, delivery, address } = body;
 
     // Validate name
     if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
@@ -55,14 +56,20 @@ export async function onRequest(context) {
     const qty = parseInt(quantity) || 1;
     if (qty < 1 || qty > 5) return json({ error: 'Quantity must be between 1 and 5' }, 400);
 
-    const total = PRICE * qty;
+    // Validate delivery
+    const isPostage = delivery === 'postage';
+    const cleanAddress = isPostage ? (address || '').trim() : '';
+    if (isPostage && cleanAddress.length < 10) return json({ error: 'Full address required for postage delivery' }, 400);
+
+    const total = PRICE * qty + (isPostage ? POSTAGE : 0);
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const orderDate = new Date().toISOString().slice(0, 10);
     const refCode = generateOrderRef(name);
     const phoneForSheet = "'" + cleanPhone;
+    const deliveryLabel = isPostage ? 'Postage' : 'Pickup';
 
-    // Columns: Order Date, Player Name, Phone, Size, Quantity, Total, Payment Status, Timestamp, Ref Code
-    await appendRow(context.env, 'Orders', [orderDate, name, phoneForSheet, size, qty, total, 'Pending', timestamp, refCode]);
+    // Columns: Order Date, Player Name, Phone, Size, Quantity, Total, Payment Status, Timestamp, Ref Code, Delivery, Address
+    await appendRow(context.env, 'Orders', [orderDate, name, phoneForSheet, size, qty, total, 'Pending', timestamp, refCode, deliveryLabel, cleanAddress]);
 
     // Send Telegram notification
     const tgMsg = [
@@ -72,10 +79,12 @@ export async function onRequest(context) {
       `📱 Phone: ${escapeHtml(cleanPhone)}`,
       `📏 Size: <b>${size}</b>`,
       `🔢 Qty: <b>${qty}</b>`,
+      `🚚 Delivery: <b>${deliveryLabel}</b>`,
+      isPostage ? `📍 Address: ${escapeHtml(cleanAddress)}` : '',
       `💰 Total: <b>RM ${total}</b>`,
       `🔖 Ref: <code>${refCode}</code>`,
       `💳 Status: <b>Pending</b>`,
-    ].join('\n');
+    ].filter(Boolean).join('\n');
     await sendTelegramNotification(context.env, tgMsg);
 
     return json({ success: true, refCode, total });

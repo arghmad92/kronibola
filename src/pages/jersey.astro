@@ -111,9 +111,30 @@ import Layout from '../layouts/Layout.astro';
             </select>
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">Delivery</label>
+          <div class="delivery-options">
+            <label class="delivery-opt">
+              <input type="radio" name="delivery" value="pickup" checked /> <span>Pickup on game day</span> <span class="delivery-price">FREE</span>
+            </label>
+            <label class="delivery-opt">
+              <input type="radio" name="delivery" value="postage" /> <span>Postage</span> <span class="delivery-price">+ RM 10</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group" id="addressGroup" style="display:none">
+          <label class="form-label" for="orderAddress">Full Address</label>
+          <textarea class="form-input" id="orderAddress" rows="3" placeholder="Full address including postcode, city, state" style="resize:vertical"></textarea>
+        </div>
         <div class="order-summary">
-          <span>Total</span>
-          <span class="order-total neon-text" id="orderTotal">RM 50</span>
+          <div class="order-breakdown" id="orderBreakdown">
+            <div class="order-line"><span>Jersey</span><span id="jerseySubtotal">RM 50</span></div>
+            <div class="order-line" id="postageLine" style="display:none"><span>Postage</span><span>RM 10</span></div>
+          </div>
+          <div class="order-total-row">
+            <span>Total</span>
+            <span class="order-total neon-text" id="orderTotal">RM 50</span>
+          </div>
         </div>
         <div id="orderError" style="display:none"></div>
         <button class="btn btn--primary" id="toStep2" style="width:100%">PROCEED TO PAYMENT</button>
@@ -154,6 +175,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="receipt-row"><span>Name</span><span id="rcptName">—</span></div>
           <div class="receipt-row"><span>Size</span><span id="rcptSize">—</span></div>
           <div class="receipt-row"><span>Quantity</span><span id="rcptQty">—</span></div>
+          <div class="receipt-row"><span>Delivery</span><span id="rcptDelivery">—</span></div>
           <div class="receipt-row"><span>Total</span><span id="rcptTotal">—</span></div>
           <div class="receipt-row"><span>Status</span><span id="rcptStatus">—</span></div>
           <p class="receipt-note">Screenshot this as your proof of order</p>
@@ -243,15 +265,31 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('closeReceipt')!.addEventListener('click', () => closeModal(orderModal));
   orderModal.addEventListener('click', (e) => { if (e.target === orderModal) closeModal(orderModal); });
 
-  // --- Total calculation ---
+  // --- Delivery & Total calculation ---
   const qtySelect = document.getElementById('orderQty') as HTMLSelectElement;
   const totalEl = document.getElementById('orderTotal')!;
+  const addressGroup = document.getElementById('addressGroup')!;
+  const postageLine = document.getElementById('postageLine')!;
+  const jerseySubtotal = document.getElementById('jerseySubtotal')!;
+  const POSTAGE = 10;
+
+  function getDelivery(): string {
+    return (document.querySelector('input[name="delivery"]:checked') as HTMLInputElement)?.value || 'pickup';
+  }
 
   function updateTotal() {
     const qty = parseInt(qtySelect.value) || 1;
-    totalEl.textContent = `RM ${PRICE * qty}`;
+    const isPostage = getDelivery() === 'postage';
+    const subtotal = PRICE * qty;
+    const total = subtotal + (isPostage ? POSTAGE : 0);
+    jerseySubtotal.textContent = `RM ${subtotal}`;
+    postageLine.style.display = isPostage ? '' : 'none';
+    totalEl.textContent = `RM ${total}`;
+    addressGroup.style.display = isPostage ? '' : 'none';
   }
+
   qtySelect.addEventListener('change', updateTotal);
+  document.querySelectorAll('input[name="delivery"]').forEach(r => r.addEventListener('change', updateTotal));
 
   // --- Step 1 → Step 2 ---
   document.getElementById('toStep2')!.addEventListener('click', () => {
@@ -261,10 +299,14 @@ import Layout from '../layouts/Layout.astro';
 
     if (!name || !phone) { showErr(errEl, 'Fill in both fields.'); return; }
     if (!/^\d{10,13}$/.test(phone)) { showErr(errEl, 'Invalid phone number.'); return; }
+    const delivery = getDelivery();
+    const address = (document.getElementById('orderAddress') as HTMLTextAreaElement).value.trim();
+    if (delivery === 'postage' && address.length < 10) { showErr(errEl, 'Please enter your full address for postage.'); return; }
 
     errEl.style.display = 'none';
     const qty = parseInt(qtySelect.value) || 1;
-    document.getElementById('payTotalLabel')!.textContent = `Total: RM ${PRICE * qty}`;
+    const total = PRICE * qty + (delivery === 'postage' ? POSTAGE : 0);
+    document.getElementById('payTotalLabel')!.textContent = `Total: RM ${total}`;
     showStep(2);
   });
 
@@ -296,6 +338,8 @@ import Layout from '../layouts/Layout.astro';
     const phone = (document.getElementById('orderPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
     const size = (document.getElementById('orderSize') as HTMLSelectElement).value;
     const quantity = parseInt(qtySelect.value) || 1;
+    const delivery = getDelivery();
+    const address = (document.getElementById('orderAddress') as HTMLTextAreaElement).value.trim();
 
     if (!receiptData) {
       uploadArea.style.borderColor = 'var(--red)';
@@ -312,7 +356,7 @@ import Layout from '../layouts/Layout.astro';
       const res = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, size, quantity }),
+        body: JSON.stringify({ name, phone, size, quantity, delivery, address }),
       });
       const data = await res.json();
 
@@ -345,12 +389,14 @@ import Layout from '../layouts/Layout.astro';
       document.getElementById('rcptName')!.textContent = name;
       document.getElementById('rcptSize')!.textContent = size;
       document.getElementById('rcptQty')!.textContent = String(quantity);
+      document.getElementById('rcptDelivery')!.textContent = delivery === 'postage' ? 'Postage (+RM 10)' : 'Pickup on game day';
       document.getElementById('rcptTotal')!.textContent = `RM ${total}`;
       document.getElementById('rcptStatus')!.textContent = 'Pending';
 
       // WhatsApp button
+      const deliveryText = delivery === 'postage' ? `Delivery: Postage\nAddress: ${address}` : 'Delivery: Pickup on game day';
       const waMsg = encodeURIComponent(
-        `Hi Admin, I've ordered a KroniBola jersey.\n\nName: ${name}\nSize: ${size}\nQty: ${quantity}\nTotal: RM ${total}\nRef: ${refCode}\n\nReceipt uploaded on the app. Please verify my payment.`
+        `Hi Admin, I've ordered a KroniBola jersey.\n\nName: ${name}\nSize: ${size}\nQty: ${quantity}\n${deliveryText}\nTotal: RM ${total}\nRef: ${refCode}\n\nReceipt uploaded on the app. Please verify my payment.`
       );
       (document.getElementById('rcptWaBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${waMsg}`;
 
@@ -468,12 +514,30 @@ import Layout from '../layouts/Layout.astro';
   /* Form row */
   .form-row { display: flex; gap: 0.6rem; }
 
+  /* Delivery options */
+  .delivery-options { display: flex; flex-direction: column; gap: 0.4rem; }
+  .delivery-opt {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.8rem;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 12px; cursor: pointer; font-size: 0.82rem; transition: border-color 0.2s;
+  }
+  .delivery-opt:has(input:checked) { border-color: rgba(0,255,65,0.3); background: rgba(0,255,65,0.04); }
+  .delivery-opt input { accent-color: var(--neon); }
+  .delivery-opt span:nth-child(2) { flex: 1; }
+  .delivery-price { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+  .delivery-opt:has(input:checked) .delivery-price { color: var(--neon); }
+
   /* Order summary */
   .order-summary {
-    display: flex; justify-content: space-between; align-items: center;
     padding: 0.8rem 1rem; margin: 0.5rem 0 1rem;
     background: rgba(0,255,65,0.04); border: 1px solid rgba(0,255,65,0.1);
-    border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+    border-radius: 12px; font-size: 0.82rem;
+  }
+  .order-breakdown { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
+  .order-line { display: flex; justify-content: space-between; color: var(--text-secondary); }
+  .order-total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.06); font-weight: 600;
   }
   .order-total { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700; }
 
