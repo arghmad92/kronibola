@@ -42,11 +42,17 @@ function generateOrderRef(name) {
 const VALID_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
 const PRICE = 48;
 const POSTAGE = 10;
+const ORDER_DEADLINE = new Date('2026-04-13T23:59:59+08:00');
 
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
 
   try {
+    // Check deadline
+    if (Date.now() > ORDER_DEADLINE.getTime()) {
+      return json({ error: 'Orders are now closed.' }, 400);
+    }
+
     const body = await context.request.json();
     let { name, phone, size, quantity, delivery, address } = body;
 

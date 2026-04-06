@@ -18,9 +18,16 @@ import Layout from '../layouts/Layout.astro';
         <span class="product-badge">#001</span>
         <h2 class="product-name">Kroni <span class="neon-text">Shirts #001</span></h2>
         <p class="product-desc">Black to neon green gradient. Breathable match-day fabric. KroniBola crest on chest.</p>
-        <div class="product-price">RM <span class="price-num">50</span></div>
+        <div class="product-price">RM <span class="price-num">48</span></div>
         <p class="product-note">Made by KOMII</p>
       </div>
+    </div>
+
+    <!-- Order deadline countdown -->
+    <div class="deadline-bar glass" id="deadlineBar">
+      <div class="deadline-label">ORDERS CLOSE IN</div>
+      <div class="deadline-countdown" id="deadlineCountdown">--:--:--</div>
+      <div class="deadline-date">Sunday, 13 April 2026 · 11:59 PM</div>
     </div>
 
     <!-- Size guide -->
@@ -207,7 +214,40 @@ import Layout from '../layouts/Layout.astro';
 <script>
   const PRICE = 48;
   const ADMIN_WA = '60126183827';
+  const ORDER_DEADLINE = new Date('2026-04-13T23:59:59+08:00');
   let receiptData: { base64: string; mimeType: string } | null = null;
+  let ordersClosed = false;
+
+  // --- Deadline countdown ---
+  function updateDeadline() {
+    const now = Date.now();
+    const diff = ORDER_DEADLINE.getTime() - now;
+    const el = document.getElementById('deadlineCountdown')!;
+    const bar = document.getElementById('deadlineBar')!;
+    const orderBtn = document.getElementById('orderBtn') as HTMLButtonElement;
+
+    if (diff <= 0) {
+      el.textContent = 'CLOSED';
+      bar.classList.add('deadline--closed');
+      orderBtn.textContent = 'ORDERS CLOSED';
+      orderBtn.disabled = true;
+      ordersClosed = true;
+      return;
+    }
+
+    const days = Math.floor(diff / 86400000);
+    const hrs = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+
+    if (days > 0) {
+      el.textContent = `${days}d ${hrs}h ${mins}m ${secs}s`;
+    } else {
+      el.textContent = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+  }
+  updateDeadline();
+  setInterval(updateDeadline, 1000);
   let uploadToken = '';
 
   async function fetchUploadToken() {
@@ -257,6 +297,7 @@ import Layout from '../layouts/Layout.astro';
 
   // --- Order button ---
   document.getElementById('orderBtn')!.addEventListener('click', () => {
+    if (ordersClosed) return;
     showStep(1);
     openModal(orderModal);
   });
@@ -484,6 +525,29 @@ import Layout from '../layouts/Layout.astro';
   .product-note {
     font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem;
   }
+
+  /* Deadline countdown */
+  .deadline-bar {
+    text-align: center; padding: 1rem 1.2rem; margin: 0.8rem 0;
+    border-color: rgba(0,255,65,0.15);
+    background: linear-gradient(135deg, rgba(0,255,65,0.04), rgba(14,14,14,0.95));
+  }
+  .deadline-label {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.15em;
+    color: var(--text-muted); margin-bottom: 0.3rem;
+  }
+  .deadline-countdown {
+    font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700;
+    color: var(--neon); text-shadow: 0 0 20px rgba(0,255,65,0.2);
+    animation: pulse 1s ease infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+  .deadline-date {
+    font-size: 0.68rem; color: var(--text-muted); margin-top: 0.2rem;
+  }
+  .deadline--closed { border-color: rgba(255,59,48,0.2); background: linear-gradient(135deg, rgba(255,59,48,0.04), rgba(14,14,14,0.95)); }
+  .deadline--closed .deadline-countdown { color: var(--red); text-shadow: none; animation: none; }
+  .deadline--closed .deadline-label { color: var(--red); }
 
   /* Size guide */
   .size-section { padding: 1rem 0; }
