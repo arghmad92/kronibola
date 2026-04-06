@@ -27,7 +27,7 @@ function generateOrderRef(name) {
   return `KBJ-${mm}${dd}-${initial}${rand}`;
 }
 
-const VALID_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+const VALID_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
 const PRICE = 50;
 
 export async function onRequest(context) {
