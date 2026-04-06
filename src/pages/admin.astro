@@ -43,6 +43,7 @@ import Layout from '../layouts/Layout.astro';
       <div class="tabs">
         <button class="tab active" data-tab="schedule">Schedule</button>
         <button class="tab" data-tab="players">Players</button>
+        <button class="tab" data-tab="orders">Orders</button>
         <button class="tab" data-tab="stats">Stats</button>
         <button class="tab" data-tab="notifs">Notifs</button>
       </div>
@@ -131,6 +132,23 @@ import Layout from '../layouts/Layout.astro';
         <div id="notifsList" class="card-list">
           <p class="empty-msg">Loading...</p>
         </div>
+      </div>
+
+      <!-- Orders Tab -->
+      <div class="tab-panel" id="tab-orders">
+        <div class="panel-top">
+          <h3 class="panel-title">JERSEY <span class="neon-text">ORDERS</span></h3>
+          <button class="btn btn--outline btn--sm" id="refreshOrdersBtn">Refresh</button>
+        </div>
+        <div class="form-group" style="margin-bottom:0.8rem">
+          <select class="form-select" id="orderFilter" style="width:100%">
+            <option value="all">All Orders</option>
+            <option value="Pending">Pending</option>
+            <option value="Paid">Paid</option>
+            <option value="Collected">Collected</option>
+          </select>
+        </div>
+        <div id="ordersList" class="card-list"><p class="empty-msg">Loading...</p></div>
       </div>
 
       <!-- Stats Tab -->
@@ -293,6 +311,96 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
+  // --- ORDERS TAB ---
+  let allOrders: any[] = [];
+
+  async function loadOrders() {
+    try {
+      const res = await fetch(`${API}/admin/players`, { headers: { Authorization: adminToken } });
+      // Orders are on a separate sheet — use a direct call
+      const ordRes = await fetch(`${API}/order-status?phone=_all_admin_`).catch(() => null);
+      // Fallback: read from admin endpoint with sheet name override
+      // For now, read orders via a simple fetch
+    } catch {}
+    // Direct sheet read via admin sessions endpoint pattern
+    try {
+      const res = await fetch(`${API}/admin/orders`, { headers: { Authorization: adminToken } });
+      const data = await res.json();
+      allOrders = data.orders || [];
+      renderOrders();
+    } catch {
+      document.getElementById('ordersList')!.innerHTML = '<p class="empty-msg">Failed to load orders.</p>';
+    }
+  }
+
+  function renderOrders() {
+    const filter = (document.getElementById('orderFilter') as HTMLSelectElement).value;
+    const filtered = filter === 'all' ? allOrders : allOrders.filter((o: any) => o['Payment Status'] === filter);
+    const wrap = document.getElementById('ordersList')!;
+
+    if (!filtered.length) {
+      wrap.innerHTML = '<p class="empty-msg">No orders found.</p>';
+      return;
+    }
+
+    const statusColors: Record<string, string> = { Paid: '#00FF41', Pending: '#ff9500', Collected: '#00c4ff' };
+
+    wrap.innerHTML = filtered.map((o: any) => {
+      const status = o['Payment Status'] || 'Pending';
+      const color = statusColors[status] || '#666';
+      const name = esc(o['Player Name']);
+      const phone = String(o.Phone || '').replace("'", '').trim();
+      const ref = esc(o['Ref Code'] || '');
+
+      return `<div class="player-card-admin">
+        <div class="pca-top">
+          <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">👕</div>
+          <div class="pca-info">
+            <span class="pca-name">${name}</span>
+            <span class="pca-phone">${esc(phone)}</span>
+            ${ref ? `<span class="pca-ref">${ref}</span>` : ''}
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:0.72rem;color:var(--text-muted)">${esc(o.Size)} × ${esc(o.Quantity)}</span>
+            <span style="display:block;font-size:0.82rem;font-weight:700;color:var(--neon);font-family:'Space Grotesk',sans-serif">RM ${esc(o.Total)}</span>
+          </div>
+        </div>
+        <div class="pca-controls">
+          <div class="pca-field">
+            <label>Status</label>
+            <select class="form-select o-status" data-ref="${ref}">
+              <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
+              <option value="Collected" ${status === 'Collected' ? 'selected' : ''}>Collected</option>
+            </select>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Status change handlers
+    wrap.querySelectorAll('.o-status').forEach((sel) => {
+      sel.addEventListener('change', async () => {
+        const ref = (sel as HTMLSelectElement).dataset.ref;
+        const newStatus = (sel as HTMLSelectElement).value;
+        const order = allOrders.find((o: any) => o['Ref Code'] === ref);
+        if (order) {
+          order['Payment Status'] = newStatus;
+          try {
+            await fetch(`${API}/admin/orders`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+              body: JSON.stringify({ orders: allOrders }),
+            });
+          } catch {}
+        }
+      });
+    });
+  }
+
+  document.getElementById('refreshOrdersBtn')!.addEventListener('click', () => loadOrders());
+  document.getElementById('orderFilter')!.addEventListener('change', () => renderOrders());
+
   // --- LOGIN ---
   document.getElementById('loginForm')!.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -305,7 +413,7 @@ import Layout from '../layouts/Layout.astro';
         adminToken = data.token;
         document.getElementById('loginGate')!.style.display = 'none';
         document.getElementById('adminContent')!.style.display = '';
-        loadSchedule(); loadAllPlayers(); loadRevenue(); loadNotifs(); loadStats();
+        loadSchedule(); loadAllPlayers(); loadRevenue(); loadNotifs(); loadStats(); loadOrders();
       } else { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>'; }
     } catch { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>'; }
   });

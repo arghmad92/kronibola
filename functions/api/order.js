@@ -1,0 +1,85 @@
+import { readSheet, appendRow, json } from './_sheets.js';
+
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(text || '').replace(/[&<>"']/g, m => map[m]);
+}
+
+async function sendTelegramNotification(env, message) {
+  const token = env.TG_BOT_TOKEN;
+  const chatId = env.TG_CHAT_ID;
+  if (!token || !chatId) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+    });
+  } catch {}
+}
+
+function generateOrderRef(name) {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const initial = (name || 'X')[0].toUpperCase();
+  const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `KBJ-${mm}${dd}-${initial}${rand}`;
+}
+
+const VALID_SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+const PRICE = 50;
+
+export async function onRequest(context) {
+  if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
+
+  try {
+    const body = await context.request.json();
+    let { name, phone, size, quantity } = body;
+
+    // Validate name
+    if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
+    name = name.trim().replace(/\s+/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    if (name.length < 2 || name.length > 100) return json({ error: 'Name must be between 2 and 100 characters' }, 400);
+
+    // Validate phone
+    if (!phone || typeof phone !== 'string') return json({ error: 'Phone number is required' }, 400);
+    if (!/^[\d\s\-+]+$/.test(phone)) return json({ error: 'Phone number contains invalid characters' }, 400);
+    const cleanPhone = phone.replace(/[\s\-+]/g, '');
+    if (cleanPhone.length < 10 || cleanPhone.length > 15) return json({ error: 'Phone number must be 10-15 digits' }, 400);
+
+    // Validate size
+    if (!size || !VALID_SIZES.includes(size)) return json({ error: 'Invalid size. Choose from: S, M, L, XL, 2XL, 3XL' }, 400);
+
+    // Validate quantity
+    const qty = parseInt(quantity) || 1;
+    if (qty < 1 || qty > 5) return json({ error: 'Quantity must be between 1 and 5' }, 400);
+
+    const total = PRICE * qty;
+    const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const orderDate = new Date().toISOString().slice(0, 10);
+    const refCode = generateOrderRef(name);
+    const phoneForSheet = "'" + cleanPhone;
+
+    // Columns: Order Date, Player Name, Phone, Size, Quantity, Total, Payment Status, Timestamp, Ref Code
+    await appendRow(context.env, 'Orders', [orderDate, name, phoneForSheet, size, qty, total, 'Pending', timestamp, refCode]);
+
+    // Send Telegram notification
+    const tgMsg = [
+      `👕 <b>New Jersey Order</b>`,
+      ``,
+      `👤 Name: <b>${escapeHtml(name)}</b>`,
+      `📱 Phone: ${escapeHtml(cleanPhone)}`,
+      `📏 Size: <b>${size}</b>`,
+      `🔢 Qty: <b>${qty}</b>`,
+      `💰 Total: <b>RM ${total}</b>`,
+      `🔖 Ref: <code>${refCode}</code>`,
+      `💳 Status: <b>Pending</b>`,
+    ].join('\n');
+    await sendTelegramNotification(context.env, tgMsg);
+
+    return json({ success: true, refCode, total });
+  } catch (e) {
+    return json({ error: 'An error occurred. Please try again.' }, 500);
+  }
+}

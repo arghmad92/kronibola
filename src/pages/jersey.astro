@@ -1,0 +1,474 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Jersey — KroniBola" description="Order your official KroniBola home jersey. RM 50 per jersey, sizes S to 3XL." activeTab="jersey">
+  <header class="page-header">
+    <div class="container">
+      <h1 class="page-title">OFFICIAL <span class="neon-text">JERSEY</span></h1>
+      <p class="page-sub">Rep the KRONI on and off the pitch</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Product hero -->
+    <div class="product-hero glass">
+      <img src="/jersey-frontandback.webp" alt="KroniBola Home Jersey — Front and Back" class="product-img" />
+      <div class="product-info">
+        <span class="product-badge">HOME KIT</span>
+        <h2 class="product-name">KroniBola <span class="neon-text">Home Jersey</span></h2>
+        <p class="product-desc">Black to neon green gradient. Breathable match-day fabric. KroniBola crest on chest.</p>
+        <div class="product-price">RM <span class="price-num">50</span></div>
+        <p class="product-note">Made by KOMII</p>
+      </div>
+    </div>
+
+    <!-- Size guide -->
+    <div class="size-section">
+      <h3 class="section-title">SIZE <span class="neon-text">GUIDE</span></h3>
+      <div class="size-table-wrap glass">
+        <table class="size-table">
+          <thead>
+            <tr><th>Size</th><th>Chest (cm)</th><th>Length (cm)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>S</td><td>48</td><td>68</td></tr>
+            <tr><td>M</td><td>50</td><td>70</td></tr>
+            <tr><td>L</td><td>52</td><td>72</td></tr>
+            <tr><td>XL</td><td>55</td><td>74</td></tr>
+            <tr><td>2XL</td><td>58</td><td>76</td></tr>
+            <tr><td>3XL</td><td>61</td><td>78</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Order CTA -->
+    <button class="btn btn--primary order-cta" id="orderBtn">ORDER NOW — RM 50</button>
+
+    <!-- Check order status -->
+    <button class="btn btn--outline status-btn" id="checkStatusBtn">CHECK ORDER STATUS</button>
+  </main>
+
+  <!-- Order Modal -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal glass">
+      <button class="modal-close" id="modalClose">&times;</button>
+
+      <div class="modal-steps" id="modalSteps">
+        <div class="step-dot active" data-step="1">1</div>
+        <div class="step-line"></div>
+        <div class="step-dot" data-step="2">2</div>
+        <div class="step-line"></div>
+        <div class="step-dot" data-step="3">3</div>
+      </div>
+
+      <!-- Step 1: Details -->
+      <div class="modal-page active" id="step1">
+        <h3 class="modal-title">ORDER <span class="neon-text">DETAILS</span></h3>
+        <div class="form-group">
+          <label class="form-label" for="orderName">Name</label>
+          <input type="text" class="form-input" id="orderName" placeholder="Your name" required style="text-transform:capitalize" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="orderPhone">Phone Number</label>
+          <input type="tel" class="form-input" id="orderPhone" placeholder="01X-XXXXXXX" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label class="form-label" for="orderSize">Size</label>
+            <select class="form-select" id="orderSize" style="width:100%">
+              <option value="S">S</option>
+              <option value="M" selected>M</option>
+              <option value="L">L</option>
+              <option value="XL">XL</option>
+              <option value="2XL">2XL</option>
+              <option value="3XL">3XL</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label" for="orderQty">Quantity</label>
+            <select class="form-select" id="orderQty" style="width:100%">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+        </div>
+        <div class="order-summary">
+          <span>Total</span>
+          <span class="order-total neon-text" id="orderTotal">RM 50</span>
+        </div>
+        <div id="orderError" style="display:none"></div>
+        <button class="btn btn--primary" id="toStep2" style="width:100%">PROCEED TO PAYMENT</button>
+      </div>
+
+      <!-- Step 2: Payment -->
+      <div class="modal-page" id="step2">
+        <h3 class="modal-title">MAKE <span class="neon-text">PAYMENT</span></h3>
+        <p class="modal-sub" id="payTotalLabel">Total: RM 50</p>
+        <img src="/pay.webp" alt="Payment QR" class="qr-img" />
+        <a href="https://www.maybank2u.com.my" target="_blank" class="btn btn--mae" style="width:100%">Open Maybank MAE</a>
+
+        <div class="receipt-upload">
+          <p class="upload-label">Upload payment receipt <span style="color:var(--red)">*</span></p>
+          <label class="upload-area" id="uploadArea">
+            <input type="file" accept="image/*" id="receiptFile" style="display:none" />
+            <div class="upload-placeholder" id="uploadPlaceholder">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>Tap to upload screenshot</span>
+            </div>
+            <img id="uploadPreview" class="upload-preview" style="display:none" />
+          </label>
+          <p class="upload-hint">Take a screenshot of your payment and upload it here</p>
+        </div>
+
+        <button class="btn btn--primary" id="confirmOrder" style="width:100%">CONFIRM ORDER</button>
+        <div id="orderSubmitting" style="display:none" class="submitting">
+          <div class="loader-sm"></div> Submitting order...
+        </div>
+      </div>
+
+      <!-- Step 3: Confirmation -->
+      <div class="modal-page" id="step3">
+        <h3 class="modal-title">ORDER <span class="neon-text">CONFIRMED</span></h3>
+        <div class="receipt" id="receiptCard">
+          <div class="receipt-header">ORDER RECEIPT</div>
+          <div class="receipt-row"><span>Ref Code</span><span id="rcptRef" style="color:var(--neon);font-family:'Space Grotesk',sans-serif">—</span></div>
+          <div class="receipt-row"><span>Name</span><span id="rcptName">—</span></div>
+          <div class="receipt-row"><span>Size</span><span id="rcptSize">—</span></div>
+          <div class="receipt-row"><span>Quantity</span><span id="rcptQty">—</span></div>
+          <div class="receipt-row"><span>Total</span><span id="rcptTotal">—</span></div>
+          <div class="receipt-row"><span>Status</span><span id="rcptStatus">—</span></div>
+          <p class="receipt-note">Screenshot this as your proof of order</p>
+        </div>
+        <a id="rcptWaBtn" href="#" target="_blank" class="btn btn--wa" style="width:100%">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+          NOTIFY ADMIN VIA WHATSAPP
+        </a>
+        <button class="btn btn--outline" id="closeReceipt" style="width:100%;margin-top:0.5rem">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Modal -->
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal glass">
+      <button class="modal-close" id="statusClose">&times;</button>
+      <h3 class="modal-title">CHECK <span class="neon-text">ORDER</span></h3>
+      <div class="form-group">
+        <label class="form-label" for="statusPhone">Phone Number</label>
+        <input type="tel" class="form-input" id="statusPhone" placeholder="01X-XXXXXXX" />
+      </div>
+      <button class="btn btn--primary" id="statusLookup" style="width:100%">LOOK UP</button>
+      <div id="statusResult" style="margin-top:1rem"></div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const PRICE = 50;
+  const ADMIN_WA = '60126183827';
+  let receiptData: { base64: string; mimeType: string } | null = null;
+
+  // XSS protection
+  function esc(text: any): string {
+    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(text || '').replace(/[&<>"']/g, m => map[m]);
+  }
+
+  function showErr(el: HTMLElement, msg: string) {
+    el.style.display = '';
+    el.innerHTML = `<div class="alert alert--error">${msg}</div>`;
+  }
+
+  // --- Modal management ---
+  const orderModal = document.getElementById('orderModal')!;
+  const statusModal = document.getElementById('statusModal')!;
+  const steps = [document.getElementById('step1')!, document.getElementById('step2')!, document.getElementById('step3')!];
+  const dots = document.querySelectorAll('.step-dot');
+
+  function showStep(n: number) {
+    steps.forEach(s => s.classList.remove('active'));
+    dots.forEach((d, i) => {
+      d.classList.remove('active', 'done');
+      if (i + 1 < n) d.classList.add('done');
+      if (i + 1 === n) d.classList.add('active');
+    });
+    steps[n - 1].classList.add('active');
+  }
+
+  function openModal(modal: HTMLElement) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(modal: HTMLElement) {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  // --- Order button ---
+  document.getElementById('orderBtn')!.addEventListener('click', () => {
+    showStep(1);
+    openModal(orderModal);
+  });
+
+  document.getElementById('modalClose')!.addEventListener('click', () => closeModal(orderModal));
+  document.getElementById('closeReceipt')!.addEventListener('click', () => closeModal(orderModal));
+  orderModal.addEventListener('click', (e) => { if (e.target === orderModal) closeModal(orderModal); });
+
+  // --- Total calculation ---
+  const qtySelect = document.getElementById('orderQty') as HTMLSelectElement;
+  const totalEl = document.getElementById('orderTotal')!;
+
+  function updateTotal() {
+    const qty = parseInt(qtySelect.value) || 1;
+    totalEl.textContent = `RM ${PRICE * qty}`;
+  }
+  qtySelect.addEventListener('change', updateTotal);
+
+  // --- Step 1 → Step 2 ---
+  document.getElementById('toStep2')!.addEventListener('click', () => {
+    const name = (document.getElementById('orderName') as HTMLInputElement).value.trim();
+    const phone = (document.getElementById('orderPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const errEl = document.getElementById('orderError')!;
+
+    if (!name || !phone) { showErr(errEl, 'Fill in both fields.'); return; }
+    if (!/^\d{10,13}$/.test(phone)) { showErr(errEl, 'Invalid phone number.'); return; }
+
+    errEl.style.display = 'none';
+    const qty = parseInt(qtySelect.value) || 1;
+    document.getElementById('payTotalLabel')!.textContent = `Total: RM ${PRICE * qty}`;
+    showStep(2);
+  });
+
+  // --- Receipt upload ---
+  const receiptFile = document.getElementById('receiptFile') as HTMLInputElement;
+  const uploadPreview = document.getElementById('uploadPreview') as HTMLImageElement;
+  const uploadPlaceholder = document.getElementById('uploadPlaceholder')!;
+  const uploadArea = document.getElementById('uploadArea')!;
+
+  receiptFile.addEventListener('change', () => {
+    const file = receiptFile.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      receiptData = { base64: result, mimeType: file.type };
+      uploadPreview.src = result;
+      uploadPreview.style.display = '';
+      uploadPlaceholder.style.display = 'none';
+      uploadArea.classList.add('has-file');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // --- Confirm order ---
+  document.getElementById('confirmOrder')!.addEventListener('click', async () => {
+    const name = (document.getElementById('orderName') as HTMLInputElement).value.trim();
+    const phone = (document.getElementById('orderPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const size = (document.getElementById('orderSize') as HTMLSelectElement).value;
+    const quantity = parseInt(qtySelect.value) || 1;
+
+    if (!receiptData) {
+      uploadArea.style.borderColor = 'var(--red)';
+      setTimeout(() => { uploadArea.style.borderColor = ''; }, 3000);
+      return;
+    }
+
+    const btn = document.getElementById('confirmOrder') as HTMLButtonElement;
+    const submitting = document.getElementById('orderSubmitting')!;
+    btn.style.display = 'none';
+    submitting.style.display = '';
+
+    try {
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, size, quantity }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        btn.style.display = '';
+        submitting.style.display = 'none';
+        showErr(document.getElementById('orderError')!, data.error || 'Order failed.');
+        showStep(1);
+        return;
+      }
+
+      const refCode = data.refCode;
+      const total = data.total;
+
+      // Fill receipt
+      document.getElementById('rcptRef')!.textContent = refCode;
+      document.getElementById('rcptName')!.textContent = name;
+      document.getElementById('rcptSize')!.textContent = size;
+      document.getElementById('rcptQty')!.textContent = String(quantity);
+      document.getElementById('rcptTotal')!.textContent = `RM ${total}`;
+      document.getElementById('rcptStatus')!.textContent = 'Pending';
+
+      // WhatsApp button
+      const waMsg = encodeURIComponent(
+        `Hi Admin, I've ordered a KroniBola jersey.\n\nName: ${name}\nSize: ${size}\nQty: ${quantity}\nTotal: RM ${total}\nRef: ${refCode}\n\nReceipt uploaded on the app. Please verify my payment.`
+      );
+      (document.getElementById('rcptWaBtn') as HTMLAnchorElement).href = `https://wa.me/${ADMIN_WA}?text=${waMsg}`;
+
+      receiptData = null;
+      showStep(3);
+    } catch {
+      btn.style.display = '';
+      submitting.style.display = 'none';
+      showErr(document.getElementById('orderError')!, 'Connection error. Try again.');
+      showStep(1);
+    }
+  });
+
+  // --- Status modal ---
+  document.getElementById('checkStatusBtn')!.addEventListener('click', () => openModal(statusModal));
+  document.getElementById('statusClose')!.addEventListener('click', () => closeModal(statusModal));
+  statusModal.addEventListener('click', (e) => { if (e.target === statusModal) closeModal(statusModal); });
+
+  document.getElementById('statusLookup')!.addEventListener('click', async () => {
+    const phone = (document.getElementById('statusPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const result = document.getElementById('statusResult')!;
+    if (!phone || phone.length < 10) { result.innerHTML = '<div class="alert alert--error">Enter a valid phone number.</div>'; return; }
+
+    result.innerHTML = '<div class="loading-sm"><div class="loader-sm"></div></div>';
+
+    try {
+      const res = await fetch(`/api/order-status?phone=${phone}`);
+      const data = await res.json();
+      const orders = data.orders || [];
+
+      if (!orders.length) {
+        result.innerHTML = '<p class="empty-msg">No orders found for this number.</p>';
+        return;
+      }
+
+      const statusColors: Record<string, string> = { Paid: '#00FF41', Pending: '#ff9500', Collected: '#00c4ff' };
+
+      result.innerHTML = orders.map((o: any) => {
+        const c = statusColors[o.status] || '#666';
+        return `<div class="status-card">
+          <div class="sc-top">
+            <span class="sc-ref" style="color:var(--neon)">${esc(o.refCode)}</span>
+            <span class="sc-badge" style="background:${c}18;color:${c};border-color:${c}30">${esc(o.status)}</span>
+          </div>
+          <div class="sc-details">
+            <span>Size: <b>${esc(o.size)}</b></span>
+            <span>Qty: <b>${esc(o.quantity)}</b></span>
+            <span>Total: <b>RM ${esc(o.total)}</b></span>
+          </div>
+        </div>`;
+      }).join('');
+    } catch {
+      result.innerHTML = '<div class="alert alert--error">Failed to load. Try again.</div>';
+    }
+  });
+</script>
+
+<style>
+  /* Product hero */
+  .product-hero {
+    padding: 0; overflow: hidden; margin: 1rem 0;
+  }
+  .product-img {
+    width: 100%; display: block;
+  }
+  .product-info {
+    padding: 1.2rem 1.5rem;
+  }
+  .product-badge {
+    display: inline-block; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.15em;
+    padding: 0.25rem 0.7rem; border-radius: 6px;
+    background: var(--neon); color: #000; margin-bottom: 0.6rem;
+  }
+  .product-name {
+    font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+  .product-desc {
+    font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.8rem;
+  }
+  .product-price {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);
+  }
+  .price-num { font-size: 2rem; color: var(--neon); }
+  .product-note {
+    font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem;
+  }
+
+  /* Size guide */
+  .size-section { padding: 1rem 0; }
+  :global(.section-title) {
+    font-size: 1.1rem; letter-spacing: 0.04em; margin-bottom: 0.8rem;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+  }
+  .size-table-wrap { padding: 0; overflow: hidden; }
+  .size-table {
+    width: 100%; border-collapse: collapse; font-size: 0.78rem;
+  }
+  .size-table th {
+    padding: 0.7rem 1rem; text-align: left; font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+    border-bottom: 1px solid var(--border); background: rgba(0,255,65,0.03);
+  }
+  .size-table td {
+    padding: 0.6rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text-secondary);
+  }
+  .size-table tr:last-child td { border-bottom: none; }
+  .size-table td:first-child { font-weight: 700; color: var(--text); font-family: 'Space Grotesk', sans-serif; }
+
+  /* Order CTA */
+  .order-cta { width: 100%; margin: 1rem 0 0.5rem; font-size: 0.9rem; }
+  .status-btn { width: 100%; margin-bottom: 2rem; font-size: 0.8rem; }
+
+  /* Form row */
+  .form-row { display: flex; gap: 0.6rem; }
+
+  /* Order summary */
+  .order-summary {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.8rem 1rem; margin: 0.5rem 0 1rem;
+    background: rgba(0,255,65,0.04); border: 1px solid rgba(0,255,65,0.1);
+    border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+  }
+  .order-total { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700; }
+
+  /* Submitting state */
+  .submitting {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.8rem; font-size: 0.82rem; color: var(--text-muted);
+  }
+  .loader-sm {
+    width: 16px; height: 16px; border: 2px solid var(--border);
+    border-top-color: var(--neon); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-sm { text-align: center; padding: 1rem; }
+
+  /* Status card */
+  :global(.status-card) {
+    padding: 1rem; margin-bottom: 0.5rem;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  :global(.sc-top) {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;
+  }
+  :global(.sc-ref) { font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700; }
+  :global(.sc-badge) {
+    font-size: 0.62rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid;
+  }
+  :global(.sc-details) {
+    display: flex; gap: 1rem; font-size: 0.75rem; color: var(--text-secondary);
+  }
+
+  .empty-msg { text-align: center; font-size: 0.82rem; color: var(--text-muted); padding: 1rem 0; }
+</style>
