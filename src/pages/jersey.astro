@@ -57,6 +57,25 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
+    <!-- Jersey Gallery -->
+    <div class="jersey-gallery">
+      <h3 class="section-title">THE KRONI <span class="neon-text">LOOK</span></h3>
+      <div class="jersey-gallery-grid">
+        <div class="jersey-gallery-item">
+          <img src="/jerseyadmin.jpeg" alt="KroniBola admins wearing the jersey" loading="lazy" />
+        </div>
+        <div class="jersey-gallery-item">
+          <img src="/jerseyadmin2.jpeg" alt="KroniBola admin on the pitch" loading="lazy" />
+        </div>
+        <div class="jersey-gallery-item">
+          <img src="/jerseyadmin3.jpeg" alt="KroniBola admin match day" loading="lazy" />
+        </div>
+        <div class="jersey-gallery-item">
+          <img src="/jerseyadmin4.jpeg" alt="KroniBola admin in the rain" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
     <!-- Order CTA -->
     <button class="btn btn--primary order-cta" id="orderBtn">ORDER NOW — RM 48</button>
 
@@ -701,4 +720,38 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .empty-msg { text-align: center; font-size: 0.82rem; color: var(--text-muted); padding: 1rem 0; }
+
+  /* Jersey Gallery */
+  .jersey-gallery { margin: 2.5rem 0 2rem; }
+
+  .jersey-gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+  }
+
+  .jersey-gallery-item {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    aspect-ratio: 3 / 4;
+  }
+
+  .jersey-gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+
+  .jersey-gallery-item:hover img {
+    transform: scale(1.05);
+  }
+
+  @media (min-width: 641px) {
+    .jersey-gallery-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
 </style>
