@@ -38,17 +38,22 @@ import Layout from '../layouts/Layout.astro';
       <p>Check back later for upcoming matches.</p>
     </div>
 
-    <!-- Match cards (swipeable) -->
-    <div id="matchCards" class="match-cards" style="display:none"></div>
-
-    <!-- Lineup section -->
-    <div id="lineupSection" style="display:none">
-      <div class="section-header">
-        <h2 class="section-title">THE <span class="neon-text">LINEUP</span></h2>
-        <span class="lineup-count" id="lineupCount">0 players</span>
+    <!-- Desktop: side-by-side | Mobile: stacked -->
+    <div class="match-layout">
+      <!-- Left: Match cards -->
+      <div class="match-layout-left">
+        <div id="matchCards" class="match-cards" style="display:none"></div>
       </div>
-      <div class="lineup-grid" id="lineupGrid"></div>
-      <p class="lineup-empty" id="lineupEmpty" style="display:none">No players yet. Be the first!</p>
+
+      <!-- Right: Lineup -->
+      <div class="match-layout-right" id="lineupSection" style="display:none">
+        <div class="section-header">
+          <h2 class="section-title">THE <span class="neon-text">LINEUP</span></h2>
+          <span class="lineup-count" id="lineupCount">0 players</span>
+        </div>
+        <div class="lineup-grid" id="lineupGrid"></div>
+        <p class="lineup-empty" id="lineupEmpty" style="display:none">No players yet. Be the first!</p>
+      </div>
     </div>
 
     <!-- Check Status -->
@@ -846,6 +851,31 @@ import Layout from '../layouts/Layout.astro';
 
   /* Match Cards — use :global for JS-generated content */
   .match-cards { margin: 1.2rem 0; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  /* Desktop master-detail layout */
+  .match-layout { display: block; }
+
+  @media (min-width: 900px) {
+    .container { max-width: 1100px; }
+
+    .match-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .match-layout-right {
+      position: sticky;
+      top: 80px;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .match-layout-right::-webkit-scrollbar { width: 3px; }
+    .match-layout-right::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+  }
 
   :global(.match-card) {
     padding: 1.5rem; cursor: pointer; transition: all 0.3s ease;
