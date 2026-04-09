@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KroniBola — Sponsorship Deck 2026</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #e0e0e0; -webkit-font-smoothing: antialiased; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .page { width: 1280px; height: 720px; background: #0a0a0a; color: #fff; position: relative; overflow: hidden; margin: 20px auto; box-shadow: 0 8px 40px rgba(0,0,0,0.3); }
+
+    @media print { body { background: none; } .page { margin: 0; box-shadow: none; page-break-after: always; page-break-inside: avoid; } .page:last-child { page-break-after: avoid; } }
+    @page { size: 1280px 720px; margin: 0; }
+
+    .pi { padding: 56px 72px; height: 100%; display: flex; flex-direction: column; position: relative; z-index: 1; }
+    .lbl { font-size: 10px; letter-spacing: 3.5px; text-transform: uppercase; color: #00FF41; font-weight: 600; margin-bottom: 8px; }
+    .bar { width: 36px; height: 3px; background: #00FF41; border-radius: 2px; margin-bottom: 16px; }
+    .tt { font-family: 'Space Grotesk', sans-serif; font-size: 42px; font-weight: 700; line-height: 1.08; margin-bottom: 14px; letter-spacing: -0.5px; }
+    .tt em { font-style: normal; color: #00FF41; }
+    .sub { font-size: 14px; color: rgba(255,255,255,0.5); max-width: 500px; line-height: 1.65; font-weight: 300; }
+    .pn { position: absolute; bottom: 28px; right: 72px; font-size: 11px; color: rgba(255,255,255,0.18); font-family: 'Space Grotesk', sans-serif; }
+    .pn em { font-style: normal; color: #00FF41; }
+    .wm { position: absolute; bottom: 28px; left: 72px; height: 16px; opacity: 0.12; }
+    .glow { position: absolute; border-radius: 50%; pointer-events: none; background: radial-gradient(circle, rgba(0,255,65,0.06) 0%, transparent 70%); }
+
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+    .g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+    .grow { flex: 1; }
+    .ac { align-items: center; }
+    .center { text-align: center; justify-content: center; align-items: center; }
+
+    .cd { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 22px; }
+    .cd h4 { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; color: #00FF41; margin-bottom: 6px; }
+    .cd p { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.55; }
+
+    .st { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 28px 20px; text-align: center; }
+    .st .n { font-family: 'Space Grotesk', sans-serif; font-size: 40px; font-weight: 700; color: #00FF41; line-height: 1; margin-bottom: 6px; }
+    .st .l { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.3px; }
+
+    .ph { display: grid; gap: 8px; }
+    .ph img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block; border: 1px solid rgba(255,255,255,0.05); }
+
+    .pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.2); border-radius: 100px; padding: 5px 14px; font-size: 11px; color: #00FF41; font-weight: 500; letter-spacing: 0.3px; }
+    .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #00FF41; }
+
+    /* Mockup */
+    .mf { background: #111; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; overflow: hidden; }
+    .mb { display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #080808; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .d { width: 8px; height: 8px; border-radius: 50%; }
+    .dr { background: #ff5f56; } .dy { background: #ffbd2e; } .dg { background: #27c93f; }
+    .mu { flex: 1; background: #0a0a0a; border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; padding: 4px 10px; font-size: 10px; color: rgba(255,255,255,0.25); font-family: 'Space Grotesk', sans-serif; margin-left: 6px; }
+    .mx { padding: 18px; }
+
+    .sb { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px; border: 1px dashed rgba(0,255,65,0.35); border-radius: 8px; background: rgba(0,255,65,0.02); margin-bottom: 14px; }
+    .sb .sl { font-size: 8px; color: #00FF41; letter-spacing: 2px; text-transform: uppercase; }
+    .sp { width: 44px; height: 20px; background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.2); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 7px; color: #00FF41; font-weight: 600; }
+
+    /* Sponsor logo */
+    .spl { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.08); }
+
+    /* Team */
+    .tm { text-align: center; }
+    .tm img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.06); margin-bottom: 6px; }
+    .tm .tn { font-family: 'Space Grotesk', sans-serif; font-size: 12px; font-weight: 600; }
+    .tm .tr { font-size: 9px; color: #00FF41; letter-spacing: 1.5px; text-transform: uppercase; }
+
+    /* Contact */
+    .cx { background: rgba(0,255,65,0.03); border: 1px solid #00FF41; border-radius: 16px; padding: 36px; text-align: center; }
+    .cx h3 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+    .cx p { font-size: 12px; color: rgba(255,255,255,0.4); margin-bottom: 18px; }
+    .cg { display: flex; gap: 36px; justify-content: center; }
+    .cg .cl { font-size: 9px; color: rgba(255,255,255,0.25); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
+    .cg .cv { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 500; color: #00FF41; }
+
+    /* WhatsApp */
+    .wa { background: #005c4b; border-radius: 0 10px 10px 10px; padding: 12px 14px; font-size: 11px; color: #d1f4cc; line-height: 1.5; max-width: 300px; }
+    .wa .wn { font-weight: 600; color: #25d366; margin-bottom: 3px; font-size: 10px; }
+    .wa .wh { color: #ffd700; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<!-- 1. COVER -->
+<div class="page">
+  <div class="glow" style="width:600px;height:600px;top:-200px;right:-200px;"></div>
+  <div class="glow" style="width:400px;height:400px;bottom:-100px;left:-100px;"></div>
+  <div class="pi center">
+    <img src="logo.png" alt="" style="width:80px;margin-bottom:28px;filter:drop-shadow(0 0 24px rgba(0,255,65,0.3));" />
+    <div class="tt" style="font-size:52px;max-width:700px;">Sponsorship <em>Deck</em></div>
+    <p class="sub" style="text-align:center;margin:0 auto 36px;max-width:460px;">Weekly pickup futsal & mini football community in KL & Selangor.</p>
+    <div style="display:flex;gap:28px;font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:0.5px;">
+      <span>April 2026</span>
+      <span>kronibola.com</span>
+      <span>@kronibola.my</span>
+    </div>
+  </div>
+  <div class="pn"><em>01</em> / 08</div>
+</div>
+
+<!-- 2. INTRO KITA -->
+<div class="page">
+  <div class="glow" style="width:500px;height:500px;top:-150px;right:-100px;"></div>
+  <div class="pi">
+    <div>
+      <div class="lbl">Intro</div>
+      <div class="bar"></div>
+      <div class="tt">Who we are</div>
+    </div>
+    <div class="g2 grow" style="margin-top:20px;align-items:center;">
+      <div>
+        <p class="sub" style="margin-bottom:28px;">KroniBola is a weekly pickup football & futsal community. We bring people together through sport — no commitments, no team drama, just show up and play.</p>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div class="pill-dot" style="margin-top:6px;flex-shrink:0;"></div>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:2px;">Komuniti Bola & Futsal</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">Weekly pickup games — mini football 7-a-side and futsal across KL & Selangor</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div class="pill-dot" style="margin-top:6px;flex-shrink:0;"></div>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:2px;">Sosial Setting</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">More than just a game — it's a community. Players connect, bond, and keep coming back</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div class="pill-dot" style="margin-top:6px;flex-shrink:0;"></div>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:2px;">Regular Sessions</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">Consistent weekly games — players can count on us every week, building habits and loyalty</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div class="pill-dot" style="margin-top:6px;flex-shrink:0;"></div>
+            <div><div style="font-size:13px;font-weight:500;margin-bottom:2px;">100% Digital</div><div style="font-size:11px;color:rgba(255,255,255,0.4);">Register & pay online via kronibola.com. No cash, no hassle — everything tracked digitally</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ph" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:100%;">
+        <div style="grid-row:1/3;"><img src="https://drive.google.com/thumbnail?id=1Xr8wH13ldUQjBQi8MZj1smSmigAbVWau&sz=w800" alt="" /></div>
+        <div><img src="https://drive.google.com/thumbnail?id=1q0hWjbPB0bm8wyEbtL9jqi_uLT8Tqs7j&sz=w800" alt="" /></div>
+        <div><img src="https://drive.google.com/thumbnail?id=1YviOvUg609r2G7AAEqMS_butUO4_tiQE&sz=w800" alt="" /></div>
+      </div>
+    </div>
+  </div>
+  <img src="logo.png" class="wm" />
+  <div class="pn"><em>02</em> / 08</div>
+</div>
+
+<!-- 3. NUMBERS -->
+<div class="page">
+  <div class="glow" style="width:500px;height:500px;bottom:-200px;right:-100px;"></div>
+  <div class="pi">
+    <div style="margin-bottom:20px;">
+      <div class="lbl">Numbers</div>
+      <div class="bar"></div>
+      <div class="tt">Our numbers <em>so far</em></div>
+    </div>
+    <div class="g4" style="margin-bottom:16px;">
+      <div class="st"><div class="n">2025</div><div class="l">Operating since</div></div>
+      <div class="st"><div class="n">5</div><div class="l">Sessions organized</div></div>
+      <div class="st"><div class="n">46+</div><div class="l">Total unique players</div></div>
+      <div class="st"><div class="n">42</div><div class="l">Max per session</div></div>
+    </div>
+    <div class="g2 grow" style="margin-top:8px;">
+      <div class="cd" style="display:flex;flex-direction:column;justify-content:center;">
+        <h4>Growing Fast</h4>
+        <p style="margin-top:6px;">First session on 4 April 2026 pulled 42 players — max capacity hit. We run both mini football (42 pax) and futsal (18 pax) sessions weekly. Demand is real and growing.</p>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+          <div class="pill"><span class="pill-dot"></span> Mini Football 7-a-side</div>
+          <div class="pill"><span class="pill-dot"></span> Futsal</div>
+          <div class="pill"><span class="pill-dot"></span> KL & Selangor</div>
+        </div>
+      </div>
+      <div class="cd" style="display:flex;flex-direction:column;justify-content:center;">
+        <h4>Session Breakdown</h4>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:12px;">Minifootball 7aside</div>
+            <div style="font-family:'Space Grotesk';font-size:14px;font-weight:600;color:#00FF41;">42 players</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="font-size:12px;">Futsal</div>
+            <div style="font-family:'Space Grotesk';font-size:14px;font-weight:600;color:#00FF41;">18 players</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;">Weekly frequency</div>
+            <div style="font-family:'Space Grotesk';font-size:14px;font-weight:600;color:#00FF41;">4-5x / month</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <img src="logo.png" class="wm" />
+  <div class="pn"><em>03</em> / 08</div>
+</div>
+
+<!-- 4. DIGITAL -->
+<div class="page">
+  <div class="pi">
+    <div class="g2" style="height:100%;align-items:stretch;">
+      <div style="display:flex;flex-direction:column;justify-content:center;">
+        <div class="lbl">Digital Platform</div>
+        <div class="bar"></div>
+        <div class="tt" style="font-size:36px;">Web-based <em>experience</em></div>
+        <p class="sub" style="margin-bottom:24px;">Everything runs through kronibola.com — a fully digital platform where players register, pay, check lineups, and engage.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="cd" style="padding:16px;">
+            <h4>Register & Pay Online</h4>
+            <p>No cash needed. Players register with name & phone, pay via Maybank MAE, get instant confirmation.</p>
+          </div>
+          <div class="cd" style="padding:16px;">
+            <h4>Live Match Lineup</h4>
+            <p>Real-time player count, who's registered, who's paid. Full transparency for every session.</p>
+          </div>
+          <div class="cd" style="padding:16px;">
+            <h4>Leaderboard & History</h4>
+            <p>Track most active players, browse past sessions, and view the photo gallery — all in one place.</p>
+          </div>
+        </div>
+      </div>
+      <div class="mf" style="align-self:center;">
+        <div class="mb"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div><div class="mu">kronibola.com</div></div>
+        <div class="mx">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-family:'Space Grotesk';font-weight:700;font-size:13px;">Kroni<span style="color:#00FF41;">Bola</span></div>
+            <div style="display:flex;gap:10px;font-size:9px;color:rgba(255,255,255,0.25);">Match &middot; History &middot; Board &middot; Jersey &middot; Gallery</div>
+          </div>
+          <div class="sb"><span class="sl">Powered by</span><div class="sp">LOGO</div><div class="sp">LOGO</div></div>
+          <div style="text-align:center;padding:14px 0 10px;">
+            <div style="font-family:'Space Grotesk';font-size:15px;font-weight:600;">No commitments — just register, pay, and <span style="color:#00FF41;">play</span>.</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:3px;">You're already part of the KRONI.</div>
+          </div>
+          <div style="background:#111;border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-family:'Space Grotesk';font-size:12px;font-weight:600;color:#00FF41;">KRONI SESSION #24</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:2px;">Fri, 11 Apr &middot; 9 PM &middot; Setia Alam</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:7px;color:rgba(255,255,255,0.25);">PLAYERS</div>
+                <div style="font-family:'Space Grotesk';font-size:18px;font-weight:700;color:#00FF41;">38/42</div>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+              <div style="background:#00FF41;color:#000;padding:5px 12px;border-radius:5px;font-size:9px;font-weight:600;">Register — RM 10</div>
+              <div style="display:flex;gap:5px;align-items:center;">
+                <span style="font-size:7px;color:rgba(255,255,255,0.2);letter-spacing:1px;">SPONSORED BY</span>
+                <div class="sp" style="width:36px;height:16px;font-size:6px;">LOGO</div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#111;border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:9px;color:rgba(255,255,255,0.3);">Minifootball 7aside &middot; 26 Apr</div>
+            <div style="font-family:'Space Grotesk';font-size:11px;font-weight:600;color:#00FF41;">35/42</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <img src="logo.png" class="wm" />
+  <div class="pn"><em>04</em> / 08</div>
+</div>
+
+<!-- 5. WHAT WE OFFER -->
+<div class="page">
+  <div class="glow" style="width:400px;height:400px;top:-100px;left:-100px;"></div>
+  <div class="pi">
+    <div style="margin-bottom:20px;">
+      <div class="lbl">What We Offer</div>
+      <div class="bar"></div>
+      <div class="tt">What sponsors <em>get</em></div>
+    </div>
+    <div class="g3 grow">
+      <div class="cd" style="display:flex;flex-direction:column;">
+        <h4>Weekly Sessions</h4>
+        <p style="flex:1;">Your brand featured at every game — 4-5 sessions per month reaching 42 players each. Logo on the app, match cards, and venue.</p>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);font-size:24px;font-family:'Space Grotesk';font-weight:700;color:#00FF41;">4-5x<span style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:400;margin-left:6px;">per month</span></div>
+      </div>
+      <div class="cd" style="display:flex;flex-direction:column;">
+        <h4>Air, Photo & Video</h4>
+        <p style="flex:1;">We provide water/drinks at every session. Professional photos and video content captured every match day — your brand in every shot, shared on social.</p>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);">
+          <div class="ph" style="grid-template-columns:1fr 1fr;gap:6px;">
+            <img src="https://drive.google.com/thumbnail?id=1eJoNPcYnc5xRWIBPLxVgkwEtBrVqEcV0&sz=w800" alt="" style="height:70px;" />
+            <img src="https://drive.google.com/thumbnail?id=1FNIwmmunXoAvvX-aX_jGtBArPoju1RVT&sz=w800" alt="" style="height:70px;" />
+          </div>
+        </div>
+      </div>
+      <div class="cd" style="display:flex;flex-direction:column;">
+        <h4>Event Organizing</h4>
+        <p style="flex:1;">Need a branded tournament or special event? We handle everything — venue booking, player management, content creation, and logistics.</p>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div class="pill"><span class="pill-dot"></span> Venue & logistics</div>
+            <div class="pill"><span class="pill-dot"></span> Player management</div>
+            <div class="pill"><span class="pill-dot"></span> Content creation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <img src="logo.png" class="wm" />
+  <div class="pn"><em>05</em> / 08</div>
+</div>
+
+<!-- 6. COLLAB -->
+<div class="page">
+  <div class="pi">
+    <div style="margin-bottom:20px;">
+      <div class="lbl">Collaborations</div>
+      <div class="bar"></div>
+      <div class="tt">Brands we've <em>worked with</em></div>
+    </div>
+    <div class="g2 grow">
+      <div class="cd" style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+          <img src="sponsor-boostplus.jpeg" alt="Boost+" class="spl" />
+          <div>
+            <div style="font-family:'Space Grotesk';font-size:18px;font-weight:600;">Boost+</div>
+            <div style="font-size:11px;color:#00FF41;letter-spacing:1px;text-transform:uppercase;">Season Partner</div>
+          </div>
+        </div>
+        <p style="flex:1;">Official hydration partner. Provides Boost+ electrolyte tablets to all players at every session. Brand featured on the app, match announcements, and social media content.</p>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div class="pill"><span class="pill-dot"></span> Product sampling</div>
+            <div class="pill"><span class="pill-dot"></span> App placement</div>
+            <div class="pill"><span class="pill-dot"></span> Social media</div>
+          </div>
+        </div>
+      </div>
+      <div class="cd" style="display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+          <img src="sponsor-efs.png" alt="EFS" class="spl" />
+          <div>
+            <div style="font-family:'Space Grotesk';font-size:18px;font-weight:600;">EFS SureGrip</div>
+            <div style="font-size:11px;color:#00FF41;letter-spacing:1px;text-transform:uppercase;">Game Sponsor</div>
+          </div>
+        </div>
+        <p style="flex:1;">Anti-slip grip socks given to the first 10 registered players each session. Players try the product on the pitch — direct, hands-on brand experience that drives real purchase intent.</p>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div class="pill"><span class="pill-dot"></span> Product giveaway</div>
+            <div class="pill"><span class="pill-dot"></span> On-pitch trial</div>
+            <div class="pill"><span class="pill-dot"></span> WhatsApp mention</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <img src="logo.png" class="wm" />
+  <div class="pn"><em>06</em> / 08</div>
+</div>
+
+<!-- 7. IN ACTION -->
+<div class="page">
+  <div class="pi">
+    <div style="margin-bottom:16px;">
+      <div class="lbl">In Action</div>
+      <div class="bar"></div>
+      <div class="tt">The <em>Kroni</em> on the pitch</div>
+    </div>
+    <div class="ph grow" style="grid-template-columns:2fr 1fr 1fr;grid-template-rows:1fr 1fr;">
+      <div style="grid-row:1/3;"><img src="https://drive.google.com/thumbnail?id=1qv6oyTiqV-hE6s_qYP2yPQAunbN1QhQR&sz=w800" alt="" /></div>
+      <div><img src="https://drive.google.com/thumbnail?id=17rzYynpouQ6rDYmgrXlUt9EuCKyIjjcw&sz=w800" alt="" /></div>
+      <div><img src="https://drive.google.com/thumbnail?id=1URRExOLIpVcaQ8T63KfbRGi3RPe_fvb3&sz=w800" alt="" /></div>
+      <div><img src="https://drive.google.com/thumbnail?id=16YAqn_W94-qhcuJna1_TJMyXC5qUZlZT&sz=w800" alt="" /></div>
+      <div><img src="https://drive.google.com/thumbnail?id=1RR9yVdsarSFKCrSeZMxACSaRLpCKFAVM&sz=w800" alt="" /></div>
+    </div>
+  </div>
+  <img src="logo.png" class="wm" />
+  <div class="pn"><em>07</em> / 08</div>
+</div>
+
+<!-- 8. CONTACT -->
+<div class="page">
+  <div class="glow" style="width:600px;height:600px;top:-200px;right:-200px;"></div>
+  <div class="glow" style="width:400px;height:400px;bottom:-100px;left:-100px;"></div>
+  <div class="pi center">
+    <img src="logo.png" alt="" style="width:70px;margin-bottom:24px;filter:drop-shadow(0 0 24px rgba(0,255,65,0.3));" />
+    <div class="tt" style="font-size:48px;">Let's <em>play</em> together</div>
+    <p class="sub" style="text-align:center;margin:0 auto 28px;">Interested to collaborate? Let's talk.</p>
+    <div class="cx" style="width:100%;max-width:600px;">
+      <h3>Get In Touch</h3>
+      <p>We're open to partnerships of all sizes — from single-game sponsorships to season-long collaborations.</p>
+      <div class="cg">
+        <div><div class="cl">WhatsApp</div><div class="cv">+6012-618 3827</div></div>
+        <div><div class="cl">Email</div><div class="cv">kronibola@gmail.com</div></div>
+        <div><div class="cl">Website</div><div class="cv">kronibola.com</div></div>
+        <div><div class="cl">Instagram</div><div class="cv">@kronibola.my</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="pn"><em>08</em> / 08</div>
+</div>
+
+</body>
+</html>
