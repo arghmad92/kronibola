@@ -17,7 +17,7 @@ const crew = [
     </div>
   </header>
 
-  <main class="container">
+  <main class="container crew-container">
     <div class="crew-grid">
       {crew.map((member, i) => (
         <div class="crew-card" style={`animation-delay:${i * 0.1}s`}>
@@ -47,6 +47,9 @@ const crew = [
       <p class="crew-cta-text">Want to join the crew or have questions?</p>
       <a href="https://wa.me/60126183827" target="_blank" class="btn btn--wa" style="width:100%">MESSAGE US</a>
     </div>
+
+    <!-- Social & Links row -->
+    <div class="crew-bottom-row">
 
     <!-- Social Media -->
     <div class="social-section">
@@ -93,7 +96,7 @@ const crew = [
         <span>Sponsors & Partners</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
-    </div>
+    </div><!-- close crew-bottom-row -->
   </main>
 </Layout>
 
@@ -264,5 +267,92 @@ const crew = [
   @media (max-width: 380px) {
     .crew-grid { grid-template-columns: 1fr; }
     .crew-photo-wrap { width: 80px; height: 80px; }
+  }
+
+  /* Desktop layout */
+  .crew-bottom-row { display: block; }
+
+  @media (min-width: 900px) {
+    .crew-container { max-width: 1100px; }
+
+    .crew-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.2rem;
+    }
+
+    .crew-card {
+      padding: 2rem 1.2rem;
+    }
+
+    .crew-photo-wrap {
+      width: 120px;
+      height: 120px;
+    }
+
+    .crew-cta {
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .crew-bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .social-links {
+      gap: 0.6rem;
+    }
+
+    .quick-links {
+      margin-bottom: 2rem;
+    }
+  }
+
+  /* Light theme */
+  :global([data-theme="light"]) .crew-card {
+    background: #ffffff;
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .crew-card:hover {
+    border-color: rgba(0,134,58,0.2);
+  }
+
+  :global([data-theme="light"]) .crew-card::before {
+    background: linear-gradient(90deg, transparent, rgba(0,134,58,0.1), transparent);
+  }
+
+  :global([data-theme="light"]) .crew-glow {
+    background: conic-gradient(from 0deg, transparent, rgba(0,134,58,0.15), transparent, rgba(0,134,58,0.08), transparent);
+  }
+
+  :global([data-theme="light"]) .crew-cta {
+    background: #ffffff;
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .crew-cta-glow {
+    background: radial-gradient(circle, rgba(0,134,58,0.05), transparent);
+  }
+
+  :global([data-theme="light"]) .social-link {
+    background: #ffffff;
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .social-link:hover {
+    background: rgba(0,134,58,0.03);
+  }
+
+  :global([data-theme="light"]) .quick-link {
+    background: #ffffff;
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .quick-link:hover {
+    background: rgba(0,134,58,0.03);
   }
 </style>

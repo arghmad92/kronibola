@@ -10,19 +10,21 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </header>
 
-  <main class="container">
+  <main class="container jersey-container">
     <!-- Product hero -->
     <div class="product-hero glass">
-      <img src="/jerseynew.jpeg" alt="Kroni Shirts #001 — Front and Back" class="product-img" />
-      <div class="product-info">
-        <span class="product-badge">#001</span>
-        <h2 class="product-name">Kroni <span class="neon-text">Shirts #001</span></h2>
-        <p class="product-desc">Black to neon green gradient. Breathable match-day fabric. KroniBola crest on chest.</p>
-        <div class="product-price">RM <span class="price-num">48</span></div>
-        <p class="product-note">Made by KOMII</p>
-        <div class="spaylater-badge">
-          <span class="spaylater-text">or 3x <strong>RM 16/mo</strong> with SPayLater</span>
-          <span class="spaylater-sub">Scan QR with Shopee app &middot; 0% interest</span>
+      <div class="product-hero-inner">
+        <img src="/jerseynew.jpeg" alt="Kroni Shirts #001 — Front and Back" class="product-img" />
+        <div class="product-info">
+          <span class="product-badge">#001</span>
+          <h2 class="product-name">Kroni <span class="neon-text">Shirts #001</span></h2>
+          <p class="product-desc">Black to neon green gradient. Breathable match-day fabric. KroniBola crest on chest.</p>
+          <div class="product-price">RM <span class="price-num">48</span></div>
+          <p class="product-note">Made by KOMII</p>
+          <div class="spaylater-badge">
+            <span class="spaylater-text">or 3x <strong>RM 16/mo</strong> with SPayLater</span>
+            <span class="spaylater-sub">Scan QR with Shopee app &middot; 0% interest</span>
+          </div>
         </div>
       </div>
     </div>
@@ -34,7 +36,9 @@ import Layout from '../layouts/Layout.astro';
       <div class="deadline-date">Sunday, 13 April 2026 · 11:59 PM</div>
     </div>
 
-    <!-- Size guide -->
+    <!-- Size guide + Gallery row -->
+    <div class="jersey-details-row">
+
     <div class="size-section">
       <h3 class="section-title">SIZE <span class="neon-text">GUIDE</span></h3>
       <div class="size-table-wrap glass">
@@ -79,6 +83,8 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
     </div>
+
+    </div><!-- close jersey-details-row -->
 
     <!-- Order CTA -->
     <button class="btn btn--primary order-cta" id="orderBtn">ORDER NOW — RM 48</button>
@@ -566,15 +572,52 @@ import Layout from '../layouts/Layout.astro';
 </script>
 
 <style>
+  /* Desktop container */
+  @media (min-width: 900px) {
+    .jersey-container { max-width: 1100px; }
+  }
+
   /* Product hero */
   .product-hero {
     padding: 0; overflow: hidden; margin: 1rem 0;
+  }
+  .product-hero-inner {
+    display: block;
   }
   .product-img {
     width: 100%; display: block;
   }
   .product-info {
     padding: 1.2rem 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .product-hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+    }
+
+    .product-img {
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-info {
+      padding: 2rem 2.5rem;
+    }
+  }
+
+  /* Details row (size guide + gallery) */
+  .jersey-details-row { display: block; }
+
+  @media (min-width: 900px) {
+    .jersey-details-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
   }
   .product-badge {
     display: inline-block; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.15em;
