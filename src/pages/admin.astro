@@ -362,12 +362,20 @@ import Layout from '../layouts/Layout.astro';
     const paid = allOrders.filter((o: any) => o['Payment Status'] === 'Paid').length;
     const collected = allOrders.filter((o: any) => o['Payment Status'] === 'Collected').length;
 
-    // Size breakdown
+    // Size breakdown — parse "M ×1, L ×2" format
     const sizes: Record<string, number> = {};
     allOrders.forEach((o: any) => {
-      const s = o.Size || 'Unknown';
-      const q = parseInt(o.Quantity) || 1;
-      sizes[s] = (sizes[s] || 0) + q;
+      const sizeStr = o.Size || '';
+      // Split by comma, then parse each "SIZE ×QTY" pair
+      sizeStr.split(',').forEach((part: string) => {
+        const trimmed = part.trim();
+        const match = trimmed.match(/^(\S+)\s*[×x]\s*(\d+)$/i);
+        if (match) {
+          sizes[match[1]] = (sizes[match[1]] || 0) + parseInt(match[2], 10);
+        } else if (trimmed) {
+          sizes[trimmed] = (sizes[trimmed] || 0) + 1;
+        }
+      });
     });
     const sizeList = Object.entries(sizes).sort((a, b) => b[1] - a[1]).map(([s, q]) => `<span class="os-size">${esc(s)} <strong>×${q}</strong></span>`).join('');
 
