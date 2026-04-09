@@ -10,7 +10,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </header>
 
-  <main class="container">
+  <main class="container board-container">
     <div id="loading" class="loading"><div class="loader"></div></div>
     <div id="board"></div>
   </main>
@@ -201,5 +201,9 @@ import Layout from '../layouts/Layout.astro';
     :global(.podium-avatar) { font-size: 0.82rem !important; }
     :global(.podium-name) { font-size: 0.68rem; }
     :global(.rank-bar-wrap) { min-width: 60px; }
+  }
+
+  @media (min-width: 900px) {
+    .board-container { max-width: 1100px; }
   }
 </style>

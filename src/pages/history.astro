@@ -10,7 +10,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </header>
 
-  <main class="container">
+  <main class="container history-container">
     <div id="loading" class="loading"><div class="loader"></div></div>
     <div id="historyList" class="history-list"></div>
     <p id="empty" style="display:none" class="empty">No past games yet.</p>
@@ -180,5 +180,9 @@ import Layout from '../layouts/Layout.astro';
     font-size: 0.62rem; font-weight: 600; color: var(--text-secondary);
     text-align: center; line-height: 1.2; max-width: 80px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  @media (min-width: 900px) {
+    .history-container { max-width: 1100px; }
   }
 </style>

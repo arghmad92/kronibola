@@ -10,7 +10,7 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </header>
 
-  <main class="container">
+  <main class="container gallery-container">
     <div id="loading" class="loading"><div class="loader"></div></div>
     <div id="galleryGrid" class="gallery-grid"></div>
     <div id="viewAllWrap" style="display:none" class="view-all-wrap">
@@ -138,4 +138,8 @@ import Layout from '../layouts/Layout.astro';
 
   @media (max-width: 360px) { .gallery-grid { columns: 1; } }
   @media (min-width: 641px) { .gallery-grid { columns: 3; } }
+  @media (min-width: 900px) {
+    .gallery-container { max-width: 1100px; }
+    .gallery-grid { columns: 4; }
+  }
 </style>
