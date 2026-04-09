@@ -78,25 +78,31 @@ const crew = [
       </div>
     </div>
 
-    <!-- Quick links to Gallery, Rules, Sponsors -->
+    <!-- Quick links to Gallery, Rules, Sponsors — same structure as social links -->
     <div class="quick-links-section">
       <h2 class="social-title">QUICK <span class="neon-text">LINKS</span></h2>
-      <div class="quick-links">
-      <a href="/gallery" class="quick-link glass">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span>Photo Gallery</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-      <a href="/rules" class="quick-link glass">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        <span>House Rules</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-      <a href="/sponsors" class="quick-link glass">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-        <span>Sponsors & Partners</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
+      <div class="social-links">
+        <a href="/gallery" class="social-link glass">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <div>
+            <span class="sl-name">Photo Gallery</span>
+            <span class="sl-handle">Match day moments</span>
+          </div>
+        </a>
+        <a href="/rules" class="social-link glass">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <div>
+            <span class="sl-name">House Rules</span>
+            <span class="sl-handle">8 rules to play by</span>
+          </div>
+        </a>
+        <a href="/sponsors" class="social-link glass">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+          <div>
+            <span class="sl-name">Sponsors & Partners</span>
+            <span class="sl-handle">Brands we work with</span>
+          </div>
+        </a>
       </div>
     </div>
 
@@ -243,30 +249,18 @@ const crew = [
     position: relative;
   }
 
-  /* Social & Quick Links — uniform sizing */
+  /* Social & Quick Links — identical styling */
   .crew-links-row { display: grid; grid-template-columns: 1fr; gap: 1rem; margin: 1.5rem 0 2rem; }
-  .social-section { }
-  .quick-links-section { }
   .social-title { font-size: 1rem; font-family: 'Space Grotesk', sans-serif; margin-bottom: 0.8rem; }
   .social-links { display: flex; flex-direction: column; gap: 0.5rem; }
-  .quick-links { display: flex; flex-direction: column; gap: 0.5rem; }
-
-  /* Shared link item style */
-  .social-link, .quick-link {
+  .social-link {
     display: flex; align-items: center; gap: 0.8rem; padding: 0.9rem 1rem;
     color: inherit; transition: all 0.2s; border-left: 3px solid transparent;
-    font-size: 0.85rem; font-weight: 500;
   }
-  .social-link:hover, .quick-link:hover {
-    border-left-color: var(--neon); background: rgba(0,255,65,0.03);
-    color: var(--text);
-  }
-  .social-link svg:first-child, .quick-link svg:first-child { color: var(--neon); opacity: 0.8; flex-shrink: 0; }
+  .social-link:hover { border-left-color: var(--neon); background: rgba(0,255,65,0.03); }
+  .social-link svg { color: var(--neon); opacity: 0.8; flex-shrink: 0; }
   .sl-name { display: block; font-weight: 700; font-size: 0.85rem; }
   .sl-handle { display: block; font-size: 0.72rem; color: var(--text-muted); }
-  .quick-link span { flex: 1; }
-  .quick-link svg:last-child { color: var(--text-muted); transition: transform 0.2s; }
-  .quick-link:hover svg:last-child { transform: translateX(3px); color: var(--neon); }
 
   @media (max-width: 380px) {
     .crew-grid { grid-template-columns: 1fr; }
@@ -338,12 +332,4 @@ const crew = [
     background: rgba(0,134,58,0.03);
   }
 
-  :global([data-theme="light"]) .quick-link {
-    background: #ffffff;
-    border-color: var(--border);
-  }
-
-  :global([data-theme="light"]) .quick-link:hover {
-    background: rgba(0,134,58,0.03);
-  }
 </style>
