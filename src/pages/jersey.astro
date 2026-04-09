@@ -20,6 +20,10 @@ import Layout from '../layouts/Layout.astro';
         <p class="product-desc">Black to neon green gradient. Breathable match-day fabric. KroniBola crest on chest.</p>
         <div class="product-price">RM <span class="price-num">48</span></div>
         <p class="product-note">Made by KOMII</p>
+        <div class="spaylater-badge">
+          <span class="spaylater-text">or 3x <strong>RM 16/mo</strong> with SPayLater</span>
+          <span class="spaylater-sub">Scan QR with Shopee app &middot; 0% interest</span>
+        </div>
       </div>
     </div>
 
@@ -172,6 +176,10 @@ import Layout from '../layouts/Layout.astro';
         <p class="modal-sub" id="payTotalLabel">Total: RM 48</p>
         <img src="/pay.webp" alt="Payment QR" class="qr-img" />
         <a href="https://www.maybank2u.com.my" target="_blank" class="btn btn--mae" style="width:100%">Open Maybank MAE</a>
+        <div class="spaylater-pay-note">
+          <div class="spaylater-pay-title">Want to pay later?</div>
+          <div class="spaylater-pay-desc">Open your <strong>Shopee app</strong> &rarr; Scan this QR &rarr; Select <strong>SPayLater</strong> at checkout. Split into 3 months, 0% interest.</div>
+        </div>
 
         <div class="receipt-upload">
           <p class="upload-label">Upload payment receipt <span style="color:var(--red)">*</span></p>
@@ -720,6 +728,59 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .empty-msg { text-align: center; font-size: 0.82rem; color: var(--text-muted); padding: 1rem 0; }
+
+  /* SPayLater badge on product */
+  .spaylater-badge {
+    margin-top: 0.8rem;
+    background: rgba(238, 77, 45, 0.08);
+    border: 1px solid rgba(238, 77, 45, 0.2);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+  }
+
+  .spaylater-text {
+    display: block;
+    font-size: 0.82rem;
+    color: #ee4d2d;
+  }
+
+  .spaylater-text strong {
+    font-weight: 700;
+  }
+
+  .spaylater-sub {
+    display: block;
+    font-size: 0.68rem;
+    color: rgba(238, 77, 45, 0.6);
+    margin-top: 2px;
+  }
+
+  /* SPayLater note on payment step */
+  .spaylater-pay-note {
+    margin-top: 0.8rem;
+    background: rgba(238, 77, 45, 0.06);
+    border: 1px solid rgba(238, 77, 45, 0.15);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    text-align: left;
+  }
+
+  .spaylater-pay-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #ee4d2d;
+    margin-bottom: 4px;
+  }
+
+  .spaylater-pay-desc {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .spaylater-pay-desc strong {
+    color: #ee4d2d;
+  }
 
   /* Jersey Gallery */
   .jersey-gallery { margin: 2.5rem 0 2rem; }
