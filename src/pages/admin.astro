@@ -438,7 +438,7 @@ import Layout from '../layouts/Layout.astro';
             ${ref ? `<span class="pca-ref">${ref}</span>` : ''}
           </div>
           <div style="text-align:right">
-            <span style="font-size:0.72rem;color:var(--text-muted)">${esc(o.Size)} × ${esc(o.Quantity)}</span>
+            <span style="font-size:0.72rem;color:var(--text-muted)">${esc(o.Size)} (${esc(o.Quantity)} pcs)</span>
             <span style="display:block;font-size:0.82rem;font-weight:700;color:var(--neon);font-family:'Space Grotesk',sans-serif">RM ${esc(o.Total)}</span>
           </div>
         </div>
