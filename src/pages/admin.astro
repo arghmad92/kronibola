@@ -150,6 +150,7 @@ import Layout from '../layouts/Layout.astro';
             <option value="Pending">Pending</option>
             <option value="Paid">Paid</option>
             <option value="Collected">Collected</option>
+            <option value="Deleted">Deleted</option>
           </select>
         </div>
 
@@ -355,16 +356,19 @@ import Layout from '../layouts/Layout.astro';
     const summary = document.getElementById('orderSummary')!;
     if (!allOrders.length) { summary.innerHTML = ''; return; }
 
-    const totalOrders = allOrders.length;
-    const totalQty = allOrders.reduce((s: number, o: any) => s + (parseInt(o.Quantity) || 0), 0);
-    const totalRevenue = allOrders.reduce((s: number, o: any) => s + (parseFloat(o.Total) || 0), 0);
-    const pending = allOrders.filter((o: any) => o['Payment Status'] === 'Pending').length;
-    const paid = allOrders.filter((o: any) => o['Payment Status'] === 'Paid').length;
-    const collected = allOrders.filter((o: any) => o['Payment Status'] === 'Collected').length;
+    // Exclude deleted orders from summary
+    const activeOrders = allOrders.filter((o: any) => o['Payment Status'] !== 'Deleted');
+    const totalOrders = activeOrders.length;
+    const totalQty = activeOrders.reduce((s: number, o: any) => s + (parseInt(o.Quantity) || 0), 0);
+    const totalRevenue = activeOrders.reduce((s: number, o: any) => s + (parseFloat(o.Total) || 0), 0);
+    const pending = activeOrders.filter((o: any) => o['Payment Status'] === 'Pending').length;
+    const paid = activeOrders.filter((o: any) => o['Payment Status'] === 'Paid').length;
+    const collected = activeOrders.filter((o: any) => o['Payment Status'] === 'Collected').length;
+    const deleted = allOrders.filter((o: any) => o['Payment Status'] === 'Deleted').length;
 
-    // Size breakdown — parse "M ×1, L ×2" format
+    // Size breakdown — parse "M ×1, L ×2" format (active orders only)
     const sizes: Record<string, number> = {};
-    allOrders.forEach((o: any) => {
+    activeOrders.forEach((o: any) => {
       const sizeStr = o.Size || '';
       // Split by comma, then parse each "SIZE ×QTY" pair
       sizeStr.split(',').forEach((part: string) => {
@@ -389,6 +393,7 @@ import Layout from '../layouts/Layout.astro';
         <span class="os-badge" style="color:#ff9500;background:rgba(255,149,0,0.1);border-color:rgba(255,149,0,0.2)">Pending: ${pending}</span>
         <span class="os-badge" style="color:#00FF41;background:rgba(0,255,65,0.1);border-color:rgba(0,255,65,0.2)">Paid: ${paid}</span>
         <span class="os-badge" style="color:#00c4ff;background:rgba(0,196,255,0.1);border-color:rgba(0,196,255,0.2)">Collected: ${collected}</span>
+        ${deleted ? `<span class="os-badge" style="color:#ff3b30;background:rgba(255,59,48,0.1);border-color:rgba(255,59,48,0.2)">Deleted: ${deleted}</span>` : ''}
       </div>
       <div class="os-sizes">
         <div class="os-sizes-label">SIZE BREAKDOWN</div>
@@ -399,7 +404,10 @@ import Layout from '../layouts/Layout.astro';
 
   function renderOrders() {
     const filter = (document.getElementById('orderFilter') as HTMLSelectElement).value;
-    const filtered = filter === 'all' ? allOrders : allOrders.filter((o: any) => o['Payment Status'] === filter);
+    // "all" hides deleted orders; use "Deleted" filter to see them
+    const filtered = filter === 'all'
+      ? allOrders.filter((o: any) => o['Payment Status'] !== 'Deleted')
+      : allOrders.filter((o: any) => o['Payment Status'] === filter);
     const wrap = document.getElementById('ordersList')!;
 
     renderOrderSummary();
@@ -409,10 +417,11 @@ import Layout from '../layouts/Layout.astro';
       return;
     }
 
-    const statusColors: Record<string, string> = { Paid: '#00FF41', Pending: '#ff9500', Collected: '#00c4ff' };
+    const statusColors: Record<string, string> = { Paid: '#00FF41', Pending: '#ff9500', Collected: '#00c4ff', Deleted: '#ff3b30' };
 
     wrap.innerHTML = filtered.map((o: any) => {
       const status = o['Payment Status'] || 'Pending';
+      const isDeleted = status === 'Deleted';
       const color = statusColors[status] || '#666';
       const name = esc(o['Player Name']);
       const phone = String(o.Phone || '').replace("'", '').trim();
@@ -420,11 +429,11 @@ import Layout from '../layouts/Layout.astro';
       const delivery = o.Delivery || '';
       const address = o.Address || '';
 
-      return `<div class="player-card-admin">
+      return `<div class="player-card-admin" style="${isDeleted ? 'opacity:0.45;' : ''}">
         <div class="pca-top">
           <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">👕</div>
           <div class="pca-info">
-            <span class="pca-name">${name}</span>
+            <span class="pca-name">${name}${isDeleted ? ' <span style="font-size:0.62rem;color:#ff3b30;">(DELETED)</span>' : ''}</span>
             <span class="pca-phone">${esc(phone)}</span>
             ${ref ? `<span class="pca-ref">${ref}</span>` : ''}
           </div>
@@ -441,12 +450,33 @@ import Layout from '../layouts/Layout.astro';
               <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
               <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
               <option value="Collected" ${status === 'Collected' ? 'selected' : ''}>Collected</option>
+              <option value="Deleted" ${status === 'Deleted' ? 'selected' : ''}>Deleted</option>
             </select>
           </div>
           <button class="btn btn--outline btn--sm o-save" data-ref="${ref}" style="align-self:flex-end;">Save</button>
+          ${!isDeleted ? `<button class="btn btn--sm o-delete" data-ref="${ref}" style="align-self:flex-end;color:#ff3b30;border-color:rgba(255,59,48,0.3);">Delete</button>` : `<button class="btn btn--sm o-restore" data-ref="${ref}" style="align-self:flex-end;color:#00c4ff;border-color:rgba(0,196,255,0.3);">Restore</button>`}
         </div>
       </div>`;
     }).join('');
+
+    // Save order status
+    async function saveOrders(feedbackMsg: string) {
+      try {
+        const res = await fetch(`${API}/admin/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+          body: JSON.stringify({ orders: allOrders }),
+        });
+        if (res.ok) {
+          showSaveToast(feedbackMsg, true);
+          renderOrders();
+        } else {
+          showSaveToast('Failed to save', false);
+        }
+      } catch {
+        showSaveToast('Network error', false);
+      }
+    }
 
     // Save button handlers
     wrap.querySelectorAll('.o-save').forEach((btn) => {
@@ -454,29 +484,39 @@ import Layout from '../layouts/Layout.astro';
         const ref = (btn as HTMLButtonElement).dataset.ref;
         const card = btn.closest('.player-card-admin')!;
         const sel = card.querySelector('.o-status') as HTMLSelectElement;
-        const newStatus = sel.value;
         const order = allOrders.find((o: any) => o['Ref Code'] === ref);
         if (order) {
-          order['Payment Status'] = newStatus;
+          order['Payment Status'] = sel.value;
           (btn as HTMLButtonElement).textContent = 'Saving...';
           (btn as HTMLButtonElement).disabled = true;
-          try {
-            const res = await fetch(`${API}/admin/orders`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-              body: JSON.stringify({ orders: allOrders }),
-            });
-            if (res.ok) {
-              showSaveToast('Status saved!', true);
-              renderOrders();
-            } else {
-              showSaveToast('Failed to save', false);
-            }
-          } catch {
-            showSaveToast('Network error', false);
-          }
+          await saveOrders('Status saved!');
           (btn as HTMLButtonElement).textContent = 'Save';
           (btn as HTMLButtonElement).disabled = false;
+        }
+      });
+    });
+
+    // Delete button handlers
+    wrap.querySelectorAll('.o-delete').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const ref = (btn as HTMLButtonElement).dataset.ref;
+        if (!confirm('Delete this order? You can restore it later from the Deleted filter.')) return;
+        const order = allOrders.find((o: any) => o['Ref Code'] === ref);
+        if (order) {
+          order['Payment Status'] = 'Deleted';
+          await saveOrders('Order deleted');
+        }
+      });
+    });
+
+    // Restore button handlers
+    wrap.querySelectorAll('.o-restore').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const ref = (btn as HTMLButtonElement).dataset.ref;
+        const order = allOrders.find((o: any) => o['Ref Code'] === ref);
+        if (order) {
+          order['Payment Status'] = 'Pending';
+          await saveOrders('Order restored');
         }
       });
     });
