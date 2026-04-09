@@ -72,6 +72,20 @@ const canonicalUrl = Astro.url.href;
     )}
   </head>
   <body>
+    <!-- Theme toggle (top-right) -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode">
+      <svg class="theme-icon theme-icon--sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="theme-icon theme-icon--moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <!-- Theme script (runs before render to prevent flash) -->
+    <script is:inline>
+      (function() {
+        var t = localStorage.getItem('kb-theme');
+        if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      })();
+    </script>
+
     <!-- Animated background -->
     <div class="bg-effects">
       <div class="bg-orb bg-orb--1"></div>
@@ -269,6 +283,21 @@ const canonicalUrl = Astro.url.href;
         <div id="statusResult" style="margin-top:1rem"></div>
       </div>
     </div>
+
+    <!-- Theme toggle logic -->
+    <script is:inline>
+      document.getElementById('themeToggle').addEventListener('click', function() {
+        var html = document.documentElement;
+        var isLight = html.getAttribute('data-theme') === 'light';
+        if (isLight) {
+          html.removeAttribute('data-theme');
+          localStorage.setItem('kb-theme', 'dark');
+        } else {
+          html.setAttribute('data-theme', 'light');
+          localStorage.setItem('kb-theme', 'light');
+        }
+      });
+    </script>
   </body>
 </html>
 
@@ -291,6 +320,250 @@ const canonicalUrl = Astro.url.href;
     --blue: #00c4ff;
     --red: #ff3b30;
     --tng-blue: #005EB8;
+  }
+
+  /* ===== LIGHT THEME ===== */
+  [data-theme="light"] {
+    --neon: #00863a;
+    --neon-dim: #006d2e;
+    --neon-glow: rgba(0, 134, 58, 0.12);
+    --neon-glow-strong: rgba(0, 134, 58, 0.2);
+    --bg: #f6f6f2;
+    --surface: #ffffff;
+    --surface-hover: #f0f0ec;
+    --card: rgba(255, 255, 255, 0.85);
+    --text: #1a1a1a;
+    --text-secondary: #5a5a5a;
+    --text-muted: #999999;
+    --border: #e2e2dd;
+    --border-light: #d5d5cf;
+    --orange: #e87800;
+    --blue: #0090c4;
+    --red: #d92d20;
+  }
+
+  /* Light theme background */
+  [data-theme="light"] .bg-effects { display: none; }
+
+  [data-theme="light"] body {
+    background: var(--bg);
+    background-image: radial-gradient(circle at 20% 10%, rgba(0,134,58,0.03) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 90%, rgba(0,134,58,0.02) 0%, transparent 50%);
+  }
+
+  /* Light glass cards */
+  [data-theme="light"] .glass {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03);
+  }
+
+  [data-theme="light"] .glass::before {
+    background: linear-gradient(90deg, transparent, rgba(0,134,58,0.12), transparent);
+  }
+
+  /* Light neon text — no glow on light backgrounds */
+  [data-theme="light"] .neon-text {
+    color: var(--neon);
+    text-shadow: none;
+  }
+
+  /* Light selection */
+  [data-theme="light"] ::selection { background: var(--neon); color: #fff; }
+
+  /* Light scrollbar */
+  [data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* Light bottom nav */
+  [data-theme="light"] .bottom-nav {
+    background: rgba(255, 255, 255, 0.92);
+    border-top-color: var(--border);
+    box-shadow: 0 -1px 8px rgba(0,0,0,0.04);
+  }
+
+  [data-theme="light"] .bottom-nav::before {
+    background: linear-gradient(90deg, transparent, rgba(0,134,58,0.1), transparent);
+  }
+
+  [data-theme="light"] .nav-item { color: var(--text-muted); }
+  [data-theme="light"] .nav-item.active { color: var(--neon); }
+  [data-theme="light"] .nav-item:hover { color: var(--text); }
+
+  /* Light modal */
+  [data-theme="light"] .modal-overlay { background: rgba(0,0,0,0.4); }
+  [data-theme="light"] .modal {
+    background: #ffffff;
+    border-color: var(--border);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  }
+
+  [data-theme="light"] .modal-glow {
+    background: radial-gradient(circle, rgba(0,134,58,0.08), transparent);
+  }
+
+  [data-theme="light"] .modal-close {
+    background: rgba(0,0,0,0.04);
+    border-color: var(--border);
+    color: var(--text-muted);
+  }
+
+  [data-theme="light"] .modal-close:hover {
+    background: rgba(0,0,0,0.08);
+    color: var(--text);
+  }
+
+  [data-theme="light"] .step-dot {
+    background: rgba(0,0,0,0.04);
+    border-color: var(--border);
+    color: var(--text-muted);
+  }
+
+  /* Light form inputs */
+  [data-theme="light"] .form-input,
+  [data-theme="light"] .form-select {
+    background: #f8f8f5;
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  [data-theme="light"] .form-input:focus,
+  [data-theme="light"] .form-select:focus {
+    border-color: var(--neon);
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--neon-glow);
+  }
+
+  [data-theme="light"] .form-input::placeholder { color: #bbb; }
+
+  /* Light buttons */
+  [data-theme="light"] .btn--primary {
+    background: linear-gradient(135deg, var(--neon), var(--neon-dim));
+    color: #fff;
+    box-shadow: 0 2px 12px var(--neon-glow);
+  }
+
+  [data-theme="light"] .btn--primary:hover {
+    box-shadow: 0 6px 24px var(--neon-glow-strong);
+  }
+
+  [data-theme="light"] .btn--primary:disabled {
+    background: var(--border);
+    color: var(--text-muted);
+    box-shadow: none;
+  }
+
+  [data-theme="light"] .btn--outline {
+    color: var(--neon);
+    border-color: rgba(0,134,58,0.25);
+  }
+
+  [data-theme="light"] .btn--outline:hover {
+    background: rgba(0,134,58,0.06);
+    border-color: var(--neon);
+  }
+
+  [data-theme="light"] .btn--ghost {
+    background: rgba(0,0,0,0.03);
+    color: var(--text-secondary);
+    border-color: var(--border);
+  }
+
+  [data-theme="light"] .btn--ghost:hover {
+    background: rgba(0,0,0,0.06);
+    color: var(--text);
+  }
+
+  /* Light badges */
+  [data-theme="light"] .badge--paid { background: var(--neon); color: #fff; box-shadow: none; }
+
+  /* Light alerts */
+  [data-theme="light"] .alert--success { background: rgba(0,134,58,0.06); border-color: rgba(0,134,58,0.15); color: var(--neon); }
+  [data-theme="light"] .alert--warning { background: rgba(232,120,0,0.06); border-color: rgba(232,120,0,0.15); color: var(--orange); }
+  [data-theme="light"] .alert--error { background: rgba(217,45,32,0.06); border-color: rgba(217,45,32,0.15); color: var(--red); }
+  [data-theme="light"] .alert--info { background: rgba(0,144,196,0.06); border-color: rgba(0,144,196,0.15); color: var(--blue); }
+
+  /* Light page header */
+  [data-theme="light"] .page-header {
+    border-bottom-color: var(--border);
+  }
+
+  [data-theme="light"] .page-header::after {
+    background: linear-gradient(90deg, transparent, rgba(0,134,58,0.1), transparent);
+  }
+
+  /* Light footer */
+  [data-theme="light"] .site-footer {
+    border-top-color: var(--border);
+    color: var(--text-muted);
+  }
+
+  [data-theme="light"] .visitor-wrap {
+    background: rgba(0,0,0,0.03);
+    border-color: var(--border);
+  }
+
+  /* Light receipt */
+  [data-theme="light"] .receipt {
+    background: rgba(0,134,58,0.03);
+    border-color: rgba(0,134,58,0.15);
+  }
+
+  /* Light upload area */
+  [data-theme="light"] .upload-area {
+    border-color: var(--border);
+    background: #fafaf8;
+  }
+
+  [data-theme="light"] .upload-area:hover,
+  [data-theme="light"] .upload-area.has-file {
+    border-color: var(--neon);
+    background: rgba(0,134,58,0.02);
+  }
+
+  /* Light status cards */
+  [data-theme="light"] .status-card {
+    background: #fff;
+    border-color: var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+
+  /* Theme toggle button */
+  .theme-toggle {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 250;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .theme-toggle:hover {
+    color: var(--neon);
+    border-color: var(--neon);
+    transform: scale(1.08);
+  }
+
+  /* Show sun icon in dark mode, moon in light mode */
+  .theme-icon--moon { display: none; }
+
+  [data-theme="light"] .theme-icon--sun { display: none; }
+  [data-theme="light"] .theme-icon--moon { display: block; }
+
+  [data-theme="light"] .theme-toggle {
+    background: rgba(255,255,255,0.9);
+    border-color: var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
