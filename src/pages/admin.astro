@@ -140,6 +140,10 @@ import Layout from '../layouts/Layout.astro';
           <h3 class="panel-title">JERSEY <span class="neon-text">ORDERS</span></h3>
           <button class="btn btn--outline btn--sm" id="refreshOrdersBtn">Refresh</button>
         </div>
+
+        <!-- Order Summary -->
+        <div id="orderSummary" class="order-summary"></div>
+
         <div class="form-group" style="margin-bottom:0.8rem">
           <select class="form-select" id="orderFilter" style="width:100%">
             <option value="all">All Orders</option>
@@ -148,6 +152,10 @@ import Layout from '../layouts/Layout.astro';
             <option value="Collected">Collected</option>
           </select>
         </div>
+
+        <!-- Save status toast -->
+        <div class="save-toast" id="saveToast">Saved</div>
+
         <div id="ordersList" class="card-list"><p class="empty-msg">Loading...</p></div>
       </div>
 
@@ -333,10 +341,60 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
+  function showSaveToast(msg: string, success: boolean) {
+    const toast = document.getElementById('saveToast')!;
+    toast.textContent = msg;
+    toast.style.background = success ? 'rgba(0,255,65,0.15)' : 'rgba(255,59,48,0.15)';
+    toast.style.color = success ? '#00FF41' : '#ff3b30';
+    toast.style.borderColor = success ? 'rgba(0,255,65,0.3)' : 'rgba(255,59,48,0.3)';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  function renderOrderSummary() {
+    const summary = document.getElementById('orderSummary')!;
+    if (!allOrders.length) { summary.innerHTML = ''; return; }
+
+    const totalOrders = allOrders.length;
+    const totalQty = allOrders.reduce((s: number, o: any) => s + (parseInt(o.Quantity) || 0), 0);
+    const totalRevenue = allOrders.reduce((s: number, o: any) => s + (parseFloat(o.Total) || 0), 0);
+    const pending = allOrders.filter((o: any) => o['Payment Status'] === 'Pending').length;
+    const paid = allOrders.filter((o: any) => o['Payment Status'] === 'Paid').length;
+    const collected = allOrders.filter((o: any) => o['Payment Status'] === 'Collected').length;
+
+    // Size breakdown
+    const sizes: Record<string, number> = {};
+    allOrders.forEach((o: any) => {
+      const s = o.Size || 'Unknown';
+      const q = parseInt(o.Quantity) || 1;
+      sizes[s] = (sizes[s] || 0) + q;
+    });
+    const sizeList = Object.entries(sizes).sort((a, b) => b[1] - a[1]).map(([s, q]) => `<span class="os-size">${esc(s)} <strong>×${q}</strong></span>`).join('');
+
+    summary.innerHTML = `
+      <div class="os-stats">
+        <div class="os-stat"><div class="os-num">${totalOrders}</div><div class="os-label">Orders</div></div>
+        <div class="os-stat"><div class="os-num">${totalQty}</div><div class="os-label">Jerseys</div></div>
+        <div class="os-stat"><div class="os-num" style="color:var(--neon)">RM ${totalRevenue}</div><div class="os-label">Revenue</div></div>
+      </div>
+      <div class="os-status-row">
+        <span class="os-badge" style="color:#ff9500;background:rgba(255,149,0,0.1);border-color:rgba(255,149,0,0.2)">Pending: ${pending}</span>
+        <span class="os-badge" style="color:#00FF41;background:rgba(0,255,65,0.1);border-color:rgba(0,255,65,0.2)">Paid: ${paid}</span>
+        <span class="os-badge" style="color:#00c4ff;background:rgba(0,196,255,0.1);border-color:rgba(0,196,255,0.2)">Collected: ${collected}</span>
+      </div>
+      <div class="os-sizes">
+        <div class="os-sizes-label">SIZE BREAKDOWN</div>
+        <div class="os-sizes-list">${sizeList}</div>
+      </div>
+    `;
+  }
+
   function renderOrders() {
     const filter = (document.getElementById('orderFilter') as HTMLSelectElement).value;
     const filtered = filter === 'all' ? allOrders : allOrders.filter((o: any) => o['Payment Status'] === filter);
     const wrap = document.getElementById('ordersList')!;
+
+    renderOrderSummary();
 
     if (!filtered.length) {
       wrap.innerHTML = '<p class="empty-msg">No orders found.</p>';
@@ -351,6 +409,8 @@ import Layout from '../layouts/Layout.astro';
       const name = esc(o['Player Name']);
       const phone = String(o.Phone || '').replace("'", '').trim();
       const ref = esc(o['Ref Code'] || '');
+      const delivery = o.Delivery || '';
+      const address = o.Address || '';
 
       return `<div class="player-card-admin">
         <div class="pca-top">
@@ -365,8 +425,9 @@ import Layout from '../layouts/Layout.astro';
             <span style="display:block;font-size:0.82rem;font-weight:700;color:var(--neon);font-family:'Space Grotesk',sans-serif">RM ${esc(o.Total)}</span>
           </div>
         </div>
+        ${delivery ? `<div style="font-size:0.68rem;color:var(--text-muted);padding:0 0.4rem;margin-top:0.3rem;">📦 ${esc(delivery)}${address ? ' — ' + esc(address) : ''}</div>` : ''}
         <div class="pca-controls">
-          <div class="pca-field">
+          <div class="pca-field" style="flex:1;">
             <label>Status</label>
             <select class="form-select o-status" data-ref="${ref}">
               <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
@@ -374,25 +435,40 @@ import Layout from '../layouts/Layout.astro';
               <option value="Collected" ${status === 'Collected' ? 'selected' : ''}>Collected</option>
             </select>
           </div>
+          <button class="btn btn--outline btn--sm o-save" data-ref="${ref}" style="align-self:flex-end;">Save</button>
         </div>
       </div>`;
     }).join('');
 
-    // Status change handlers
-    wrap.querySelectorAll('.o-status').forEach((sel) => {
-      sel.addEventListener('change', async () => {
-        const ref = (sel as HTMLSelectElement).dataset.ref;
-        const newStatus = (sel as HTMLSelectElement).value;
+    // Save button handlers
+    wrap.querySelectorAll('.o-save').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const ref = (btn as HTMLButtonElement).dataset.ref;
+        const card = btn.closest('.player-card-admin')!;
+        const sel = card.querySelector('.o-status') as HTMLSelectElement;
+        const newStatus = sel.value;
         const order = allOrders.find((o: any) => o['Ref Code'] === ref);
         if (order) {
           order['Payment Status'] = newStatus;
+          (btn as HTMLButtonElement).textContent = 'Saving...';
+          (btn as HTMLButtonElement).disabled = true;
           try {
-            await fetch(`${API}/admin/orders`, {
+            const res = await fetch(`${API}/admin/orders`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', Authorization: adminToken },
               body: JSON.stringify({ orders: allOrders }),
             });
-          } catch {}
+            if (res.ok) {
+              showSaveToast('Status saved!', true);
+              renderOrders();
+            } else {
+              showSaveToast('Failed to save', false);
+            }
+          } catch {
+            showSaveToast('Network error', false);
+          }
+          (btn as HTMLButtonElement).textContent = 'Save';
+          (btn as HTMLButtonElement).disabled = false;
         }
       });
     });
@@ -1249,4 +1325,111 @@ import Layout from '../layouts/Layout.astro';
 
   .footer { border-top: 1px solid var(--border); padding: 1.5rem 0; text-align: center; margin-top: 2rem; font-size: 0.72rem; color: var(--text-muted); }
   .ssm { font-size: 0.6rem; opacity: 0.5; margin-top: 0.2rem; }
+
+  /* Order Summary */
+  .order-summary {
+    background: rgba(0, 255, 65, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .os-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .os-stat { text-align: center; }
+
+  .os-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .os-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .os-status-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+  }
+
+  .os-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    border: 1px solid;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .os-sizes {
+    border-top: 1px solid var(--border);
+    padding-top: 0.6rem;
+  }
+
+  .os-sizes-label {
+    font-size: 0.6rem;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .os-sizes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .os-size {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .os-size strong {
+    color: var(--neon);
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  /* Save toast */
+  .save-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,255,65,0.15);
+    color: #00FF41;
+    border: 1px solid rgba(0,255,65,0.3);
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+  }
+
+  .save-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
