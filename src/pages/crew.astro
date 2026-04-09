@@ -48,9 +48,6 @@ const crew = [
       <a href="https://wa.me/60126183827" target="_blank" class="btn btn--wa" style="width:100%">MESSAGE US</a>
     </div>
 
-    <!-- Social & Links row -->
-    <div class="crew-bottom-row">
-
     <!-- Social Media -->
     <div class="social-section">
       <h2 class="social-title">FOLLOW <span class="neon-text">US</span></h2>
@@ -79,8 +76,9 @@ const crew = [
       </div>
     </div>
 
-    <!-- Quick links to Gallery and Rules -->
+    <!-- Quick links to Gallery, Rules, Sponsors -->
     <div class="quick-links">
+      <h2 class="social-title">QUICK <span class="neon-text">LINKS</span></h2>
       <a href="/gallery" class="quick-link glass">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span>Photo Gallery</span>
@@ -96,7 +94,7 @@ const crew = [
         <span>Sponsors & Partners</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
-    </div><!-- close crew-bottom-row -->
+    </div>
   </main>
 </Layout>
 
@@ -270,8 +268,6 @@ const crew = [
   }
 
   /* Desktop layout */
-  .crew-bottom-row { display: block; }
-
   @media (min-width: 900px) {
     .crew-container { max-width: 1100px; }
 
@@ -295,19 +291,24 @@ const crew = [
       margin-right: auto;
     }
 
-    .crew-bottom-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      align-items: start;
+    /* Social + Quick Links side by side */
+    .social-section {
+      display: inline-block;
+      vertical-align: top;
+      width: calc(50% - 0.75rem);
+      margin-right: 0.75rem;
+    }
+
+    .quick-links {
+      display: inline-block;
+      vertical-align: top;
+      width: calc(50% - 0.75rem);
+      margin-left: 0.75rem;
+      margin-bottom: 2rem;
     }
 
     .social-links {
       gap: 0.6rem;
-    }
-
-    .quick-links {
-      margin-bottom: 2rem;
     }
   }
 
