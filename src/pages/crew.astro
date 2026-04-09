@@ -48,6 +48,8 @@ const crew = [
       <a href="https://wa.me/60126183827" target="_blank" class="btn btn--wa" style="width:100%">MESSAGE US</a>
     </div>
 
+    <div class="crew-links-row">
+
     <!-- Social Media -->
     <div class="social-section">
       <h2 class="social-title">FOLLOW <span class="neon-text">US</span></h2>
@@ -77,8 +79,9 @@ const crew = [
     </div>
 
     <!-- Quick links to Gallery, Rules, Sponsors -->
-    <div class="quick-links">
+    <div class="quick-links-section">
       <h2 class="social-title">QUICK <span class="neon-text">LINKS</span></h2>
+      <div class="quick-links">
       <a href="/gallery" class="quick-link glass">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span>Photo Gallery</span>
@@ -94,7 +97,10 @@ const crew = [
         <span>Sponsors & Partners</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
+      </div>
     </div>
+
+    </div><!-- close crew-links-row -->
   </main>
 </Layout>
 
@@ -237,8 +243,9 @@ const crew = [
     position: relative;
   }
 
-  /* Social Media */
-  .social-section { margin: 1.5rem 0; }
+  /* Social & Quick Links */
+  .crew-links-row { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin: 1.5rem 0 2rem; }
+  .social-section { }
   .social-title { font-size: 1rem; font-family: 'Space Grotesk', sans-serif; margin-bottom: 0.8rem; }
   .social-links { display: flex; flex-direction: column; gap: 0.5rem; }
   .social-link {
@@ -250,7 +257,8 @@ const crew = [
   .sl-name { display: block; font-weight: 700; font-size: 0.85rem; }
   .sl-handle { display: block; font-size: 0.72rem; color: var(--text-muted); }
 
-  .quick-links { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
+  .quick-links-section { }
+  .quick-links { display: flex; flex-direction: column; gap: 0.5rem; }
   .quick-link {
     display: flex; align-items: center; gap: 0.8rem; padding: 1rem 1.2rem;
     color: var(--text-secondary); font-size: 0.88rem; font-weight: 500;
@@ -291,24 +299,8 @@ const crew = [
       margin-right: auto;
     }
 
-    /* Social + Quick Links side by side */
-    .social-section {
-      display: inline-block;
-      vertical-align: top;
-      width: calc(50% - 0.75rem);
-      margin-right: 0.75rem;
-    }
-
-    .quick-links {
-      display: inline-block;
-      vertical-align: top;
-      width: calc(50% - 0.75rem);
-      margin-left: 0.75rem;
-      margin-bottom: 2rem;
-    }
-
-    .social-links {
-      gap: 0.6rem;
+    .crew-links-row {
+      grid-template-columns: 1fr 1fr;
     }
   }
 
