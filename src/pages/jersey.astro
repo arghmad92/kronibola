@@ -815,4 +815,47 @@ import Layout from '../layouts/Layout.astro';
       grid-template-columns: repeat(4, 1fr);
     }
   }
+
+  /* Light theme */
+  :global([data-theme="light"]) .product-hero {
+    background: #ffffff;
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .deadline-bar {
+    background: rgba(0,134,58,0.03);
+    border-color: rgba(0,134,58,0.12);
+  }
+
+  :global([data-theme="light"]) .deadline-countdown {
+    text-shadow: none;
+  }
+
+  :global([data-theme="light"]) .deadline--closed {
+    background: rgba(217,45,32,0.03);
+    border-color: rgba(217,45,32,0.12);
+  }
+
+  :global([data-theme="light"]) .size-table-wrap {
+    background: #ffffff;
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .size-table tr:nth-child(even) td {
+    background: rgba(0,0,0,0.02);
+  }
+
+  :global([data-theme="light"]) .jersey-gallery-item {
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .spaylater-badge {
+    background: rgba(238,77,45,0.05);
+    border-color: rgba(238,77,45,0.15);
+  }
+
+  :global([data-theme="light"]) .spaylater-pay-note {
+    background: rgba(238,77,45,0.04);
+    border-color: rgba(238,77,45,0.1);
+  }
 </style>

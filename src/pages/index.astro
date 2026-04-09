@@ -1043,4 +1043,110 @@ import Layout from '../layouts/Layout.astro';
   :global(.wa-group-sub) { display: block; font-size: 0.7rem; color: var(--text-muted); }
   :global(.wa-group-arrow) { color: var(--text-muted); flex-shrink: 0; transition: transform 0.2s; }
   :global(.wa-group-banner:hover .wa-group-arrow) { transform: translateX(3px); color: #25D366; }
+
+  /* ===== LIGHT THEME OVERRIDES ===== */
+
+  /* Header */
+  :global([data-theme="light"]) .header {
+    background: rgba(246,246,242,0.92);
+    border-bottom-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .header::after {
+    background: linear-gradient(90deg, transparent, rgba(0,134,58,0.1), transparent);
+  }
+
+  :global([data-theme="light"]) .brand-name {
+    color: var(--text);
+  }
+
+  :global([data-theme="light"]) .admin-btn {
+    border-color: var(--border);
+    color: var(--text-muted);
+  }
+
+  :global([data-theme="light"]) .admin-btn:hover {
+    border-color: var(--neon);
+    color: var(--neon);
+  }
+
+  /* Match cards */
+  :global([data-theme="light"] .match-card) {
+    background: #ffffff;
+    border-color: var(--border);
+    border-left-color: var(--border);
+  }
+
+  :global([data-theme="light"] .match-card:not(.active):hover) {
+    background: rgba(0,134,58,0.03);
+    border-left-color: var(--neon);
+    border-color: rgba(0,134,58,0.15);
+  }
+
+  :global([data-theme="light"] .match-card.active) {
+    background: linear-gradient(135deg, rgba(0,134,58,0.04) 0%, #ffffff 40%, rgba(0,144,196,0.02) 100%);
+    border-left-color: var(--neon);
+    border-color: rgba(0,134,58,0.15);
+    box-shadow: 0 4px 24px rgba(0,134,58,0.06), 0 1px 0 rgba(0,134,58,0.08);
+  }
+
+  :global([data-theme="light"] .match-card.active)::after {
+    background: radial-gradient(circle, rgba(0,134,58,0.04), transparent 70%);
+  }
+
+  /* Match card internals */
+  :global([data-theme="light"] .mc-badge) {
+    background: var(--neon);
+    color: #fff;
+  }
+
+  :global([data-theme="light"] .progress-track) {
+    background: rgba(0,0,0,0.06);
+  }
+
+  :global([data-theme="light"] .mc-slots-bar) {
+    background: rgba(0,134,58,0.06);
+  }
+
+  /* Lineup grid */
+  :global([data-theme="light"]) .lineup-card {
+    background: rgba(0,134,58,0.04);
+    border-color: rgba(0,134,58,0.1);
+  }
+
+  :global([data-theme="light"]) .lineup-card:hover {
+    background: rgba(0,134,58,0.08);
+    border-color: rgba(0,134,58,0.2);
+  }
+
+  :global([data-theme="light"]) .lineup-avatar {
+    background: rgba(0,134,58,0.08);
+  }
+
+  /* Upload area */
+  :global([data-theme="light"] .upload-area-mini) {
+    background: rgba(0,134,58,0.03);
+    border-color: rgba(0,134,58,0.15);
+  }
+
+  :global([data-theme="light"] .upload-area-mini:hover) {
+    background: rgba(0,134,58,0.06);
+    border-color: var(--neon);
+  }
+
+  /* WhatsApp banner */
+  :global([data-theme="light"]) .wa-group-banner {
+    background: #ffffff;
+    border-color: var(--border);
+  }
+
+  :global([data-theme="light"]) .wa-group-banner:hover {
+    border-color: #25D366;
+    background: rgba(37,211,102,0.03);
+  }
+
+  /* Intro section */
+  :global([data-theme="light"]) .intro-section {
+    border-bottom-color: var(--border);
+  }
 </style>
