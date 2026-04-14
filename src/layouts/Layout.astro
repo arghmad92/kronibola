@@ -10,7 +10,7 @@ interface Props {
 const { title, description = 'KroniBola — Football pickup game registration in KL & Selangor. Join weekly futsal sessions, register online, and track your stats.', activeTab = 'home', hideNav = false, noindex = false } = Astro.props;
 
 const siteUrl = 'https://kronibola.com';
-const ogImage = `${siteUrl}/logo-v2.png`;
+const ogImage = `${siteUrl}/og-image.png`;
 const canonicalUrl = Astro.url.href;
 ---
 
@@ -40,6 +40,15 @@ const canonicalUrl = Astro.url.href;
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
 
     <link rel="icon" type="image/png" href="/logo-v2.png" />
     <link rel="apple-touch-icon" href="/logo-v2.png" />
