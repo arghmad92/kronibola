@@ -154,9 +154,6 @@ import Layout from '../layouts/Layout.astro';
           </select>
         </div>
 
-        <!-- Save status toast -->
-        <div class="save-toast" id="saveToast">Saved</div>
-
         <div id="ordersList" class="card-list"><p class="empty-msg">Loading...</p></div>
       </div>
 
@@ -218,6 +215,9 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </main>
 
+  <!-- Global save status toast (visible from any tab) -->
+  <div class="save-toast" id="saveToast" role="status" aria-live="polite">Saved</div>
+
   <footer class="footer">
     <p>&copy; 2025 KroniBola. All rights reserved.</p>
     <p class="ssm">SSM: 202603032902 (TR0336774-T)</p>
@@ -227,6 +227,19 @@ import Layout from '../layouts/Layout.astro';
 <script>
   const API = '/api';
   let adminToken = '';
+
+  // --- Toast helper (global save confirmation) ---
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  function showToast(message: string, kind: 'success' | 'error' = 'success') {
+    const toast = document.getElementById('saveToast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.remove('save-toast--error');
+    if (kind === 'error') toast.classList.add('save-toast--error');
+    toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2200);
+  }
   let sessionsData: any[] = [];
   let allPlayers: any[] = [];
 
@@ -342,16 +355,6 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  function showSaveToast(msg: string, success: boolean) {
-    const toast = document.getElementById('saveToast')!;
-    toast.textContent = msg;
-    toast.style.background = success ? 'rgba(0,255,65,0.15)' : 'rgba(255,59,48,0.15)';
-    toast.style.color = success ? '#00FF41' : '#ff3b30';
-    toast.style.borderColor = success ? 'rgba(0,255,65,0.3)' : 'rgba(255,59,48,0.3)';
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2000);
-  }
-
   function renderOrderSummary() {
     const summary = document.getElementById('orderSummary')!;
     if (!allOrders.length) { summary.innerHTML = ''; return; }
@@ -453,8 +456,10 @@ import Layout from '../layouts/Layout.astro';
               <option value="Deleted" ${status === 'Deleted' ? 'selected' : ''}>Deleted</option>
             </select>
           </div>
-          <button class="btn btn--outline btn--sm o-save" data-ref="${ref}" style="align-self:flex-end;">Save</button>
-          ${!isDeleted ? `<button class="btn btn--sm o-delete" data-ref="${ref}" style="align-self:flex-end;color:#ff3b30;border-color:rgba(255,59,48,0.3);">Delete</button>` : `<button class="btn btn--sm o-restore" data-ref="${ref}" style="align-self:flex-end;color:#00c4ff;border-color:rgba(0,196,255,0.3);">Restore</button>`}
+          <button type="button" class="pca-save o-save" data-ref="${ref}">SAVE</button>
+          ${!isDeleted
+            ? `<button type="button" class="pca-save pca-save--danger o-delete" data-ref="${ref}">DELETE</button>`
+            : `<button type="button" class="pca-save pca-save--info o-restore" data-ref="${ref}">RESTORE</button>`}
         </div>
       </div>`;
     }).join('');
@@ -467,14 +472,11 @@ import Layout from '../layouts/Layout.astro';
           headers: { 'Content-Type': 'application/json', Authorization: adminToken },
           body: JSON.stringify({ orders: allOrders }),
         });
-        if (res.ok) {
-          showSaveToast(feedbackMsg, true);
-          renderOrders();
-        } else {
-          showSaveToast('Failed to save', false);
-        }
+        if (!res.ok) throw new Error('save failed');
+        showToast(feedbackMsg);
+        renderOrders();
       } catch {
-        showSaveToast('Network error', false);
+        showToast('Failed to save order', 'error');
       }
     }
 
@@ -487,10 +489,10 @@ import Layout from '../layouts/Layout.astro';
         const order = allOrders.find((o: any) => o['Ref Code'] === ref);
         if (order) {
           order['Payment Status'] = sel.value;
-          (btn as HTMLButtonElement).textContent = 'Saving...';
+          (btn as HTMLButtonElement).textContent = '…';
           (btn as HTMLButtonElement).disabled = true;
-          await saveOrders('Status saved!');
-          (btn as HTMLButtonElement).textContent = 'Save';
+          await saveOrders(`Order ${ref} saved`);
+          (btn as HTMLButtonElement).textContent = 'SAVE';
           (btn as HTMLButtonElement).disabled = false;
         }
       });
@@ -681,10 +683,16 @@ import Layout from '../layouts/Layout.astro';
     const btn = document.getElementById('saveScheduleBtn') as HTMLButtonElement;
     btn.disabled = true; btn.textContent = 'SAVING...';
     try {
-      await fetch(`${API}/admin/sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ sessions: sessionsData }) });
+      const res = await fetch(`${API}/admin/sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ sessions: sessionsData }) });
+      if (!res.ok) throw new Error('save failed');
       btn.textContent = 'SAVED!';
+      showToast('Schedule saved');
       setTimeout(() => { btn.textContent = 'SAVE SCHEDULE'; btn.disabled = false; }, 2000);
-    } catch { btn.textContent = 'ERROR'; btn.disabled = false; }
+    } catch {
+      btn.textContent = 'ERROR';
+      btn.disabled = false;
+      showToast('Failed to save schedule', 'error');
+    }
   });
 
   // --- PLAYERS (Card Layout) ---
@@ -773,9 +781,6 @@ import Layout from '../layouts/Layout.astro';
             <span class="pca-phone">${esc(phone)}</span>
             ${ref ? `<span class="pca-ref">${esc(ref)}</span>` : ''}
           </div>
-          <div class="pca-check">
-            <input type="checkbox" class="player-del" data-name="${playerName}" title="Select to delete" />
-          </div>
         </div>
         <div class="pca-controls">
           <div class="pca-field">
@@ -796,6 +801,8 @@ import Layout from '../layouts/Layout.astro';
               <option value="Refunded" ${refund === 'Refunded' ? 'selected' : ''}>Done</option>
             </select>
           </div>
+          <button type="button" class="pca-save" data-name="${playerName}" title="Save this player">SAVE</button>
+          <button type="button" class="pca-save pca-save--danger pca-delete" data-name="${playerName}" title="Delete this player">DELETE</button>
           <a href="${waLink}" target="_blank" class="pca-wa" title="WhatsApp">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
           </a>
@@ -945,7 +952,6 @@ import Layout from '../layouts/Layout.astro';
     btn.disabled = true; btn.textContent = 'SAVING...';
 
     const delNames = new Set<string>();
-    document.querySelectorAll('.player-del:checked').forEach(cb => delNames.add((cb as HTMLInputElement).dataset.name!));
 
     const statusMap = new Map<string, string>();
     document.querySelectorAll('.p-status').forEach(sel => statusMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value));
@@ -969,10 +975,12 @@ import Layout from '../layouts/Layout.astro';
     }).filter(Boolean);
 
     try {
-      await fetch(`${API}/admin/players`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ players: updated }) });
+      const res = await fetch(`${API}/admin/players`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ players: updated }) });
+      if (!res.ok) throw new Error('save failed');
       allPlayers = updated as any[];
       renderPlayers(date);
       btn.textContent = 'SAVED!';
+      showToast(delNames.size ? `Saved (${delNames.size} removed)` : 'Players saved');
       setTimeout(() => { btn.textContent = 'SAVE CHANGES'; btn.disabled = false; }, 3000);
 
       if (changedPlayers.length > 0) {
@@ -1008,7 +1016,100 @@ import Layout from '../layouts/Layout.astro';
         wrap.parentElement!.appendChild(box);
         setTimeout(() => box.remove(), 20000);
       }
-    } catch { btn.textContent = 'ERROR'; btn.disabled = false; }
+    } catch {
+      btn.textContent = 'ERROR';
+      btn.disabled = false;
+      showToast('Failed to save players', 'error');
+    }
+  });
+
+  // --- Per-player save & delete (event delegation on players list) ---
+  document.getElementById('playersList')!.addEventListener('click', async (e) => {
+    const deleteBtn = (e.target as HTMLElement).closest('.pca-delete') as HTMLButtonElement | null;
+    const saveBtn = !deleteBtn ? (e.target as HTMLElement).closest('.pca-save') as HTMLButtonElement | null : null;
+    const target = deleteBtn || saveBtn;
+    if (!target) return;
+
+    const playerName = target.dataset.name || '';
+    const date = (document.getElementById('filterDate') as HTMLSelectElement).value;
+    const card = target.closest('.player-card-admin') as HTMLElement | null;
+    if (!card) return;
+
+    const isDeleted = !!deleteBtn;
+    if (isDeleted && !confirm(`Delete ${playerName}? This cannot be undone.`)) return;
+
+    const statusSel = card.querySelector('.p-status') as HTMLSelectElement | null;
+    const refundSel = card.querySelector('.p-refund') as HTMLSelectElement | null;
+
+    const newStatus = statusSel ? statusSel.value : '';
+    const newRefund = refundSel ? refundSel.value : '';
+
+    // Snapshot previous status BEFORE mutating allPlayers so we can detect a change
+    const existing = allPlayers.find((p: any) => p['Session Date'] === date && p['Player Name'] === playerName);
+    const oldStatus = existing ? existing['Payment Status'] : '';
+    const phone = existing ? String(existing.Phone || '').replace("'", '').trim() : '';
+
+    // Apply the change locally
+    const updated = allPlayers
+      .map((p: any) => {
+        if (p['Session Date'] !== date || p['Player Name'] !== playerName) return p;
+        if (isDeleted) return null;
+        p['Payment Status'] = newStatus;
+        p['Refund'] = newRefund;
+        return p;
+      })
+      .filter(Boolean);
+
+    target.disabled = true;
+    const originalLabel = target.textContent || (isDeleted ? 'DELETE' : 'SAVE');
+    target.textContent = '…';
+
+    try {
+      const res = await fetch(`${API}/admin/players`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+        body: JSON.stringify({ players: updated }),
+      });
+      if (!res.ok) throw new Error('save failed');
+      allPlayers = updated as any[];
+      renderPlayers(date);
+      showToast(isDeleted ? `${playerName} removed` : `${playerName} saved`);
+
+      // If status changed, show a single notify row for this player only
+      if (!isDeleted && newStatus && newStatus !== oldStatus) {
+        const session = sessionsData.find((s: any) => s.Date === date);
+        const sessionName = session ? session['Session Name'] : 'Game';
+        const sessionTime = session ? session.Time : '';
+        const sessionLoc = session ? session.Location : '';
+        const wazeLink = sessionLoc ? `https://waze.com/ul?q=${encodeURIComponent(sessionLoc)}` : '';
+        const gameDetails = `📅 ${date}${sessionTime ? `\n⏰ ${sessionTime}` : ''}${sessionLoc ? `\n📍 ${sessionLoc}` : ''}${wazeLink ? `\n🗺️ ${wazeLink}` : ''}`;
+        const msgs: Record<string, string> = {
+          Paid: `Hi ${playerName}! ✅ Your payment for *${sessionName}* has been confirmed. You're in!\n\n${gameDetails}\n\nSee you on the pitch! ⚽\n\nJoin our WhatsApp group if you haven't: https://chat.whatsapp.com/FsLEE1Bko9a9fGXd88UPgS`,
+          Pending: `Hi ${playerName}! 🎉 Good news — a slot has opened up for *${sessionName}*!\n\n${gameDetails}\n\nTo confirm your spot:\n1. Pay via Maybank MAE (scan QR at kronibola.com)\n2. Go to kronibola.com\n3. Tap "CHECK MY STATUS"\n4. Enter your phone number\n5. Upload your payment receipt\n\nPlease do this ASAP or your slot may be given to the next player.`,
+          Rejected: `Hi ${playerName}, unfortunately your registration for *${sessionName}* on ${date} has been cancelled. If you believe this is a mistake, please contact us via kronibola.com.`,
+          Waitlist: `Hi ${playerName}, you've been moved to the waitlist for *${sessionName}* on ${date}. We'll notify you immediately if a slot opens up.\n\n⚠️ Please do NOT pay yet — only pay when we confirm a slot for you.`,
+          Overdue: `Hi ${playerName}, ⚠️ your payment for *${sessionName}* is overdue.\n\n${gameDetails}\n\nTo keep your slot:\n1. Pay via Maybank MAE (scan QR at kronibola.com)\n2. Go to kronibola.com → tap "CHECK MY STATUS"\n3. Enter your phone number and upload your receipt\n\nPlease do this ASAP or your slot will be given to the next player.`,
+        };
+        const msg = msgs[newStatus] || `Hi ${playerName}, your status for ${date} is now: ${newStatus}.`;
+        const link = phone ? `https://wa.me/6${phone}?text=${encodeURIComponent(msg)}` : '#';
+        logNotification(playerName, phone, newStatus, date, msg);
+
+        const wrap = document.getElementById('playersList')!;
+        const box = document.createElement('div');
+        box.className = 'notify-box';
+        box.innerHTML = `<p class="notify-title">Notify player:</p>
+          <a href="${link}" target="_blank" class="notify-item">
+            <span>${playerName} → <strong>${newStatus}</strong></span>
+            <span class="notify-send">Send</span>
+          </a>`;
+        wrap.parentElement!.appendChild(box);
+        setTimeout(() => box.remove(), 20000);
+      }
+    } catch {
+      target.disabled = false;
+      target.textContent = originalLabel;
+      showToast(`Failed to save ${playerName}`, 'error');
+    }
   });
 
   // --- NOTIFICATIONS LOG ---
@@ -1267,7 +1368,6 @@ import Layout from '../layouts/Layout.astro';
   .pca-name { display: block; font-weight: 700; font-size: 0.9rem; }
   .pca-phone { display: block; font-size: 0.72rem; color: var(--text-muted); }
   .pca-ref { display: inline-block; font-size: 0.62rem; font-family: 'Space Grotesk', monospace; color: var(--neon); background: rgba(0,255,65,0.08); padding: 0.1rem 0.4rem; border-radius: 4px; margin-top: 0.15rem; }
-  .pca-check input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--red); }
 
   .pca-controls { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
   @media (max-width: 480px) { .pca-controls { flex-direction: column; align-items: stretch; } .pca-wa { align-self: flex-start; } }
@@ -1280,6 +1380,30 @@ import Layout from '../layouts/Layout.astro';
     display: flex; align-items: center; justify-content: center; color: #25D366; transition: all 0.2s;
   }
   .pca-wa:hover { background: #25D366; color: #fff; }
+
+  .pca-save {
+    height: 38px; padding: 0 0.8rem; flex-shrink: 0;
+    background: rgba(0,255,65,0.1); border: 1px solid rgba(0,255,65,0.25);
+    color: var(--neon); border-radius: 10px; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.72rem; letter-spacing: 0.08em; transition: all 0.2s;
+  }
+  .pca-save:hover:not(:disabled) { background: rgba(0,255,65,0.2); border-color: rgba(0,255,65,0.5); }
+  .pca-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .pca-save--danger {
+    background: rgba(255,59,48,0.1); border-color: rgba(255,59,48,0.3); color: #ff3b30;
+  }
+  .pca-save--danger:hover:not(:disabled) {
+    background: rgba(255,59,48,0.2); border-color: rgba(255,59,48,0.55);
+  }
+
+  .pca-save--info {
+    background: rgba(0,196,255,0.1); border-color: rgba(0,196,255,0.3); color: #00c4ff;
+  }
+  .pca-save--info:hover:not(:disabled) {
+    background: rgba(0,196,255,0.2); border-color: rgba(0,196,255,0.55);
+  }
 
   /* Notify box */
   .notify-box {
@@ -1479,6 +1603,12 @@ import Layout from '../layouts/Layout.astro';
   .save-toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+  }
+
+  .save-toast--error {
+    background: rgba(255,59,48,0.15);
+    color: #ff3b30;
+    border-color: rgba(255,59,48,0.35);
   }
 
   /* Light theme */

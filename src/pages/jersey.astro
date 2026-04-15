@@ -474,7 +474,7 @@ import Layout from '../layouts/Layout.astro';
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, phone, items, delivery, address }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!data.success) {
         btn.style.display = '';
@@ -549,11 +549,12 @@ import Layout from '../layouts/Layout.astro';
     const result = document.getElementById('statusResult')!;
     if (!phone || phone.length < 10) { result.innerHTML = '<div class="alert alert--error">Enter a valid phone number.</div>'; return; }
 
-    result.innerHTML = '<div class="loading-sm"><div class="loader-sm"></div></div>';
+    result.innerHTML = '<div class="loading-sm"><div class="loader-sm"></div> Checking…</div>';
 
     try {
-      const res = await fetch(`/api/order-status?phone=${phone}`);
-      const data = await res.json();
+      const res = await fetch(`/api/order-status?phone=${encodeURIComponent(phone)}`);
+      if (!res.ok) throw new Error('status fetch failed');
+      const data = await res.json().catch(() => ({}));
       const orders = data.orders || [];
 
       if (!orders.length) {
@@ -582,6 +583,22 @@ import Layout from '../layouts/Layout.astro';
     }
   });
 </script>
+
+<style is:global>
+  /* Global helpers — used by dynamically injected markup */
+  .loader-sm {
+    width: 16px; height: 16px; border: 2px solid var(--border);
+    border-top-color: var(--neon); border-radius: 50%;
+    animation: spin-sm 0.8s linear infinite;
+    display: inline-block; vertical-align: middle;
+  }
+  .loading-sm {
+    text-align: center; padding: 1rem;
+    color: var(--text-muted); font-size: 0.82rem;
+  }
+  .loading-sm .loader-sm { margin-right: 0.5rem; }
+  @keyframes spin-sm { to { transform: rotate(360deg); } }
+</style>
 
 <style>
   /* Desktop container */
@@ -759,13 +776,7 @@ import Layout from '../layouts/Layout.astro';
     display: flex; align-items: center; justify-content: center; gap: 0.5rem;
     padding: 0.8rem; font-size: 0.82rem; color: var(--text-muted);
   }
-  .loader-sm {
-    width: 16px; height: 16px; border: 2px solid var(--border);
-    border-top-color: var(--neon); border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-sm { text-align: center; padding: 1rem; }
 
   /* Status card */
   :global(.status-card) {

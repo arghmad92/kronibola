@@ -1,34 +1,5 @@
 import { readSheet, appendRow, json } from './_sheets.js';
-
-function escapeHtml(text) {
-  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(text || '').replace(/[&<>"']/g, m => map[m]);
-}
-
-// Strip HTML tags and dangerous characters
-function sanitize(text) {
-  return String(text || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim();
-}
-
-// Prevent Google Sheets formula injection
-function sheetSafe(value) {
-  const s = String(value || '');
-  if (/^[=+\-@\t\r]/.test(s)) return "'" + s;
-  return s;
-}
-
-async function sendTelegramNotification(env, message) {
-  const token = env.TG_BOT_TOKEN;
-  const chatId = env.TG_CHAT_ID;
-  if (!token || !chatId) return;
-  try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
-    });
-  } catch {}
-}
+import { escapeHtml, sanitize, sheetSafe, sendTelegramNotification } from './_utils.js';
 
 function generateRefCode(date, name) {
   const dd = date.slice(8, 10);

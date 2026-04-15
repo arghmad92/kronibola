@@ -125,7 +125,8 @@ import Layout from '../layouts/Layout.astro';
   async function init() {
     try {
       const res = await fetch(`${API}/sessions`);
-      const data = await res.json();
+      if (!res.ok) throw new Error('sessions fetch failed');
+      const data = await res.json().catch(() => ({}));
       sessions = (data.sessions || []).filter((s: any) => s.Status === 'Open').sort((a: any, b: any) => (a.Date || '').localeCompare(b.Date || ''));
 
       loadingEl.style.display = 'none';
@@ -453,7 +454,7 @@ import Layout from '../layouts/Layout.astro';
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(regBody),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.success) {
         const wl = data.status === 'Waitlist';
         const doneTitle = document.getElementById('doneTitle')!;
@@ -495,13 +496,15 @@ import Layout from '../layouts/Layout.astro';
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ refCode, playerName: name, imageData: receiptData.base64, mimeType: receiptData.mimeType, uploadToken }),
             });
-            const uploadData = await uploadRes.json();
-            if (!uploadData.success) {
-              // Receipt upload failed — user sees inline error message
-              uploadStatus.innerHTML = `<div class="alert alert--error" style="font-size:0.78rem">Receipt upload failed. You can resend it later via Check Status.</div>`;
+            const uploadData = await uploadRes.json().catch(() => ({}));
+            if (!uploadRes.ok || !uploadData.success) {
+              const msg = uploadData.error || 'Receipt upload failed.';
+              uploadStatus.innerHTML = `<div class="alert alert--error" style="font-size:0.78rem">${msg} Your slot is saved — you can resend via Check Status.</div>`;
+            } else {
+              uploadStatus.style.display = 'none';
             }
-          } catch (err) {
-            // Receipt upload network error — silently handled
+          } catch {
+            uploadStatus.innerHTML = '<div class="alert alert--error" style="font-size:0.78rem">Receipt upload failed (network). Your slot is saved — you can resend via Check Status.</div>';
           }
           receiptData = null;
         }
@@ -631,11 +634,12 @@ import Layout from '../layouts/Layout.astro';
     const result = document.getElementById('statusResult')!;
     if (!phone || phone.length < 10) { result.innerHTML = '<div class="alert alert--error">Enter a valid phone number.</div>'; return; }
 
-    result.innerHTML = '<p style="color:var(--text-muted);text-align:center">Checking...</p>';
+    result.innerHTML = '<div class="loading-sm"><div class="loader-sm"></div>Checking…</div>';
 
     try {
       const res = await fetch(`${API}/status?phone=${encodeURIComponent(phone)}`);
-      const data = await res.json();
+      if (!res.ok) throw new Error('status fetch failed');
+      const data = await res.json().catch(() => ({}));
       const regs = data.registrations || [];
 
       if (!regs.length) {
@@ -796,6 +800,22 @@ import Layout from '../layouts/Layout.astro';
   // Show check status after init
   setTimeout(() => { checkSection.style.display = ''; }, 500);
 </script>
+
+<style is:global>
+  /* Global helpers — used by dynamically injected markup */
+  .loader-sm {
+    width: 16px; height: 16px; border: 2px solid var(--border);
+    border-top-color: var(--neon); border-radius: 50%;
+    animation: spin-sm 0.8s linear infinite;
+    display: inline-block; vertical-align: middle;
+  }
+  .loading-sm {
+    text-align: center; padding: 1rem;
+    color: var(--text-muted); font-size: 0.82rem;
+  }
+  .loading-sm .loader-sm { margin-right: 0.5rem; }
+  @keyframes spin-sm { to { transform: rotate(360deg); } }
+</style>
 
 <style>
   .header {
