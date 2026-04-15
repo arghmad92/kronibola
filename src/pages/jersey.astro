@@ -198,6 +198,7 @@ import Layout from '../layouts/Layout.astro';
             <img id="uploadPreview" class="upload-preview" style="display:none" />
           </label>
           <p class="upload-hint">Take a screenshot of your payment and upload it here</p>
+          <div id="uploadStatus" style="display:none;margin-top:0.5rem"></div>
         </div>
 
         <button class="btn btn--primary" id="confirmOrder" style="width:100%">CONFIRM ORDER</button>
@@ -488,14 +489,25 @@ import Layout from '../layouts/Layout.astro';
 
       // Upload receipt image
       if (receiptData) {
+        const uploadStatus = document.getElementById('uploadStatus')!;
+        uploadStatus.style.display = '';
+        uploadStatus.innerHTML = '<div class="alert alert--info" style="font-size:0.78rem">Uploading receipt...</div>';
         try {
           if (!uploadToken) await fetchUploadToken();
-          await fetch('/api/upload-receipt', {
+          const uploadRes = await fetch('/api/upload-receipt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refCode, playerName: name, imageData: receiptData.base64, mimeType: receiptData.mimeType, uploadToken }),
           });
-        } catch {}
+          const uploadData = await uploadRes.json();
+          if (!uploadData.success) {
+            uploadStatus.innerHTML = `<div class="alert alert--error" style="font-size:0.78rem">${uploadData.error || 'Receipt upload failed.'} You can resend via Check Status.</div>`;
+          } else {
+            uploadStatus.style.display = 'none';
+          }
+        } catch {
+          uploadStatus.innerHTML = '<div class="alert alert--error" style="font-size:0.78rem">Receipt upload failed (network). You can resend via Check Status.</div>';
+        }
         receiptData = null;
       }
 

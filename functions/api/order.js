@@ -42,7 +42,7 @@ function generateOrderRef(name) {
 const VALID_SIZES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '8XL'];
 const PRICE = 48;
 const POSTAGE = 10;
-const ORDER_DEADLINE = new Date('2026-04-13T23:59:59+08:00');
+const ORDER_DEADLINE = new Date('2026-04-30T23:59:59+08:00');
 
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
