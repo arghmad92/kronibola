@@ -1,5 +1,7 @@
-import { readSheet, writeSheet, json } from '../_sheets.js';
+import { readSheet, writeSheet, mergeRowsByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
+
+const HEADERS = ['Session Name', 'Date', 'Time', 'Location', 'Fee', 'Status', 'Max Players', 'Require Car Plate'];
 
 export async function onRequest(context) {
   // Auth check
@@ -21,11 +23,24 @@ export async function onRequest(context) {
   if (method === 'POST') {
     try {
       const { sessions } = await context.request.json();
-      const headers = ['Session Name', 'Date', 'Time', 'Location', 'Fee', 'Status', 'Max Players', 'Require Car Plate'];
-      await writeSheet(context.env, 'Sessions', sessions, headers);
+      if (!Array.isArray(sessions)) return json({ error: 'Invalid payload: sessions must be an array' }, 400);
+
+      // Re-read current sheet and merge by Date. Preserves cron-autoclose
+      // Status updates that happened between page load and save. Admin can
+      // still change any field — payload values always win on merge.
+      const current = await readSheet(context.env, 'Sessions');
+      const merged = mergeRowsByKey(current, sessions, 'Date');
+
+      // Refuse to clear a non-empty sheet. Individual deletions still allowed.
+      if (current.length > 0 && merged.length === 0) {
+        return json({ error: 'Refusing to clear all sessions. Delete rows individually.' }, 409);
+      }
+
+      await writeSheet(context.env, 'Sessions', merged, HEADERS);
       return json({ success: true });
     } catch (e) {
-      return json({ error: e.message }, 500);
+      console.error('admin/sessions POST error:', e && e.stack ? e.stack : e);
+      return json({ error: e.message || 'Save failed' }, 500);
     }
   }
 

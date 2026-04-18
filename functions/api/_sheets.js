@@ -153,6 +153,28 @@ export async function appendRow(env, sheetName, row) {
   }
 }
 
+// Merge incoming rows with current sheet state by a key field. For each
+// incoming row, if a row with the same key exists in current state, missing
+// fields are filled in from the existing row. This protects fields the admin
+// never intended to modify (e.g. Car Plate on a registration) from being
+// wiped by a stale client that loaded the page before those fields existed.
+// Rows in current but not in incoming are dropped — admin intent is still to
+// replace the sheet contents, just without inadvertently clearing columns.
+export function mergeRowsByKey(current, incoming, keyField) {
+  const byKey = new Map();
+  for (const row of current) {
+    const k = row && row[keyField];
+    if (k) byKey.set(String(k), row);
+  }
+  return incoming.map((row) => {
+    const k = row && row[keyField];
+    if (!k) return row;
+    const existing = byKey.get(String(k));
+    if (!existing) return row;
+    return { ...existing, ...row };
+  });
+}
+
 // Get access token for any Google API scope
 export async function getGoogleToken(env, scope) {
   const creds = parseCreds(env.GCP_CREDENTIALS);
