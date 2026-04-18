@@ -40,14 +40,33 @@ async function createJWT(credentials, scope) {
   return `${unsigned}.${sig}`;
 }
 
+// Fetch wrapper that throws on non-2xx so callers can't silently swallow
+// Google API failures. Includes a truncated response body in the error to
+// make Cloudflare Pages logs actionable.
+async function sheetsFetch(url, init, context) {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    let body = '';
+    try { body = (await res.text()).slice(0, 500); } catch {}
+    const err = new Error(`${context || 'sheetsFetch'} failed: ${res.status} ${res.statusText}${body ? ' - ' + body : ''}`);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  return res;
+}
+
 async function getAccessToken(credentials, scope) {
   const jwt = await createJWT(credentials, scope);
-  const res = await fetch('https://oauth2.googleapis.com/token', {
+  const res = await sheetsFetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-  });
+  }, 'Google OAuth token');
   const data = await res.json();
+  if (!data.access_token) {
+    throw new Error(`Google OAuth returned no access_token: ${JSON.stringify(data).slice(0, 300)}`);
+  }
   return data.access_token;
 }
 
@@ -69,9 +88,10 @@ export async function readSheet(env, sheetName) {
   const token = await getAccessToken(creds);
   const spreadsheetId = env.SPREADSHEET_ID;
 
-  const res = await fetch(
+  const res = await sheetsFetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}` } },
+    `readSheet(${sheetName})`
   );
   const data = await res.json();
   const rows = data.values || [];
@@ -93,33 +113,44 @@ export async function writeSheet(env, sheetName, records, headers) {
   const authHeader = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   // Clear
-  await fetch(
+  await sheetsFetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}:clear`,
-    { method: 'POST', headers: authHeader, body: '{}' }
+    { method: 'POST', headers: authHeader, body: '{}' },
+    `writeSheet.clear(${sheetName})`
   );
 
   // Write
   const values = [headers, ...records.map((r) => headers.map((h) => r[h] || ''))];
-  await fetch(
+  await sheetsFetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?valueInputOption=RAW`,
-    { method: 'PUT', headers: authHeader, body: JSON.stringify({ values }) }
+    { method: 'PUT', headers: authHeader, body: JSON.stringify({ values }) },
+    `writeSheet.update(${sheetName})`
   );
 }
 
-// Append a row
+// Append a row. Verifies that Google Sheets reports an updated range —
+// otherwise we'd still be silently accepting a 200 with no write performed.
+// Intentionally no retry: :append is not idempotent and we'd rather surface
+// a 500 than risk a duplicate row (the caller's duplicate check ran before
+// this write, so a retry wouldn't be caught).
 export async function appendRow(env, sheetName, row) {
   const creds = parseCreds(env.GCP_CREDENTIALS);
   const token = await getAccessToken(creds);
   const spreadsheetId = env.SPREADSHEET_ID;
 
-  await fetch(
+  const res = await sheetsFetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [row] }),
-    }
+    },
+    `appendRow(${sheetName})`
   );
+  const data = await res.json().catch(() => ({}));
+  if (!data.updates || !data.updates.updatedRange) {
+    throw new Error(`appendRow(${sheetName}) returned no updatedRange: ${JSON.stringify(data).slice(0, 300)}`);
+  }
 }
 
 // Get access token for any Google API scope

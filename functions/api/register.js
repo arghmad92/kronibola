@@ -102,7 +102,7 @@ export async function onRequest(context) {
 
     return json({ success: true, status, refCode });
   } catch (e) {
-    console.error('Registration error:', e);
-    return json({ error: 'An error occurred. Please try again.' }, 500);
+    console.error('Registration error:', e && e.stack ? e.stack : e);
+    return json({ error: 'Unable to save your registration. Please try again in a moment — no spot was taken.' }, 500);
   }
 }

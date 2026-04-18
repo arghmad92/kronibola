@@ -85,6 +85,7 @@ export async function onRequest(context) {
 
     return json({ success: true, refCode, total });
   } catch (e) {
-    return json({ error: 'An error occurred. Please try again.' }, 500);
+    console.error('Order error:', e && e.stack ? e.stack : e);
+    return json({ error: 'Unable to save your order. Please try again in a moment — no order was placed.' }, 500);
   }
 }
