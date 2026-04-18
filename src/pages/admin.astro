@@ -116,8 +116,9 @@ import Layout from '../layouts/Layout.astro';
               <input type="number" class="form-input" id="apFee" value="28" />
             </div>
           </div>
-          <!-- Optional plate: only shown for sessions where Require Car Plate = No.
-               Plate-required sessions use the public registration flow. -->
+          <!-- Optional plate: only shown for sessions where Require Car Plate = Yes.
+               Admin can skip it if the plate isn't known at add time — the
+               player can fill it in later via the public Check-My-Status flow. -->
           <div class="ap-row" id="apPlateRow" style="display:none">
             <div class="form-group" style="flex:1">
               <label class="form-label">Car Plate <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
@@ -1172,16 +1173,17 @@ import Layout from '../layouts/Layout.astro';
   const addPlayerBox = document.getElementById('addPlayerBox')!;
 
   // Toggle the optional Car Plate row based on the currently selected session.
-  // Plate-required sessions intentionally hide it — players for those must
-  // register through the public form so the plate flows in validated.
+  // Only shown for plate-required sessions so admin can capture the plate at
+  // add time; still optional on submit (admin can skip if unknown — player
+  // can fill it in later via the public Check-My-Status flow).
   function syncApPlateRow() {
     const date = (document.getElementById('filterDate') as HTMLSelectElement).value;
     const session = sessionsData.find((s: any) => s.Date === date);
     const requiresPlate = !!(session && session['Require Car Plate'] === 'Yes');
     const row = document.getElementById('apPlateRow') as HTMLElement | null;
     if (!row) return;
-    row.style.display = requiresPlate ? 'none' : '';
-    if (requiresPlate) {
+    row.style.display = requiresPlate ? '' : 'none';
+    if (!requiresPlate) {
       const inp = document.getElementById('apPlate') as HTMLInputElement | null;
       if (inp) inp.value = '';
     }
@@ -1204,13 +1206,13 @@ import Layout from '../layouts/Layout.astro';
 
     if (!name || !phone) { alert('Fill in name and phone.'); return; }
 
-    // Plate only accepted for sessions that don't require one (field is
-    // hidden otherwise, but also guard here). Validate format if provided;
-    // empty is fine since it's optional.
+    // Plate field is only shown for plate-required sessions; still optional
+    // on submit (admin may not know the plate yet). Validate format when
+    // provided; for no-plate sessions we ignore any value entirely.
     const session = sessionsData.find((s: any) => s.Date === date);
     const requiresPlate = !!(session && session['Require Car Plate'] === 'Yes');
     let plate = '';
-    if (!requiresPlate) {
+    if (requiresPlate) {
       const plateInput = (document.getElementById('apPlate') as HTMLInputElement).value.replace(/\s/g, '').toUpperCase();
       if (plateInput) {
         if (plateInput.length < 2 || plateInput.length > 10) { alert('Car plate must be 2-10 characters'); return; }
