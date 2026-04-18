@@ -25,17 +25,21 @@ import Layout from '../layouts/Layout.astro';
 
       document.getElementById('loading')!.style.display = 'none';
 
-      // Group by phone number (unique per player), use latest name
-      const phoneMap: Record<string, { name: string; count: number }> = {};
+      // Group by player name. Phone isn't a reliable identity key since a
+      // person often registers for friends using their own phone, which would
+      // merge separate players into one record and inflate their count.
+      // Names are Title-Cased at registration (see functions/api/register.js),
+      // so case/whitespace drift can't split one player into two.
+      const nameMap: Record<string, { name: string; count: number }> = {};
       players.forEach((p: any) => {
-        const phone = String(p.Phone || '').replace(/[-\s']/g, '').replace(/^0/, '').slice(-10);
-        if (!phone) return;
-        if (!phoneMap[phone]) phoneMap[phone] = { name: p['Player Name'], count: 0 };
-        phoneMap[phone].count += 1;
-        phoneMap[phone].name = p['Player Name']; // use latest name
+        const displayName = String(p['Player Name'] || '').trim();
+        if (!displayName) return;
+        const key = displayName.toLowerCase().replace(/\s+/g, ' ');
+        if (!nameMap[key]) nameMap[key] = { name: displayName, count: 0 };
+        nameMap[key].count += 1;
       });
 
-      const sorted = Object.values(phoneMap)
+      const sorted = Object.values(nameMap)
         .map((v) => [v.name, v.count] as [string, number])
         .sort((a, b) => b[1] - a[1]);
       if (!sorted.length) {
