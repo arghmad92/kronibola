@@ -780,7 +780,11 @@ import Layout from '../layouts/Layout.astro';
         document.getElementById('loginGate')!.style.display = 'none';
         document.getElementById('adminContent')!.style.display = '';
         document.getElementById('notifyBell')!.style.display = '';
-        loadSchedule(); loadAllPlayers(); loadRevenue(); loadNotifs(); loadStats(); loadOrders();
+        // Schedule must finish first: loadAllPlayers() cross-references sessionsData
+        // to classify dates as Upcoming vs Past. Running them in parallel races,
+        // and when players resolves first every game falls into "Past Games".
+        await loadSchedule();
+        loadAllPlayers(); loadRevenue(); loadNotifs(); loadStats(); loadOrders();
       } else { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>'; }
     } catch { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>'; }
   });
@@ -941,9 +945,16 @@ import Layout from '../layouts/Layout.astro';
     try {
       const res = await fetch(`${API}/admin/players`, { headers: { Authorization: adminToken } });
       allPlayers = (await res.json()).players || [];
-      const dates = [...new Set(allPlayers.map((p: any) => p['Session Date']))];
 
-      // Split into open and closed sessions
+      // Union of session dates and registration dates. Using only registration
+      // dates would hide freshly-scheduled games that nobody has signed up for
+      // yet, making them impossible to open from this tab.
+      const playerDates = allPlayers.map((p: any) => p['Session Date']).filter(Boolean);
+      const sessionDates = sessionsData.map((s: any) => s.Date).filter(Boolean);
+      const dates = [...new Set<string>([...playerDates, ...sessionDates])];
+
+      // Split into open and closed sessions. Dates with registrations but no
+      // matching session (orphan data) also fall into "Past Games".
       const openDates = dates.filter(d => sessionsData.some((s: any) => s.Date === d && s.Status === 'Open'));
       const closedDates = dates.filter(d => !openDates.includes(d));
 
