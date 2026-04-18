@@ -116,6 +116,14 @@ import Layout from '../layouts/Layout.astro';
               <input type="number" class="form-input" id="apFee" value="28" />
             </div>
           </div>
+          <!-- Optional plate: only shown for sessions where Require Car Plate = No.
+               Plate-required sessions use the public registration flow. -->
+          <div class="ap-row" id="apPlateRow" style="display:none">
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Car Plate <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+              <input type="text" class="form-input" id="apPlate" placeholder="e.g. VAB1234" style="text-transform:uppercase" autocomplete="off" maxlength="10" />
+            </div>
+          </div>
           <button class="btn btn--primary btn--sm" id="apConfirm" style="width:100%">ADD PLAYER</button>
         </div>
         <button class="btn btn--outline btn--sm" id="addPlayerBtn" style="width:100%;margin-bottom:0.8rem">+ ADD PLAYER MANUALLY</button>
@@ -1001,6 +1009,9 @@ import Layout from '../layouts/Layout.astro';
 
   document.getElementById('filterDate')!.addEventListener('change', () => {
     renderPlayers((document.getElementById('filterDate') as HTMLSelectElement).value);
+    // If the Add Player form is open, re-evaluate whether to show the optional
+    // plate field for the newly selected session.
+    if (addPlayerBox.style.display !== 'none') syncApPlateRow();
   });
 
   function renderPlayers(date: string) {
@@ -1159,8 +1170,27 @@ import Layout from '../layouts/Layout.astro';
 
   // --- ADD PLAYER MANUALLY ---
   const addPlayerBox = document.getElementById('addPlayerBox')!;
+
+  // Toggle the optional Car Plate row based on the currently selected session.
+  // Plate-required sessions intentionally hide it — players for those must
+  // register through the public form so the plate flows in validated.
+  function syncApPlateRow() {
+    const date = (document.getElementById('filterDate') as HTMLSelectElement).value;
+    const session = sessionsData.find((s: any) => s.Date === date);
+    const requiresPlate = !!(session && session['Require Car Plate'] === 'Yes');
+    const row = document.getElementById('apPlateRow') as HTMLElement | null;
+    if (!row) return;
+    row.style.display = requiresPlate ? 'none' : '';
+    if (requiresPlate) {
+      const inp = document.getElementById('apPlate') as HTMLInputElement | null;
+      if (inp) inp.value = '';
+    }
+  }
+
   document.getElementById('addPlayerBtn')!.addEventListener('click', () => {
-    addPlayerBox.style.display = addPlayerBox.style.display === 'none' ? '' : 'none';
+    const willShow = addPlayerBox.style.display === 'none';
+    addPlayerBox.style.display = willShow ? '' : 'none';
+    if (willShow) syncApPlateRow();
   });
 
   document.getElementById('apConfirm')!.addEventListener('click', async () => {
@@ -1174,6 +1204,22 @@ import Layout from '../layouts/Layout.astro';
 
     if (!name || !phone) { alert('Fill in name and phone.'); return; }
 
+    // Plate only accepted for sessions that don't require one (field is
+    // hidden otherwise, but also guard here). Validate format if provided;
+    // empty is fine since it's optional.
+    const session = sessionsData.find((s: any) => s.Date === date);
+    const requiresPlate = !!(session && session['Require Car Plate'] === 'Yes');
+    let plate = '';
+    if (!requiresPlate) {
+      const plateInput = (document.getElementById('apPlate') as HTMLInputElement).value.replace(/\s/g, '').toUpperCase();
+      if (plateInput) {
+        if (plateInput.length < 2 || plateInput.length > 10) { alert('Car plate must be 2-10 characters'); return; }
+        if (!/^[A-Z0-9]+$/.test(plateInput)) { alert('Car plate must contain only letters and numbers'); return; }
+        if (!/[A-Z]/.test(plateInput) || !/[0-9]/.test(plateInput)) { alert('Car plate must contain at least 1 letter and 1 digit'); return; }
+        plate = plateInput;
+      }
+    }
+
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const refCode = `KB-${date.slice(5, 7)}${date.slice(8, 10)}-${name[0].toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
@@ -1186,7 +1232,7 @@ import Layout from '../layouts/Layout.astro';
       Timestamp: timestamp,
       'Ref Code': refCode,
       Refund: '',
-      'Car Plate': '',
+      'Car Plate': plate,
     };
 
     allPlayers.push(newPlayer);
@@ -1195,6 +1241,7 @@ import Layout from '../layouts/Layout.astro';
     // Clear form
     (document.getElementById('apName') as HTMLInputElement).value = '';
     (document.getElementById('apPhone') as HTMLInputElement).value = '';
+    (document.getElementById('apPlate') as HTMLInputElement).value = '';
     addPlayerBox.style.display = 'none';
 
     // Auto-save
