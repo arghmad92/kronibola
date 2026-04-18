@@ -963,16 +963,25 @@ import Layout from '../layouts/Layout.astro';
       openDates.sort(sortDesc);
       closedDates.sort(sortDesc);
 
+      // Build the dropdown label. Append the Session Name (e.g. "Futsal",
+      // "7-a-side") so the admin can tell sessions apart at a glance when
+      // two dates are close together or when picking from the Past list.
+      const labelFor = (d: string) => {
+        const s = sessionsData.find((x: any) => x.Date === d);
+        const name = s && s['Session Name'] ? String(s['Session Name']).trim() : '';
+        return name ? `${d} · ${name}` : d;
+      };
+
       const sel = document.getElementById('filterDate') as HTMLSelectElement;
       let html = '';
       if (openDates.length) {
         html += `<optgroup label="Upcoming">`;
-        html += openDates.map(d => `<option value="${d}">${d}</option>`).join('');
+        html += openDates.map(d => `<option value="${d}">${labelFor(d)}</option>`).join('');
         html += `</optgroup>`;
       }
       if (closedDates.length) {
         html += `<optgroup label="Past Games">`;
-        html += closedDates.map(d => `<option value="${d}">${d}</option>`).join('');
+        html += closedDates.map(d => `<option value="${d}">${labelFor(d)}</option>`).join('');
         html += `</optgroup>`;
       }
       sel.innerHTML = html;
