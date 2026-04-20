@@ -758,6 +758,11 @@ import Layout from '../layouts/Layout.astro';
             ` : ''}
           </div>
           ${needsReceipt ? `
+            <div class="status-pay">
+              <p class="status-pay-label">Pay via Maybank MAE — RM ${r.fee}</p>
+              <img src="/pay.webp" alt="Payment QR" class="status-pay-qr" loading="lazy" />
+              <a href="https://www.maybank2u.com.my" target="_blank" rel="noopener" class="btn btn--mae" style="width:100%">Open Maybank MAE</a>
+            </div>
             <div class="status-upload" style="margin-top:0.6rem">
               <label class="upload-area-mini" data-ref="${refCode}" data-name="${r.name}">
                 <input type="file" accept="image/*" class="status-receipt-input" style="display:none" />
@@ -1186,6 +1191,24 @@ import Layout from '../layouts/Layout.astro';
     font-size: 0.78rem; color: var(--neon); font-weight: 600;
   }
   :global(.upload-area-mini:hover) { background: rgba(0,255,65,0.08); border-color: var(--neon); }
+
+  /* Inline payment block inside status cards — shown for Pending/Overdue so
+     promoted waitlist players (and anyone who forgot to pay) can scan the QR
+     without backing out to the registration modal. */
+  :global(.status-pay) {
+    margin-top: 0.7rem; padding: 0.8rem;
+    background: rgba(0,255,65,0.03); border: 1px solid rgba(0,255,65,0.15);
+    border-radius: 12px; text-align: center;
+  }
+  :global(.status-pay-label) {
+    font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+    margin: 0 0 0.55rem; letter-spacing: 0.04em;
+  }
+  :global(.status-pay-qr) {
+    display: block; width: 100%; max-width: 220px; height: auto;
+    margin: 0 auto 0.6rem;
+    border-radius: 12px; border: 1px solid var(--border);
+  }
 
   :global(.wa-group-banner) {
     display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem;
