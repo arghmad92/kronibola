@@ -247,6 +247,28 @@ export function mergeRowsByKey(current, incoming, keyField, protectedFields = []
   });
 }
 
+// Update specific cells via values:batchUpdate. Unlike writeSheet this
+// does NOT clear the sheet — it only touches the ranges it's told about.
+// Use this when a caller wants to mutate a handful of cells without risk
+// of wiping unrelated columns or concurrent writes.
+// `updates` is [{ range: "SheetName!D5", values: [["Overdue"]] }, ...]
+export async function batchUpdateCells(env, updates) {
+  if (!updates || !updates.length) return;
+  const creds = parseCreds(env.GCP_CREDENTIALS);
+  const token = await getAccessToken(creds);
+  const spreadsheetId = env.SPREADSHEET_ID;
+
+  await sheetsFetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ valueInputOption: 'RAW', data: updates }),
+    },
+    `batchUpdateCells(${updates.length})`
+  );
+}
+
 // Get access token for any Google API scope
 export async function getGoogleToken(env, scope) {
   const creds = parseCreds(env.GCP_CREDENTIALS);
