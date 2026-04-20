@@ -53,6 +53,16 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <div class="lineup-grid" id="lineupGrid"></div>
         <p class="lineup-empty" id="lineupEmpty" style="display:none">No players yet. Be the first!</p>
+        <div class="lineup-locked" id="lineupLocked" style="display:none">
+          <div class="lineup-locked-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <p class="lineup-locked-title">Lineup locked</p>
+          <p class="lineup-locked-sub" id="lineupLockedSub">Revealed the day before the match. Register now to secure your spot.</p>
+        </div>
       </div>
     </div>
 
@@ -254,7 +264,6 @@ import Layout from '../layouts/Layout.astro';
       const paid = players.filter((p: any) => p['Payment Status'] === 'Paid');
       const nonRejected = players.filter((p: any) => p['Payment Status'] !== 'Rejected');
       const activeCount = players.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])).length;
-      document.getElementById('lineupCount')!.textContent = `${paid.length} confirmed · ${nonRejected.length} total`;
 
       // Update register button text
       const isFull = activeCount >= currentMax;
@@ -262,8 +271,31 @@ import Layout from '../layouts/Layout.astro';
         btn.textContent = isFull ? 'JOIN WAITLIST' : 'REGISTER NOW';
       });
 
-      renderLineup(players);
+      // Lineup is hidden until the day before the match to encourage early
+      // registration. The count in the section header and the player cards
+      // are both suppressed — slot counts on session cards are kept so
+      // players still see overall scarcity.
+      const lineupCountEl = document.getElementById('lineupCount')!;
+      if (shouldRevealLineup(date)) {
+        lineupCountEl.textContent = `${paid.length} confirmed · ${nonRejected.length} total`;
+      } else {
+        lineupCountEl.textContent = 'revealed on match eve';
+      }
+
+      renderLineup(players, date);
     } catch {}
+  }
+
+  // Lineup reveals when the match date is today, tomorrow, or already past.
+  // Comparison done in Malaysia time so the cutover happens at local midnight
+  // regardless of where the viewer is.
+  function shouldRevealLineup(matchDateStr: string): boolean {
+    if (!matchDateStr) return true;
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+    const today = new Date(todayStr + 'T00:00:00+08:00').getTime();
+    const match = new Date(matchDateStr + 'T00:00:00+08:00').getTime();
+    const diffDays = Math.round((match - today) / (1000 * 60 * 60 * 24));
+    return diffDays <= 1;
   }
 
   function updateSlots(idx: number, count: number, max: number) {
@@ -283,9 +315,32 @@ import Layout from '../layouts/Layout.astro';
     bar.className = `progress-fill ${full ? 'progress-fill--full' : ''}`;
   }
 
-  function renderLineup(list: any[]) {
+  function renderLineup(list: any[], sessionDate: string) {
     const grid = document.getElementById('lineupGrid')!;
     const empty = document.getElementById('lineupEmpty')!;
+    const locked = document.getElementById('lineupLocked')!;
+
+    // If we're more than a day out from the match, hide the names and show
+    // the locked placeholder instead. Goal is to nudge players to register
+    // earlier rather than waiting and checking the list.
+    if (!shouldRevealLineup(sessionDate)) {
+      grid.innerHTML = '';
+      grid.style.display = 'none';
+      empty.style.display = 'none';
+      locked.style.display = '';
+      // Update the sub-copy with the actual reveal date so it's concrete.
+      const revealSub = document.getElementById('lineupLockedSub');
+      if (revealSub && sessionDate) {
+        const revealDate = new Date(new Date(sessionDate + 'T00:00:00+08:00').getTime() - 24 * 60 * 60 * 1000);
+        const revealStr = revealDate.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kuala_Lumpur' });
+        revealSub.textContent = `Names revealed ${revealStr} (the day before). Register now to secure your spot.`;
+      }
+      return;
+    }
+
+    locked.style.display = 'none';
+    grid.style.display = '';
+
     const order: Record<string, number> = { Paid: 1, Pending: 2, Overdue: 3, Waitlist: 4 };
     const filtered = list.filter((p: any) => p['Payment Status'] !== 'Rejected');
     const sorted = [...filtered].sort((a, b) => (order[a['Payment Status']] || 5) - (order[b['Payment Status']] || 5));
@@ -1061,6 +1116,31 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .lineup-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic; font-size: 0.88rem; }
+
+  /* Locked lineup placeholder — shown until the day before the match to
+     nudge players to register early without being able to scout the list. */
+  .lineup-locked {
+    text-align: center;
+    padding: 2.2rem 1.2rem;
+    background: rgba(0,255,65,0.03);
+    border: 1px dashed rgba(0,255,65,0.18);
+    border-radius: 14px;
+  }
+  .lineup-locked-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.22);
+    color: var(--neon); margin-bottom: 0.7rem;
+  }
+  .lineup-locked-title {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.92rem; letter-spacing: 0.06em; text-transform: uppercase;
+    margin: 0 0 0.35rem; color: var(--neon);
+  }
+  .lineup-locked-sub {
+    margin: 0; font-size: 0.78rem; line-height: 1.5;
+    color: var(--text-secondary); max-width: 32ch; margin-inline: auto;
+  }
 
   /* Share */
   .share-section { margin: 1.5rem 0 2rem; }
