@@ -258,7 +258,7 @@ import Layout from '../layouts/Layout.astro';
         // Only update if this is the matching session
         const sessionPlayers = data.players?.filter((p: any) => String(p['Session Date']) === s.Date) || [];
         const count = sessionPlayers.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])).length;
-        updateSlots(i, count, max);
+        updateSlots(i, count, max, s.Date);
       });
 
       const paid = players.filter((p: any) => p['Payment Status'] === 'Paid');
@@ -298,7 +298,7 @@ import Layout from '../layouts/Layout.astro';
     return diffDays <= 1;
   }
 
-  function updateSlots(idx: number, count: number, max: number) {
+  function updateSlots(idx: number, count: number, max: number, sessionDate?: string) {
     const label = document.getElementById(`slotsLabel-${idx}`);
     const spots = document.getElementById(`spots-${idx}`);
     const bar = document.getElementById(`bar-${idx}`);
@@ -307,6 +307,40 @@ import Layout from '../layouts/Layout.astro';
     const left = Math.max(max - count, 0);
     const pct = Math.min(count / max, 1) * 100;
     const full = left <= 0;
+
+    // While the lineup is locked (more than a day from the match), suppress
+    // the exact numbers and show a soft status tier instead. Admin + players
+    // on match eve / match day still see the precise count.
+    const softMode = sessionDate ? !shouldRevealLineup(sessionDate) : false;
+
+    if (softMode) {
+      // Label: keep capacity visible since it's on the session card already
+      // (e.g. "15 slots"), but drop the "registered" count.
+      label.textContent = `${max} slots`;
+      // Spots: tiered copy driven by fill percentage.
+      //   0%       → "Just opened"
+      //   1–40%    → "Slots open"
+      //   41–75%   → "Filling fast"
+      //   76–99%   → "Almost full"
+      //   100%     → "FULL"
+      let tier = 'Slots open';
+      if (full) tier = 'FULL';
+      else if (pct === 0) tier = 'Just opened';
+      else if (pct > 75) tier = 'Almost full';
+      else if (pct > 40) tier = 'Filling fast';
+      spots.textContent = tier;
+      spots.className = `mc-spots ${full ? 'mc-spots--full' : ''}`;
+      // Progress bar: snap to coarse buckets so the exact number can't be
+      // eyeballed from the bar width.
+      let softPct = 0;
+      if (full) softPct = 100;
+      else if (pct > 75) softPct = 80;
+      else if (pct > 40) softPct = 55;
+      else if (pct > 0) softPct = 25;
+      bar.style.width = `${softPct}%`;
+      bar.className = `progress-fill ${full ? 'progress-fill--full' : ''}`;
+      return;
+    }
 
     label.textContent = `${count} / ${max}`;
     spots.textContent = full ? 'FULL' : `${left} left`;
