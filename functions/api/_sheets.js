@@ -153,6 +153,63 @@ export async function appendRow(env, sheetName, row) {
   }
 }
 
+// Reconcile an admin save against the current sheet state. Stronger guarantees
+// than mergeRowsByKey:
+//
+// 1. Rows in current but NOT in incoming are PRESERVED. This fixes the
+//    concurrent-write data loss where a registration coming in between the
+//    admin's page load and save would be silently wiped because the admin's
+//    stale payload didn't list it. Deletion is now EXPLICIT — the caller
+//    passes `deletes: [refCodes]` to remove rows.
+// 2. Rows present in both are field-merged, and `protectedFields` revert
+//    empty incoming values to the existing sheet value (so a stale client
+//    posting `'Car Plate': ''` doesn't overwrite a fresh plate).
+// 3. Rows in incoming with keys not in current are appended at the end
+//    (admin-added players/orders).
+// 4. Row ORDER from current is preserved; new rows go at the end.
+export function reconcileByKey(current, incoming, keyField, options = {}) {
+  const { deletes = [], protectedFields = [] } = options;
+  const deleteSet = new Set((deletes || []).map(String));
+
+  // Index incoming by key. Rows without a key can't be safely reconciled.
+  const incomingByKey = new Map();
+  for (const row of incoming || []) {
+    const k = row && row[keyField];
+    if (k) incomingByKey.set(String(k), row);
+  }
+
+  const result = [];
+  const consumed = new Set();
+
+  for (const row of current || []) {
+    const k = row && row[keyField];
+    const kStr = k ? String(k) : null;
+    if (kStr && deleteSet.has(kStr)) continue; // explicit delete
+    if (kStr && incomingByKey.has(kStr)) {
+      const inc = incomingByKey.get(kStr);
+      const merged = { ...row, ...inc };
+      for (const f of protectedFields) {
+        const v = inc[f];
+        const isEmpty = v === undefined || v === null || v === '';
+        if (isEmpty && row[f]) merged[f] = row[f];
+      }
+      result.push(merged);
+      consumed.add(kStr);
+    } else {
+      // Row not mentioned in incoming — preserve it. This is the core fix
+      // against concurrent-write loss. To actually delete, use `deletes`.
+      result.push(row);
+    }
+  }
+
+  // Append any rows in incoming whose key wasn't in current (admin-added).
+  for (const [kStr, row] of incomingByKey) {
+    if (!consumed.has(kStr)) result.push(row);
+  }
+
+  return result;
+}
+
 // Merge incoming rows with current sheet state by a key field. For each
 // incoming row, if a row with the same key exists in current state, missing
 // fields are filled in from the existing row.

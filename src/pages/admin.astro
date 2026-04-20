@@ -713,15 +713,18 @@ import Layout from '../layouts/Layout.astro';
       </div>`;
     }).join('');
 
-    // Save order status
+    // Save order status. Orders use soft-delete (Payment Status = Deleted),
+    // so deletes is always empty — server preserves concurrent orders.
     async function saveOrders(feedbackMsg: string) {
       try {
         const res = await fetch(`${API}/admin/orders`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-          body: JSON.stringify({ orders: allOrders }),
+          body: JSON.stringify({ orders: allOrders, deletes: [] }),
         });
         if (!res.ok) throw new Error('save failed');
+        const data = await res.json().catch(() => ({}));
+        if (Array.isArray(data.orders)) allOrders = data.orders;
         showToast(feedbackMsg);
         renderOrders();
       } catch {
@@ -1246,13 +1249,18 @@ import Layout from '../layouts/Layout.astro';
     (document.getElementById('apPlate') as HTMLInputElement).value = '';
     addPlayerBox.style.display = 'none';
 
-    // Auto-save
+    // Auto-save. Passing deletes: [] explicitly keeps the new
+    // reconcile-based server happy and preserves any concurrent registrations.
     try {
-      await fetch(`${API}/admin/players`, {
+      const res = await fetch(`${API}/admin/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-        body: JSON.stringify({ players: allPlayers }),
+        body: JSON.stringify({ players: allPlayers, deletes: [] }),
       });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (Array.isArray(data.players)) allPlayers = data.players;
+      }
     } catch {}
   });
 
@@ -1270,10 +1278,16 @@ import Layout from '../layouts/Layout.astro';
     document.querySelectorAll('.p-refund').forEach(sel => refundMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value));
 
     const changedPlayers: { name: string; phone: string; oldStatus: string; newStatus: string }[] = [];
+    // Collect Ref Codes for the deletions so the server can action them
+    // explicitly. Rows missing from the payload are preserved now.
+    const deletes: string[] = [];
 
     const updated = allPlayers.map((p: any) => {
       if (p['Session Date'] === date) {
-        if (delNames.has(p['Player Name'])) return null;
+        if (delNames.has(p['Player Name'])) {
+          if (p['Ref Code']) deletes.push(p['Ref Code']);
+          return null;
+        }
         if (statusMap.has(p['Player Name'])) {
           const ns = statusMap.get(p['Player Name'])!;
           if (ns !== p['Payment Status']) changedPlayers.push({ name: p['Player Name'], phone: String(p.Phone || '').replace("'", '').trim(), oldStatus: p['Payment Status'], newStatus: ns });
@@ -1285,9 +1299,10 @@ import Layout from '../layouts/Layout.astro';
     }).filter(Boolean);
 
     try {
-      const res = await fetch(`${API}/admin/players`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ players: updated }) });
+      const res = await fetch(`${API}/admin/players`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken }, body: JSON.stringify({ players: updated, deletes }) });
       if (!res.ok) throw new Error('save failed');
-      allPlayers = updated as any[];
+      const data = await res.json().catch(() => ({}));
+      allPlayers = Array.isArray(data.players) ? data.players : (updated as any[]);
       renderPlayers(date);
       btn.textContent = 'SAVED!';
       showToast(delNames.size ? `Saved (${delNames.size} removed)` : 'Players saved');
@@ -1348,14 +1363,22 @@ import Layout from '../layouts/Layout.astro';
     const originalLabel = target.textContent || (isDeleted ? 'DELETE' : 'SAVE');
     target.textContent = '…';
 
+    // Deletion must be explicit now — a row missing from the payload is
+    // preserved server-side (so a concurrent registration between page load
+    // and save doesn't get wiped). List the Ref Code if we're deleting.
+    const deletes: string[] = isDeleted && existing && existing['Ref Code'] ? [existing['Ref Code']] : [];
+
     try {
       const res = await fetch(`${API}/admin/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-        body: JSON.stringify({ players: updated }),
+        body: JSON.stringify({ players: updated, deletes }),
       });
       if (!res.ok) throw new Error('save failed');
-      allPlayers = updated as any[];
+      // Server returns the reconciled state — adopt it so any concurrent
+      // registrations the admin didn't know about appear on the next render.
+      const data = await res.json().catch(() => ({}));
+      allPlayers = Array.isArray(data.players) ? data.players : (updated as any[]);
       renderPlayers(date);
       showToast(isDeleted ? `${playerName} removed` : `${playerName} saved`);
 

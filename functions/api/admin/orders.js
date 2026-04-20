@@ -1,4 +1,4 @@
-import { readSheet, writeSheet, mergeRowsByKey, json } from '../_sheets.js';
+import { readSheet, writeSheet, reconcileByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
 
 const HEADERS = ['Order Date', 'Player Name', 'Phone', 'Size', 'Quantity', 'Total', 'Payment Status', 'Timestamp', 'Ref Code', 'Delivery', 'Address'];
@@ -24,22 +24,22 @@ export async function onRequest(context) {
 
   if (method === 'POST') {
     try {
-      const { orders } = await context.request.json();
+      const body = await context.request.json();
+      const orders = body && body.orders;
+      const deletes = Array.isArray(body && body.deletes) ? body.deletes : [];
       if (!Array.isArray(orders)) return json({ error: 'Invalid payload: orders must be an array' }, 400);
 
-      // Re-read current sheet and merge by Ref Code. Protects fields the
-      // admin UI never modifies (Address, Timestamp, Size, etc.) from
-      // being wiped if a stale client posts rows missing those keys.
+      // Reconcile by Ref Code. Preserves rows not in the payload (protects
+      // against concurrent orders placed after the admin loaded the page).
       const current = await readSheet(context.env, 'Orders');
-      const merged = mergeRowsByKey(current, orders, 'Ref Code', PROTECTED);
+      const result = reconcileByKey(current, orders, 'Ref Code', { deletes, protectedFields: PROTECTED });
 
-      // Refuse to clear a non-empty sheet. Individual deletions still allowed.
-      if (current.length > 0 && merged.length === 0) {
+      if (current.length > 0 && result.length === 0) {
         return json({ error: 'Refusing to clear all orders. Delete rows individually.' }, 409);
       }
 
-      await writeSheet(context.env, 'Orders', merged, HEADERS);
-      return json({ success: true });
+      await writeSheet(context.env, 'Orders', result, HEADERS);
+      return json({ success: true, orders: result });
     } catch (e) {
       console.error('admin/orders POST error:', e && e.stack ? e.stack : e);
       return json({ error: e.message || 'Save failed' }, 500);
