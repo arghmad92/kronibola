@@ -155,12 +155,21 @@ export async function appendRow(env, sheetName, row) {
 
 // Merge incoming rows with current sheet state by a key field. For each
 // incoming row, if a row with the same key exists in current state, missing
-// fields are filled in from the existing row. This protects fields the admin
-// never intended to modify (e.g. Car Plate on a registration) from being
-// wiped by a stale client that loaded the page before those fields existed.
+// fields are filled in from the existing row.
+//
+// `protectedFields` is the critical bit for data safety: readSheet always
+// coerces missing cells to '' (never undefined), so a stale client's in-memory
+// payload arrives with `'Car Plate': ''` for rows where the plate was blank
+// AT PAGE LOAD TIME. If a player updates their plate between page load and
+// the admin's save (via update-plate.js), the empty string in the payload
+// would still override the freshly-written plate. Declaring Car Plate as
+// "protected" means: if incoming is empty but existing has a value, prefer
+// existing. Fields the admin genuinely intends to edit (Payment Status,
+// Refund) are NOT protected — an empty string there is a legitimate clear.
+//
 // Rows in current but not in incoming are dropped — admin intent is still to
 // replace the sheet contents, just without inadvertently clearing columns.
-export function mergeRowsByKey(current, incoming, keyField) {
+export function mergeRowsByKey(current, incoming, keyField, protectedFields = []) {
   const byKey = new Map();
   for (const row of current) {
     const k = row && row[keyField];
@@ -171,7 +180,13 @@ export function mergeRowsByKey(current, incoming, keyField) {
     if (!k) return row;
     const existing = byKey.get(String(k));
     if (!existing) return row;
-    return { ...existing, ...row };
+    const merged = { ...existing, ...row };
+    for (const f of protectedFields) {
+      const incomingVal = row[f];
+      const isEmpty = incomingVal === undefined || incomingVal === null || incomingVal === '';
+      if (isEmpty && existing[f]) merged[f] = existing[f];
+    }
+    return merged;
   });
 }
 

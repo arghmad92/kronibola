@@ -2,6 +2,9 @@ import { readSheet, writeSheet, mergeRowsByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
 
 const HEADERS = ['Order Date', 'Player Name', 'Phone', 'Size', 'Quantity', 'Total', 'Payment Status', 'Timestamp', 'Ref Code', 'Delivery', 'Address'];
+// Fields the admin UI never edits on existing orders. If a stale client
+// posts an empty string for one of these, treat it as "no change".
+const PROTECTED = ['Order Date', 'Player Name', 'Phone', 'Size', 'Quantity', 'Total', 'Timestamp', 'Delivery', 'Address'];
 
 export async function onRequest(context) {
   const token = context.request.headers.get('Authorization') || '';
@@ -28,7 +31,7 @@ export async function onRequest(context) {
       // admin UI never modifies (Address, Timestamp, Size, etc.) from
       // being wiped if a stale client posts rows missing those keys.
       const current = await readSheet(context.env, 'Orders');
-      const merged = mergeRowsByKey(current, orders, 'Ref Code');
+      const merged = mergeRowsByKey(current, orders, 'Ref Code', PROTECTED);
 
       // Refuse to clear a non-empty sheet. Individual deletions still allowed.
       if (current.length > 0 && merged.length === 0) {

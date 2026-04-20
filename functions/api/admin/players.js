@@ -2,6 +2,10 @@ import { readSheet, writeSheet, mergeRowsByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
 
 const HEADERS = ['Session Date', 'Player Name', 'Phone', 'Payment Status', 'Amount', 'Timestamp', 'Ref Code', 'Refund', 'Car Plate'];
+// Fields the admin UI never edits on existing players. If a stale client
+// posts an empty string for one of these, treat it as "no change" — this
+// is what stopped the car-plate wipe after update-plate.js writes.
+const PROTECTED = ['Session Date', 'Player Name', 'Phone', 'Amount', 'Timestamp', 'Car Plate'];
 
 export async function onRequest(context) {
   // Auth check
@@ -29,7 +33,7 @@ export async function onRequest(context) {
       // admin UI never modifies (Car Plate, Timestamp, Phone, etc.) from
       // being wiped if a stale client posts rows missing those keys.
       const current = await readSheet(context.env, 'Registrations');
-      const merged = mergeRowsByKey(current, players, 'Ref Code');
+      const merged = mergeRowsByKey(current, players, 'Ref Code', PROTECTED);
 
       // Refuse to clear a non-empty sheet. Guards against a bug in the
       // client that posts an empty array (e.g. before loadAllPlayers()
