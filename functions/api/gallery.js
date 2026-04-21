@@ -2,18 +2,21 @@ import { getGoogleToken, json } from './_sheets.js';
 
 const FOLDER_ID = '1P5a06gF5ZE9okLGgiTAdZYUsvDUbDkTp';
 
-// A file is treated as a "highlight" if its Drive description contains any
-// of these markers. Highlights float to the top of the gallery; everything
-// else is ordered by createdTime desc. To curate, open the photo in Drive
-// and add ★ (or ⭐ / [highlight]) anywhere in the description.
+// Any subfolder whose name matches this pattern (case-insensitive) is treated
+// as the curated highlights folder. Photos in that subfolder float to the top
+// of the gallery grid; everything else falls back to "newest first" from the
+// main folder.
+const HIGHLIGHT_FOLDER_PATTERN = /highlight/i;
+
+// Backup path: description markers still work if you ever prefer to curate
+// without moving files around.
 const HIGHLIGHT_MARKERS = ['★', '⭐', '[highlight]', '[hl]'];
-function isHighlight(file) {
+function hasDescriptionMarker(file) {
   const desc = (file.description || '').toLowerCase();
   return HIGHLIGHT_MARKERS.some((m) => desc.includes(m.toLowerCase()));
 }
 
-// Strip the highlight marker from the caption so the user sees a clean
-// caption instead of a leading ★.
+// Strip any highlight marker from the caption so the viewer sees clean text.
 function cleanCaption(file) {
   let cap = file.description || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
   for (const m of HIGHLIGHT_MARKERS) {
@@ -22,25 +25,63 @@ function cleanCaption(file) {
   return cap || file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
 }
 
+async function driveList(url, token) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.files || [];
+}
+
+async function listImagesIn(folderId, token) {
+  const q = encodeURIComponent(`'${folderId}' in parents and mimeType contains 'image/' and trashed = false`);
+  const fields = encodeURIComponent('files(id,name,createdTime,description)');
+  const url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=${fields}&orderBy=createdTime desc&pageSize=100`;
+  return driveList(url, token);
+}
+
 export async function onRequest(context) {
   try {
     const token = await getGoogleToken(context.env, 'https://www.googleapis.com/auth/drive.readonly');
 
-    const query = encodeURIComponent(`'${FOLDER_ID}' in parents and mimeType contains 'image/' and trashed = false`);
-    const fields = encodeURIComponent('files(id,name,createdTime,description)');
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&orderBy=createdTime desc&pageSize=100`,
-      { headers: { Authorization: `Bearer ${token}` } }
+    // 1. Find a subfolder named "Highlights" (or anything matching /highlight/i)
+    //    inside the main session folder. Failure is non-fatal — if it doesn't
+    //    exist we fall back to description markers + newest-first.
+    const folderQ = encodeURIComponent(
+      `'${FOLDER_ID}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
     );
+    const folderUrl = `https://www.googleapis.com/drive/v3/files?q=${folderQ}&fields=${encodeURIComponent('files(id,name)')}`;
+    let highlightFolderId = null;
+    try {
+      const subfolders = await driveList(folderUrl, token);
+      const match = subfolders.find((f) => HIGHLIGHT_FOLDER_PATTERN.test(f.name || ''));
+      if (match) highlightFolderId = match.id;
+    } catch {
+      // ignore — treat as no highlight folder
+    }
 
-    const data = await res.json();
-    if (data.error) return json({ error: data.error.message }, 500);
+    // 2. Fetch main-folder photos and, if we have one, highlight-folder photos
+    //    in parallel. Both are sorted newest-first by Drive.
+    const [mainFiles, highlightFiles] = await Promise.all([
+      listImagesIn(FOLDER_ID, token),
+      highlightFolderId ? listImagesIn(highlightFolderId, token) : Promise.resolve([]),
+    ]);
 
-    const files = data.files || [];
-    const highlights = files.filter(isHighlight);
-    const rest = files.filter((f) => !isHighlight(f));
-    const ordered = [...highlights, ...rest];
+    // 3. Merge: highlight folder first (they float to the top), then main.
+    //    Dedupe by file id in case the same photo lives in both.
+    const seen = new Set();
+    const ordered = [];
+    for (const f of highlightFiles) {
+      if (seen.has(f.id)) continue;
+      seen.add(f.id);
+      ordered.push({ ...f, _folderHighlight: true });
+    }
+    for (const f of mainFiles) {
+      if (seen.has(f.id)) continue;
+      seen.add(f.id);
+      ordered.push({ ...f, _folderHighlight: false });
+    }
 
+    // 4. Shape for the client, cap at 12.
     const photos = ordered.slice(0, 12).map((f) => ({
       id: f.id,
       name: f.name,
@@ -48,7 +89,7 @@ export async function onRequest(context) {
       caption: cleanCaption(f),
       url: `https://drive.google.com/thumbnail?id=${f.id}&sz=w800`,
       fullUrl: `https://drive.google.com/thumbnail?id=${f.id}&sz=w1600`,
-      highlight: isHighlight(f),
+      highlight: f._folderHighlight || hasDescriptionMarker(f),
     }));
 
     return json({ photos });
