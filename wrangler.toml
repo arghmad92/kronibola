@@ -9,12 +9,9 @@ pages_build_output_dir = "./dist"
 #   [triggers]
 #   crons = ["*/30 * * * *"]
 
-# Visitor counter (functions/api/visitors.js)
-# Cloudflare Pages reads KV bindings from the dashboard, not wrangler.toml.
-# To enable the self-hosted counter:
-#   Workers & Pages → kronibola → Settings → Bindings → KV namespace bindings
-#   Variable name: VISITORS_KV
-#   KV namespace: create one named "kronibola-visitors" (or reuse an existing)
-# Until the binding is added, /api/visitors returns {count: 0} and the
-# footer hides the counter automatically — nothing looks broken in the
-# meantime.
+# Visitor counter KV binding (functions/api/visitors.js).
+# This Pages project is set to wrangler.toml-managed bindings, so the
+# binding must be declared here rather than in the dashboard UI.
+[[kv_namespaces]]
+binding = "VISITORS_KV"
+id = "d377a5670ddd406dbe91f09de0051494"
