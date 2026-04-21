@@ -129,13 +129,24 @@ const canonicalUrl = Astro.url.href;
           <span class="visitor-label">visitors</span>
         </div>
         <script is:inline>
-          fetch('https://api.counterapi.dev/v1/kronibola/visitors/up')
-            .then(r => r.json())
+          // Self-hosted visitor counter on Cloudflare KV (see functions/api/visitors.js).
+          // Hide the entire wrap on any failure so a broken counter doesn't leave a
+          // dangling "—" in the footer.
+          fetch('/api/visitors', { method: 'POST' })
+            .then(r => r.ok ? r.json() : Promise.reject())
             .then(data => {
               const el = document.getElementById('visitorCount');
-              if (el && typeof data.count === 'number') el.textContent = data.count.toLocaleString('en-MY');
+              const wrap = document.querySelector('.visitor-wrap');
+              if (data && typeof data.count === 'number' && data.count > 0) {
+                if (el) el.textContent = data.count.toLocaleString('en-MY');
+              } else if (wrap instanceof HTMLElement) {
+                wrap.style.display = 'none';
+              }
             })
-            .catch(() => {});
+            .catch(() => {
+              const wrap = document.querySelector('.visitor-wrap');
+              if (wrap instanceof HTMLElement) wrap.style.display = 'none';
+            });
         </script>
         <p>&copy; 2025 KroniBola. All rights reserved.</p>
         <p class="ssm-text">SSM: 202603032902 (TR0336774-T)</p>

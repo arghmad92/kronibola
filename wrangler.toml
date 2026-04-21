@@ -8,3 +8,13 @@ pages_build_output_dir = "./dist"
 # or deploy _scheduled.js as a standalone Worker with:
 #   [triggers]
 #   crons = ["*/30 * * * *"]
+
+# Visitor counter (functions/api/visitors.js)
+# Cloudflare Pages reads KV bindings from the dashboard, not wrangler.toml.
+# To enable the self-hosted counter:
+#   Workers & Pages → kronibola → Settings → Bindings → KV namespace bindings
+#   Variable name: VISITORS_KV
+#   KV namespace: create one named "kronibola-visitors" (or reuse an existing)
+# Until the binding is added, /api/visitors returns {count: 0} and the
+# footer hides the counter automatically — nothing looks broken in the
+# meantime.
