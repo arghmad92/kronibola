@@ -61,7 +61,7 @@ import Layout from '../layouts/Layout.astro';
             </svg>
           </div>
           <p class="lineup-locked-title">Lineup locked</p>
-          <p class="lineup-locked-sub" id="lineupLockedSub">Revealed the day before the match. Register now to secure your spot.</p>
+          <p class="lineup-locked-sub" id="lineupLockedSub">Revealed 2 days before the match. Register now to secure your spot.</p>
         </div>
       </div>
     </div>
@@ -271,7 +271,7 @@ import Layout from '../layouts/Layout.astro';
         btn.textContent = isFull ? 'JOIN WAITLIST' : 'REGISTER NOW';
       });
 
-      // Lineup is hidden until the day before the match to encourage early
+      // Lineup is hidden until 2 days before the match to encourage early
       // registration. The count in the section header and the player cards
       // are both suppressed — slot counts on session cards are kept so
       // players still see overall scarcity.
@@ -279,23 +279,24 @@ import Layout from '../layouts/Layout.astro';
       if (shouldRevealLineup(date)) {
         lineupCountEl.textContent = `${paid.length} confirmed · ${nonRejected.length} total`;
       } else {
-        lineupCountEl.textContent = 'revealed on match eve';
+        lineupCountEl.textContent = 'revealed 2 days before';
       }
 
       renderLineup(players, date);
     } catch {}
   }
 
-  // Lineup reveals when the match date is today, tomorrow, or already past.
-  // Comparison done in Malaysia time so the cutover happens at local midnight
-  // regardless of where the viewer is.
+  // Lineup reveals when the match is within 2 days (today, tomorrow,
+  // day-after-tomorrow, or already past). Comparison done in Malaysia
+  // time so the cutover happens at local midnight regardless of where
+  // the viewer is.
   function shouldRevealLineup(matchDateStr: string): boolean {
     if (!matchDateStr) return true;
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
     const today = new Date(todayStr + 'T00:00:00+08:00').getTime();
     const match = new Date(matchDateStr + 'T00:00:00+08:00').getTime();
     const diffDays = Math.round((match - today) / (1000 * 60 * 60 * 24));
-    return diffDays <= 1;
+    return diffDays <= 2;
   }
 
   function updateSlots(idx: number, count: number, max: number, sessionDate?: string) {
@@ -365,9 +366,9 @@ import Layout from '../layouts/Layout.astro';
       // Update the sub-copy with the actual reveal date so it's concrete.
       const revealSub = document.getElementById('lineupLockedSub');
       if (revealSub && sessionDate) {
-        const revealDate = new Date(new Date(sessionDate + 'T00:00:00+08:00').getTime() - 24 * 60 * 60 * 1000);
+        const revealDate = new Date(new Date(sessionDate + 'T00:00:00+08:00').getTime() - 2 * 24 * 60 * 60 * 1000);
         const revealStr = revealDate.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kuala_Lumpur' });
-        revealSub.textContent = `Names revealed ${revealStr} (the day before). Register now to secure your spot.`;
+        revealSub.textContent = `Names revealed ${revealStr} (2 days before). Register now to secure your spot.`;
       }
       return;
     }
@@ -817,13 +818,21 @@ import Layout from '../layouts/Layout.astro';
         });
       });
 
-      // Handle receipt uploads from status cards
+      // Handle receipt uploads from status cards. Guard against the
+      // known iOS Safari quirk where the file `change` event can fire
+      // twice on the same selection — without this we'd POST the same
+      // receipt twice and the admin would see duplicate Telegram messages.
       result.querySelectorAll('.status-receipt-input').forEach((input: Element) => {
+        let uploading = false;
         input.addEventListener('change', async () => {
+          if (uploading) return;
           const fileInput = input as HTMLInputElement;
           const file = fileInput.files?.[0];
           if (!file) return;
           if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); return; }
+
+          uploading = true;
+          fileInput.disabled = true;
 
           const label = fileInput.closest('.upload-area-mini') as HTMLElement;
           const refCode = label.dataset.ref || 'UNKNOWN';
@@ -845,11 +854,18 @@ import Layout from '../layouts/Layout.astro';
               if (data.success) {
                 resultDiv.innerHTML = '<span style="color:var(--neon);font-size:0.75rem">✓ Receipt uploaded!</span>';
                 label.style.display = 'none';
+                // leave uploading=true on success so any stray second
+                // change event is swallowed even if the user re-enables
+                // the input via dev tools or a flaky mobile browser
               } else {
                 resultDiv.innerHTML = '<span style="color:var(--red);font-size:0.75rem">Upload failed. Try again.</span>';
+                uploading = false;
+                fileInput.disabled = false;
               }
             } catch {
               resultDiv.innerHTML = '<span style="color:var(--red);font-size:0.75rem">Upload failed. Try again.</span>';
+              uploading = false;
+              fileInput.disabled = false;
             }
           };
           reader.readAsDataURL(file);
@@ -1156,7 +1172,7 @@ import Layout from '../layouts/Layout.astro';
 
   .lineup-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic; font-size: 0.88rem; }
 
-  /* Locked lineup placeholder — shown until the day before the match to
+  /* Locked lineup placeholder — shown until 2 days before the match to
      nudge players to register early without being able to scout the list. */
   .lineup-locked {
     text-align: center;

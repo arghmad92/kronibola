@@ -20,6 +20,12 @@ async function verifyUploadToken(token, secret) {
   } catch { return false; }
 }
 
+// Short window in which repeat uploads of the same receipt are treated as
+// accidental double-fires (mobile Safari is known to fire `change` twice on
+// camera-sourced file inputs). Longer than this, a second upload is treated
+// as an intentional retry / correction and forwarded to Telegram normally.
+const DEDUPE_TTL_SECONDS = 6;
+
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
 
@@ -42,6 +48,25 @@ export async function onRequest(context) {
     const base64 = imageData.replace(/^data:[^;]+;base64,/, '');
     if (base64.length > 6.7 * 1024 * 1024) {
       return json({ error: 'File too large. Maximum size is 5MB.' }, 400);
+    }
+
+    // Dedupe identical uploads within a short window. Fingerprint combines
+    // refCode + image size + a small prefix of the encoded bytes — enough to
+    // tell "same receipt posted twice in 6 seconds" from "user retried with
+    // a different file". Key lives in the VISITORS_KV namespace (reused as
+    // a general ephemeral cache; prefix keeps it separate from visitor keys).
+    if (context.env.VISITORS_KV) {
+      const prefix = base64.slice(0, 32);
+      const fp = `rx:${refCode}:${base64.length}:${prefix}`;
+      const recent = await context.env.VISITORS_KV.get(fp).catch(() => null);
+      if (recent) {
+        // Duplicate within window — swallow it. Report success to the client
+        // so the user still sees the ✓, but do NOT forward to Telegram.
+        return json({ success: true, deduped: true });
+      }
+      // Record the fingerprint BEFORE sending to Telegram so any truly
+      // simultaneous second request finds the key set.
+      await context.env.VISITORS_KV.put(fp, '1', { expirationTtl: DEDUPE_TTL_SECONDS }).catch(() => {});
     }
 
     const binaryStr = atob(base64);
