@@ -349,6 +349,17 @@ import Layout from '../layouts/Layout.astro';
         <input type="password" class="form-input" id="adminPassword" placeholder="At least 6 characters" autocomplete="new-password" />
         <p class="form-hint" id="adminPasswordHint" style="display:none;font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem">Leave blank to keep the current password.</p>
       </div>
+      <!-- Role row: visible to superadmins only. Promotes/demotes managed
+           admins. Hidden when the current session is a regular admin so the
+           form can't be (mis)used to escalate privilege client-side; the
+           server still rejects the change either way. -->
+      <div class="form-group" id="adminRoleRow" style="display:none">
+        <label class="form-label">Role</label>
+        <select class="form-select" id="adminRole">
+          <option value="">Admin</option>
+          <option value="superadmin">Superadmin (can manage other admins)</option>
+        </select>
+      </div>
       <button type="button" class="btn btn--primary" id="adminSubmitBtn" style="width:100%;margin-top:0.4rem">CREATE</button>
       <div id="adminModalError" style="display:none;margin-top:0.6rem"></div>
     </div>
@@ -385,9 +396,10 @@ import Layout from '../layouts/Layout.astro';
   const API = '/api';
   let adminToken = '';
   // Session captured from /api/admin/auth response. Drives "Logged in as"
-  // header chip, leave-modal pre-fill, and Apply-Leave eligibility check
-  // (owner-override sessions can't apply for leave on someone's behalf).
-  let adminSession: { username: string; displayName: string; isOwner: boolean } | null = null;
+  // header chip, leave-modal pre-fill, Apply-Leave eligibility, and the
+  // Manage Admins panel's conditional buttons (only superadmins can edit
+  // OR delete other admins; everyone can edit themselves).
+  let adminSession: { username: string; displayName: string; isOwner: boolean; isSuperadmin: boolean } | null = null;
 
   // --- Toast helper (global save confirmation) ---
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -948,6 +960,7 @@ import Layout from '../layouts/Layout.astro';
           username,
           displayName: data.displayName || username,
           isOwner: !!data.isOwner,
+          isSuperadmin: !!data.isSuperadmin,
         };
         localStorage.setItem('kb_admin_username', username);
         document.getElementById('loginGate')!.style.display = 'none';
@@ -2045,6 +2058,10 @@ import Layout from '../layouts/Layout.astro';
     const list = document.getElementById('adminsList');
     if (!list) return;
     list.innerHTML = '<p class="empty-msg">Loading…</p>';
+    // Only superadmins can create new admins, so hide the button for
+    // regular admins. Server enforces this regardless.
+    const addBtn = document.getElementById('addAdminBtn') as HTMLElement | null;
+    if (addBtn) addBtn.style.display = (adminSession && adminSession.isSuperadmin) ? '' : 'none';
     try {
       const res = await fetch(`${API}/admin/admins`, { headers: { Authorization: adminToken } });
       const data = await res.json().catch(() => ({}));
@@ -2062,22 +2079,32 @@ import Layout from '../layouts/Layout.astro';
       list.innerHTML = '<p class="empty-msg">No admin accounts yet. Tap "+ Add Admin" to create the first one.</p>';
       return;
     }
+    const meIsSA = !!(adminSession && adminSession.isSuperadmin);
     list.innerHTML = adminsData.map((a: any) => {
       const username = String(a.Username || '').toLowerCase();
       const isMe = adminSession && adminSession.username === username;
       const active = String(a.Active || '').toLowerCase() === 'yes';
+      const isSA = String(a.Role || '').toLowerCase() === 'superadmin';
+      // Self-edit (display name + own password) is always allowed.
+      // Editing OR deleting another admin requires superadmin.
+      const canManageThis = isMe || meIsSA;
+      const canDeleteThis = !isMe && meIsSA;
+      const canToggleThis = !isMe && meIsSA;
+      const roleChip = isSA
+        ? `<span class="admin-role-chip admin-role-chip--sa">SUPERADMIN</span>`
+        : '';
       return `<div class="player-card-admin">
         <div class="pca-top">
           <div class="pca-avatar" style="background:${active ? 'rgba(0,255,65,0.12)' : 'rgba(255,255,255,0.06)'};color:${active ? 'var(--neon)' : 'var(--text-muted)'};border-color:${active ? 'rgba(0,255,65,0.3)' : 'var(--border)'}">${calEsc((a['Display Name'] || username || '?')[0].toUpperCase())}</div>
           <div class="pca-info">
-            <span class="pca-name">${calEsc(a['Display Name'] || username)}${isMe ? ' <span style="font-size:0.62rem;color:var(--neon)">(you)</span>' : ''}</span>
+            <span class="pca-name">${calEsc(a['Display Name'] || username)}${isMe ? ' <span style="font-size:0.62rem;color:var(--neon)">(you)</span>' : ''} ${roleChip}</span>
             <span class="pca-phone">@${calEsc(username)} · ${active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         <div class="pca-controls">
-          <button type="button" class="pca-save admin-edit" data-username="${calEsc(username)}" title="Edit / reset password">EDIT</button>
-          <button type="button" class="pca-save ${active ? 'pca-save--info' : 'pca-save--danger'} admin-toggle" data-username="${calEsc(username)}" data-active="${active ? 'Yes' : 'No'}" title="${active ? 'Deactivate' : 'Reactivate'}">${active ? 'DEACTIVATE' : 'REACTIVATE'}</button>
-          ${!isMe ? `<button type="button" class="pca-save pca-save--danger admin-delete" data-username="${calEsc(username)}" title="Delete admin">DELETE</button>` : ''}
+          ${canManageThis ? `<button type="button" class="pca-save admin-edit" data-username="${calEsc(username)}" title="${isMe ? 'Edit profile' : 'Edit / reset password'}">EDIT</button>` : ''}
+          ${canToggleThis ? `<button type="button" class="pca-save ${active ? 'pca-save--info' : 'pca-save--danger'} admin-toggle" data-username="${calEsc(username)}" data-active="${active ? 'Yes' : 'No'}" title="${active ? 'Deactivate' : 'Reactivate'}">${active ? 'DEACTIVATE' : 'REACTIVATE'}</button>` : ''}
+          ${canDeleteThis ? `<button type="button" class="pca-save pca-save--danger admin-delete" data-username="${calEsc(username)}" title="Delete admin">DELETE</button>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -2086,6 +2113,10 @@ import Layout from '../layouts/Layout.astro';
   // === Add / Edit Admin modal ===
   const adminModal = document.getElementById('adminModal')!;
   document.getElementById('addAdminBtn')!.addEventListener('click', () => {
+    if (!adminSession || !adminSession.isSuperadmin) {
+      showToast('Only the superadmin can create new admins.', 'error');
+      return;
+    }
     editingAdminUsername = null;
     (document.getElementById('adminModalTitle') as HTMLElement).innerHTML = 'ADD <span class="neon-text">ADMIN</span>';
     (document.getElementById('adminModalSub') as HTMLElement).textContent = 'Create a new admin account';
@@ -2097,6 +2128,9 @@ import Layout from '../layouts/Layout.astro';
     (document.getElementById('adminPasswordHint') as HTMLElement).style.display = 'none';
     (document.getElementById('adminSubmitBtn') as HTMLButtonElement).textContent = 'CREATE';
     (document.getElementById('adminModalError') as HTMLElement).style.display = 'none';
+    // Role row visible to superadmins only (server enforces this regardless).
+    (document.getElementById('adminRoleRow') as HTMLElement).style.display = '';
+    (document.getElementById('adminRole') as HTMLSelectElement).value = '';
     adminModal.style.display = '';
   });
   document.getElementById('adminModalClose')!.addEventListener('click', () => adminModal.style.display = 'none');
@@ -2112,9 +2146,16 @@ import Layout from '../layouts/Layout.astro';
       const username = editBtn.dataset.username || '';
       const row = adminsData.find((a: any) => String(a.Username || '').toLowerCase() === username);
       if (!row) return;
+      const isMe = adminSession && adminSession.username === username;
+      const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+      // Server also enforces this — UI guard for nicer UX.
+      if (!isMe && !meIsSA) {
+        showToast('Only the superadmin can edit other admins.', 'error');
+        return;
+      }
       editingAdminUsername = username;
       (document.getElementById('adminModalTitle') as HTMLElement).innerHTML = 'EDIT <span class="neon-text">ADMIN</span>';
-      (document.getElementById('adminModalSub') as HTMLElement).textContent = `@${username}`;
+      (document.getElementById('adminModalSub') as HTMLElement).textContent = `@${username}${isMe ? ' (you)' : ''}`;
       (document.getElementById('adminUsername') as HTMLInputElement).value = username;
       (document.getElementById('adminUsername') as HTMLInputElement).disabled = true;
       (document.getElementById('adminDisplayName') as HTMLInputElement).value = row['Display Name'] || '';
@@ -2123,6 +2164,12 @@ import Layout from '../layouts/Layout.astro';
       (document.getElementById('adminPasswordHint') as HTMLElement).style.display = '';
       (document.getElementById('adminSubmitBtn') as HTMLButtonElement).textContent = 'SAVE';
       (document.getElementById('adminModalError') as HTMLElement).style.display = 'none';
+      // Role row visible to superadmins only. When self-editing as a regular
+      // admin, the row stays hidden — promoting yourself isn't a thing.
+      const roleRow = document.getElementById('adminRoleRow') as HTMLElement;
+      roleRow.style.display = meIsSA ? '' : 'none';
+      (document.getElementById('adminRole') as HTMLSelectElement).value =
+        String(row.Role || '').toLowerCase() === 'superadmin' ? 'superadmin' : '';
       adminModal.style.display = '';
       return;
     }
@@ -2187,19 +2234,25 @@ import Layout from '../layouts/Layout.astro';
       return;
     }
 
+    const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+    const role = meIsSA ? (document.getElementById('adminRole') as HTMLSelectElement).value : undefined;
+
     const btn = document.getElementById('adminSubmitBtn') as HTMLButtonElement;
     btn.disabled = true; btn.textContent = isCreate ? 'CREATING…' : 'SAVING…';
     try {
       let res;
       if (isCreate) {
+        const body: any = { username, displayName, password, active: 'Yes' };
+        if (role !== undefined) body.role = role;
         res = await fetch(`${API}/admin/admins`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-          body: JSON.stringify({ username, displayName, password, active: 'Yes' }),
+          body: JSON.stringify(body),
         });
       } else {
         const body: any = { username, displayName };
         if (password) body.password = password;
+        if (role !== undefined) body.role = role;
         res = await fetch(`${API}/admin/admins`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: adminToken },
@@ -2293,6 +2346,18 @@ import Layout from '../layouts/Layout.astro';
     margin: 0.4rem 0 1rem; padding: 0.6rem 0.8rem;
     background: rgba(0,255,65,0.04); border: 1px solid rgba(0,255,65,0.15);
     border-radius: 10px;
+  }
+
+  .admin-role-chip {
+    display: inline-block; margin-left: 0.4rem; padding: 0.1rem 0.5rem;
+    border-radius: 100px;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.55rem; letter-spacing: 0.1em; text-transform: uppercase;
+    vertical-align: middle;
+  }
+  .admin-role-chip--sa {
+    background: rgba(0,196,255,0.12); color: #00c4ff;
+    border: 1px solid rgba(0,196,255,0.3);
   }
 
   /* Calendar tab — chronological list */

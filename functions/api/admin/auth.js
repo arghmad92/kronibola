@@ -94,7 +94,8 @@ export async function onRequest(context) {
       displayName: 'OWNER',
       isOwner: true,
     }, adminPassword);
-    return json({ success: true, token, displayName: 'OWNER', isOwner: true });
+    // Owner is implicitly superadmin — recovery path for everything.
+    return json({ success: true, token, displayName: 'OWNER', isOwner: true, isSuperadmin: true });
   }
 
   // Per-admin login: look up the username in the `Admins` sheet and verify
@@ -118,10 +119,14 @@ export async function onRequest(context) {
   if (!ok) return badCreds();
 
   const displayName = String(row['Display Name'] || row.Username || username).trim() || username;
+  // Surface the role to the UI so it can conditionally render Admins-tab
+  // buttons. Server endpoints still re-read the sheet to authoritatively
+  // check superadmin status — this flag is a UI hint only.
+  const isSuperadmin = String(row.Role || '').trim().toLowerCase() === 'superadmin';
   const token = await issueToken({
     username: username,
     displayName,
     isOwner: false,
   }, adminPassword);
-  return json({ success: true, token, displayName, isOwner: false });
+  return json({ success: true, token, displayName, isOwner: false, isSuperadmin });
 }
