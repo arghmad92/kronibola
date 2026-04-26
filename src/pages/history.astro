@@ -26,7 +26,15 @@ import Layout from '../layouts/Layout.astro';
 
       document.getElementById('loading')!.style.display = 'none';
 
-      const closed = sessions.filter((s: any) => s.Status === 'Closed');
+      // History should only show games that have actually been played.
+      // Status === 'Closed' on a date in the future means the admin
+      // closed/cancelled an upcoming game — not history. Compare dates in
+      // Malaysia time so the boundary lines up with KL midnight regardless
+      // of where the viewer is.
+      const todayMY = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+      const closed = sessions
+        .filter((s: any) => s.Status === 'Closed' && s.Date && s.Date <= todayMY)
+        .sort((a: any, b: any) => String(b.Date).localeCompare(String(a.Date)));
       if (!closed.length) { document.getElementById('empty')!.style.display = ''; return; }
 
       const list = document.getElementById('historyList')!;
