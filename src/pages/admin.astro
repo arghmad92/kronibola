@@ -55,7 +55,7 @@ import Layout from '../layouts/Layout.astro';
           <button type="submit" class="btn btn--primary" style="width:100%;margin-top:0.5rem">UNLOCK</button>
         </form>
         <div id="loginError" style="display:none;margin-top:1rem"></div>
-        <p class="login-hint">First time setup? Log in with username <strong>owner</strong> and the owner password (Cloudflare env var) to bootstrap real admin accounts. Forgot your password? Ask another admin to reset it from Manage Admins.</p>
+        <p class="login-hint">Forgot your password? Ask the Creator.</p>
       </div>
     </div>
 
@@ -357,7 +357,10 @@ import Layout from '../layouts/Layout.astro';
       <button type="button" class="modal-close" id="adminModalClose">&times;</button>
       <h3 class="modal-title" id="adminModalTitle">ADD <span class="neon-text">ADMIN</span></h3>
       <p class="modal-sub" id="adminModalSub">Create a new admin account</p>
-      <div class="form-group">
+      <!-- Username is only editable when creating a new admin. On edit it's
+           hidden — the modal subtitle already shows @username and the
+           server doesn't accept username changes anyway. -->
+      <div class="form-group" id="adminUsernameRow">
         <label class="form-label">Username</label>
         <input type="text" class="form-input" id="adminUsername" placeholder="e.g. iman" autocapitalize="none" autocorrect="off" spellcheck="false" style="text-transform:lowercase" />
       </div>
@@ -2345,6 +2348,7 @@ import Layout from '../layouts/Layout.astro';
     editingAdminUsername = null;
     (document.getElementById('adminModalTitle') as HTMLElement).innerHTML = 'ADD <span class="neon-text">ADMIN</span>';
     (document.getElementById('adminModalSub') as HTMLElement).textContent = 'Create a new admin account';
+    (document.getElementById('adminUsernameRow') as HTMLElement).style.display = '';
     (document.getElementById('adminUsername') as HTMLInputElement).value = '';
     (document.getElementById('adminUsername') as HTMLInputElement).disabled = false;
     (document.getElementById('adminDisplayName') as HTMLInputElement).value = '';
@@ -2381,6 +2385,11 @@ import Layout from '../layouts/Layout.astro';
       editingAdminUsername = username;
       (document.getElementById('adminModalTitle') as HTMLElement).innerHTML = 'EDIT <span class="neon-text">ADMIN</span>';
       (document.getElementById('adminModalSub') as HTMLElement).textContent = `@${username}${isMe ? ' (you)' : ''}`;
+      // Username is locked on edit. Hide the row entirely — the subtitle
+      // above already shows it, and there's no path to actually change it
+      // (server PUT uses the body username only as a lookup key, never
+      // writes it as an update).
+      (document.getElementById('adminUsernameRow') as HTMLElement).style.display = 'none';
       (document.getElementById('adminUsername') as HTMLInputElement).value = username;
       (document.getElementById('adminUsername') as HTMLInputElement).disabled = true;
       (document.getElementById('adminDisplayName') as HTMLInputElement).value = row['Display Name'] || '';
