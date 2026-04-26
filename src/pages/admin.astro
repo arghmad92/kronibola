@@ -1794,6 +1794,13 @@ import Layout from '../layouts/Layout.astro';
 
   async function loadCalendar() {
     if (!calViewYear) initCalendarView();
+    // Holiday management is superadmin-only. Hide the header buttons for
+    // regular admins (server enforces it regardless on POST).
+    const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+    const hBtn = document.getElementById('addHolidayBtn') as HTMLElement | null;
+    const sBtn = document.getElementById('syncMyHolidaysBtn') as HTMLElement | null;
+    if (hBtn) hBtn.style.display = meIsSA ? '' : 'none';
+    if (sBtn) sBtn.style.display = meIsSA ? '' : 'none';
     const grid = document.getElementById('calGrid');
     if (grid) grid.innerHTML = '<p class="empty-msg" style="grid-column:1/-1">Loading…</p>';
     try {
@@ -1983,24 +1990,26 @@ import Layout from '../layouts/Layout.astro';
         }
         if (e.kind === 'holiday') {
           const h = e.payload;
+          const meIsSA = !!(adminSession && adminSession.isSuperadmin);
           return `<div class="cal-event cal-event--holiday">
             <span class="cal-event-icon">🇲🇾</span>
             <div class="cal-event-body">
               <span class="cal-event-title">${calEsc(h.Name || 'Holiday')}</span>
               <span class="cal-event-meta">${calEsc(h.Type || 'Custom')}</span>
             </div>
-            <button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove holiday">&times;</button>
+            ${meIsSA ? `<button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove holiday">&times;</button>` : ''}
           </div>`;
         }
         if (e.kind === 'school') {
           const h = e.payload;
+          const meIsSA = !!(adminSession && adminSession.isSuperadmin);
           return `<div class="cal-event cal-event--school">
             <span class="cal-event-icon">🎒</span>
             <div class="cal-event-body">
               <span class="cal-event-title">${calEsc(h.Name || 'School Holiday')}</span>
               <span class="cal-event-meta">${calEsc(h.Type || 'School')}</span>
             </div>
-            <button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove">&times;</button>
+            ${meIsSA ? `<button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove">&times;</button>` : ''}
           </div>`;
         }
         // leave
@@ -2026,12 +2035,13 @@ import Layout from '../layouts/Layout.astro';
       }).join('');
     }
 
+    const meIsSA = !!(adminSession && adminSession.isSuperadmin);
     wrap.innerHTML = `
       <div class="cal-details-head">
         <span class="cal-details-date">${calEsc(heading)}</span>
         <div class="cal-details-actions">
           <button type="button" class="cal-mini-btn" id="calQuickLeave">+ Leave</button>
-          <button type="button" class="cal-mini-btn" id="calQuickHoliday">+ Holiday</button>
+          ${meIsSA ? '<button type="button" class="cal-mini-btn" id="calQuickHoliday">+ Holiday</button>' : ''}
         </div>
       </div>
       <div class="cal-events">${body}</div>

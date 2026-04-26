@@ -1,5 +1,6 @@
 import { readSheet, writeSheet, reconcileByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
+import { isSuperadmin } from './admins.js';
 
 const HEADERS = ['Date', 'Name', 'Type'];
 
@@ -21,6 +22,12 @@ export async function onRequest(context) {
   }
 
   if (method === 'POST') {
+    // Holidays are a calendar-of-truth concern — only the superadmin (or
+    // owner) can add/edit/remove. Regular admins still see the holiday
+    // dots and tints on the calendar; they just can't mutate the list.
+    if (!(await isSuperadmin(context.env, session))) {
+      return json({ error: 'Only the superadmin can manage holidays.' }, 403);
+    }
     // Reconcile by Date (which doubles as the natural key — only one holiday
     // entry per date is sensible). Same shape as Sessions: {holidays, deletes}.
     try {
