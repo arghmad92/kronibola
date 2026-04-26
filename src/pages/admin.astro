@@ -245,27 +245,48 @@ import Layout from '../layouts/Layout.astro';
         <div id="revenueDashboard"></div>
       </div>
 
-      <!-- Calendar Tab — unified view of games, public holidays, admin leave -->
+      <!-- Calendar Tab — month grid view with games, public holidays, admin leave -->
       <div class="tab-panel" id="tab-calendar">
         <div class="panel-top">
-          <h3 class="panel-title">CALENDAR <span class="neon-text">90 DAYS</span></h3>
+          <h3 class="panel-title">CALENDAR</h3>
           <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
-            <button class="btn btn--outline btn--sm" id="addLeaveBtn">+ APPLY LEAVE</button>
+            <button class="btn btn--outline btn--sm" id="addLeaveBtn">+ LEAVE</button>
             <button class="btn btn--outline btn--sm" id="addHolidayBtn">+ HOLIDAY</button>
+            <button class="btn btn--outline btn--sm" id="syncMyHolidaysBtn" title="Pre-fill Malaysia Klang Valley 2026 public holidays">SYNC MY 2026</button>
           </div>
         </div>
 
-        <div class="cal-filters" id="calFilters">
-          <button type="button" class="cal-chip active" data-stream="all">All</button>
-          <button type="button" class="cal-chip" data-stream="games">🏟 Games</button>
-          <button type="button" class="cal-chip" data-stream="holidays">🇲🇾 Holidays</button>
-          <button type="button" class="cal-chip" data-stream="leave">🛌 Leave</button>
+        <!-- Month navigation -->
+        <div class="cal-monthnav">
+          <button type="button" class="cal-nav-btn" id="calPrevMonth" aria-label="Previous month">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="cal-month-label">
+            <span class="cal-month-name" id="calMonthName">—</span>
+            <span class="cal-month-year" id="calMonthYear">—</span>
+          </div>
+          <button type="button" class="cal-nav-btn" id="calNextMonth" aria-label="Next month">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button type="button" class="cal-today-btn" id="calTodayBtn">TODAY</button>
         </div>
 
-        <div id="calendarList" class="cal-list"></div>
-        <div style="text-align:center;margin-top:0.8rem">
-          <button type="button" class="btn btn--outline btn--sm" id="calMoreBtn">Show more →</button>
+        <!-- Filter chips -->
+        <div class="cal-filters" id="calFilters">
+          <button type="button" class="cal-chip active" data-stream="all">All</button>
+          <button type="button" class="cal-chip" data-stream="games"><span class="cal-dot cal-dot--game"></span>Games</button>
+          <button type="button" class="cal-chip" data-stream="holidays"><span class="cal-dot cal-dot--holiday"></span>Holidays</button>
+          <button type="button" class="cal-chip" data-stream="leave"><span class="cal-dot cal-dot--leave"></span>Leave</button>
         </div>
+
+        <!-- Month grid -->
+        <div class="cal-grid-wrap">
+          <div class="cal-weekdays" id="calWeekdays"></div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <!-- Selected-day details panel -->
+        <div class="cal-day-details" id="calDayDetails"></div>
       </div>
 
       <!-- Admins Tab — manage admin accounts -->
@@ -1710,12 +1731,16 @@ import Layout from '../layouts/Layout.astro';
   }
 
   // ===========================================================================
-  // CALENDAR TAB — unified view of games, holidays, admin leave
+  // CALENDAR TAB — month-grid view of games, holidays, admin leave
   // ===========================================================================
   let holidaysData: any[] = [];
   let leavesData: any[] = [];
-  let calendarWindowDays = 90;
   let calendarFilter: 'all' | 'games' | 'holidays' | 'leave' = 'all';
+  // Month being viewed (year + 0-indexed month) and the day selected for
+  // the details panel below the grid. Always interpreted in Malaysia time.
+  let calViewYear = 0;
+  let calViewMonth = 0;
+  let calSelectedDate = '';
 
   function ymdToday(): string {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
@@ -1725,24 +1750,41 @@ import Layout from '../layouts/Layout.astro';
     return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]!));
   }
 
-  function calFormatDay(ymd: string): { weekday: string; day: string; monthYear: string; key: string } {
-    try {
-      const d = new Date(`${ymd}T00:00:00+08:00`);
-      return {
-        weekday: d.toLocaleDateString('en-MY', { weekday: 'short', timeZone: 'Asia/Kuala_Lumpur' }),
-        day: d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', timeZone: 'Asia/Kuala_Lumpur' }),
-        monthYear: d.toLocaleDateString('en-MY', { month: 'long', year: 'numeric', timeZone: 'Asia/Kuala_Lumpur' }).toUpperCase(),
-        key: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }),
-      };
-    } catch {
-      return { weekday: '', day: ymd, monthYear: '—', key: ymd };
-    }
+  function ymdFromYMD(y: number, m: number, d: number): string {
+    return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+
+  function parseYmd(ymd: string): { y: number; m: number; d: number } | null {
+    const m = String(ymd).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    return { y: parseInt(m[1], 10), m: parseInt(m[2], 10) - 1, d: parseInt(m[3], 10) };
+  }
+
+  function daysInMonth(y: number, m: number): number {
+    return new Date(y, m + 1, 0).getDate();
+  }
+
+  // Mon-first weekday index: 0=Mon, 6=Sun. JS Date.getDay() is Sun-first
+  // (0=Sun..6=Sat) so shift it.
+  function monFirstWeekday(y: number, m: number, d: number): number {
+    const js = new Date(y, m, d).getDay();
+    return (js + 6) % 7;
+  }
+
+  // Initialise to today's month on first open.
+  function initCalendarView() {
+    const today = ymdToday();
+    const t = parseYmd(today);
+    if (!t) return;
+    calViewYear = t.y;
+    calViewMonth = t.m;
+    calSelectedDate = today;
   }
 
   async function loadCalendar() {
-    const list = document.getElementById('calendarList');
-    if (!list) return;
-    list.innerHTML = '<p class="empty-msg">Loading…</p>';
+    if (!calViewYear) initCalendarView();
+    const grid = document.getElementById('calGrid');
+    if (grid) grid.innerHTML = '<p class="empty-msg" style="grid-column:1/-1">Loading…</p>';
     try {
       const [hRes, lRes] = await Promise.all([
         fetch(`${API}/admin/holidays`, { headers: { Authorization: adminToken } }),
@@ -1754,112 +1796,221 @@ import Layout from '../layouts/Layout.astro';
       leavesData = Array.isArray(lData.leaves) ? lData.leaves : [];
       renderCalendar();
     } catch {
-      list.innerHTML = '<p class="empty-msg">Failed to load calendar.</p>';
+      if (grid) grid.innerHTML = '<p class="empty-msg" style="grid-column:1/-1">Failed to load calendar.</p>';
     }
   }
 
-  function renderCalendar() {
-    const list = document.getElementById('calendarList');
-    if (!list) return;
-
-    const today = ymdToday();
-    const horizon = (() => {
-      const d = new Date(`${today}T00:00:00+08:00`);
-      d.setDate(d.getDate() + calendarWindowDays);
-      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
-    })();
-
-    type Event = { date: string; kind: 'game' | 'holiday' | 'leave'; payload: any };
-    const events: Event[] = [];
-
+  // Build a map: ymd → array of events { kind, payload } so the grid render
+  // can look up cells in O(1). Leave entries are expanded across each
+  // covered day. Filters drop entire categories from the map.
+  function buildEventMap(): Record<string, Array<{ kind: 'game' | 'holiday' | 'leave'; payload: any }>> {
+    const map: Record<string, Array<{ kind: 'game' | 'holiday' | 'leave'; payload: any }>> = {};
+    const push = (ymd: string, kind: 'game' | 'holiday' | 'leave', payload: any) => {
+      if (!map[ymd]) map[ymd] = [];
+      map[ymd].push({ kind, payload });
+    };
     if (calendarFilter === 'all' || calendarFilter === 'games') {
-      for (const s of sessionsData) {
-        if (!s.Date || s.Date < today || s.Date > horizon) continue;
-        events.push({ date: s.Date, kind: 'game', payload: s });
-      }
+      for (const s of sessionsData) if (s.Date) push(s.Date, 'game', s);
     }
     if (calendarFilter === 'all' || calendarFilter === 'holidays') {
-      for (const h of holidaysData) {
-        if (!h.Date || h.Date < today || h.Date > horizon) continue;
-        events.push({ date: h.Date, kind: 'holiday', payload: h });
-      }
+      for (const h of holidaysData) if (h.Date) push(h.Date, 'holiday', h);
     }
     if (calendarFilter === 'all' || calendarFilter === 'leave') {
       for (const lv of leavesData) {
-        const from = String(lv['Date From'] || '');
-        const to = String(lv['Date To'] || from);
-        if (!from) continue;
-        // Expand multi-day leave into one event per affected day inside window.
-        const start = from < today ? today : from;
-        if (start > horizon) continue;
-        const end = to > horizon ? horizon : to;
-        for (let d = start; d <= end; ) {
-          events.push({ date: d, kind: 'leave', payload: lv });
-          const next = new Date(`${d}T00:00:00+08:00`);
-          next.setDate(next.getDate() + 1);
-          d = next.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+        const from = parseYmd(String(lv['Date From'] || ''));
+        const toY = parseYmd(String(lv['Date To'] || lv['Date From'] || ''));
+        if (!from || !toY) continue;
+        // Walk inclusive from-to without timezone surprises by iterating days locally.
+        const start = new Date(from.y, from.m, from.d);
+        const end = new Date(toY.y, toY.m, toY.d);
+        for (let cur = start; cur <= end; cur.setDate(cur.getDate() + 1)) {
+          push(ymdFromYMD(cur.getFullYear(), cur.getMonth(), cur.getDate()), 'leave', lv);
         }
       }
     }
-
-    events.sort((a, b) => a.date.localeCompare(b.date));
-
-    if (!events.length) {
-      list.innerHTML = '<p class="empty-msg">Nothing scheduled in the next ' + calendarWindowDays + ' days.</p>';
-      return;
-    }
-
-    let lastMonth = '';
-    let html = '';
-    for (const ev of events) {
-      const fmt = calFormatDay(ev.date);
-      if (fmt.monthYear !== lastMonth) {
-        html += `<div class="cal-month-head">${calEsc(fmt.monthYear)}</div>`;
-        lastMonth = fmt.monthYear;
-      }
-      if (ev.kind === 'game') {
-        const s = ev.payload;
-        html += `<div class="cal-row cal-row--game" data-date="${calEsc(ev.date)}">
-          <div class="cal-day"><span class="cal-day-wd">${calEsc(fmt.weekday)}</span><span class="cal-day-num">${calEsc(fmt.day)}</span></div>
-          <div class="cal-icon">🏟</div>
-          <div class="cal-body">
-            <span class="cal-title">${calEsc(s['Session Name'] || 'Game')}</span>
-            <span class="cal-meta">${calEsc(s.Time || '')}${s.Location ? ' · ' + calEsc(s.Location) : ''}</span>
-          </div>
-        </div>`;
-      } else if (ev.kind === 'holiday') {
-        const h = ev.payload;
-        html += `<div class="cal-row cal-row--holiday" data-date="${calEsc(ev.date)}">
-          <div class="cal-day"><span class="cal-day-wd">${calEsc(fmt.weekday)}</span><span class="cal-day-num">${calEsc(fmt.day)}</span></div>
-          <div class="cal-icon">🇲🇾</div>
-          <div class="cal-body">
-            <span class="cal-title">${calEsc(h.Name || 'Holiday')}</span>
-            <span class="cal-meta">${calEsc(h.Type || '—')}</span>
-          </div>
-          <button type="button" class="cal-remove" data-kind="holiday" data-date="${calEsc(h.Date)}" title="Remove holiday">&times;</button>
-        </div>`;
-      } else {
-        const lv = ev.payload;
-        const me = adminSession ? adminSession.username : '';
-        const isMine = String(lv.Username || '').trim().toLowerCase() === me;
-        const reason = lv.Reason ? ` · "${calEsc(String(lv.Reason).slice(0, 80))}"` : '';
-        const span = lv['Date From'] !== lv['Date To'] && lv['Date To']
-          ? ` (${calEsc(lv['Date From'])}–${calEsc(lv['Date To'])})`
-          : '';
-        html += `<div class="cal-row cal-row--leave" data-date="${calEsc(ev.date)}">
-          <div class="cal-day"><span class="cal-day-wd">${calEsc(fmt.weekday)}</span><span class="cal-day-num">${calEsc(fmt.day)}</span></div>
-          <div class="cal-icon">🛌</div>
-          <div class="cal-body">
-            <span class="cal-title">${calEsc(lv['Display Name'] || lv.Username || 'Admin')} on leave${calEsc(span)}</span>
-            <span class="cal-meta">${reason || '—'}</span>
-          </div>
-          ${isMine ? `<button type="button" class="cal-remove" data-kind="leave" data-created="${calEsc(lv['Created At'] || '')}" title="Cancel my leave">&times;</button>` : ''}
-        </div>`;
-      }
-    }
-
-    list.innerHTML = html;
+    return map;
   }
+
+  function renderCalendar() {
+    if (!calViewYear) initCalendarView();
+    renderMonthHeader();
+    renderWeekdaysRow();
+    renderMonthGrid();
+    renderDayDetails();
+  }
+
+  function renderMonthHeader() {
+    const monthName = new Date(calViewYear, calViewMonth, 1)
+      .toLocaleDateString('en-MY', { month: 'long' });
+    const nameEl = document.getElementById('calMonthName');
+    const yearEl = document.getElementById('calMonthYear');
+    if (nameEl) nameEl.textContent = monthName.toUpperCase();
+    if (yearEl) yearEl.textContent = String(calViewYear);
+  }
+
+  function renderWeekdaysRow() {
+    const wrap = document.getElementById('calWeekdays');
+    if (!wrap) return;
+    // Mon-first; short single-letter labels with full names in title for a11y.
+    const labels = [
+      { s: 'M', f: 'Mon' }, { s: 'T', f: 'Tue' }, { s: 'W', f: 'Wed' },
+      { s: 'T', f: 'Thu' }, { s: 'F', f: 'Fri' }, { s: 'S', f: 'Sat' },
+      { s: 'S', f: 'Sun' },
+    ];
+    wrap.innerHTML = labels.map((l) =>
+      `<div class="cal-weekday" title="${l.f}">${l.s}</div>`
+    ).join('');
+  }
+
+  function renderMonthGrid() {
+    const grid = document.getElementById('calGrid');
+    if (!grid) return;
+
+    const eventMap = buildEventMap();
+    const today = ymdToday();
+
+    const firstWd = monFirstWeekday(calViewYear, calViewMonth, 1);  // 0=Mon..6=Sun
+    const numDays = daysInMonth(calViewYear, calViewMonth);
+    // Previous-month tail to fill the leading row.
+    const prevMonth = calViewMonth === 0 ? 11 : calViewMonth - 1;
+    const prevYear = calViewMonth === 0 ? calViewYear - 1 : calViewYear;
+    const prevNum = daysInMonth(prevYear, prevMonth);
+    // Next-month head to fill the trailing row.
+    const nextMonth = calViewMonth === 11 ? 0 : calViewMonth + 1;
+    const nextYear = calViewMonth === 11 ? calViewYear + 1 : calViewYear;
+
+    const cells: Array<{ ymd: string; day: number; outside: boolean }> = [];
+    for (let i = 0; i < firstWd; i++) {
+      const d = prevNum - firstWd + 1 + i;
+      cells.push({ ymd: ymdFromYMD(prevYear, prevMonth, d), day: d, outside: true });
+    }
+    for (let d = 1; d <= numDays; d++) {
+      cells.push({ ymd: ymdFromYMD(calViewYear, calViewMonth, d), day: d, outside: false });
+    }
+    while (cells.length % 7 !== 0 || cells.length < 42) {
+      const idx = cells.length - (firstWd + numDays);
+      const d = idx + 1;
+      cells.push({ ymd: ymdFromYMD(nextYear, nextMonth, d), day: d, outside: true });
+      if (cells.length >= 42) break;
+    }
+
+    grid.innerHTML = cells.map((c) => {
+      const evts = eventMap[c.ymd] || [];
+      const kinds = new Set(evts.map((e) => e.kind));
+      const isToday = c.ymd === today;
+      const isSelected = c.ymd === calSelectedDate;
+      const classes = [
+        'cal-cell',
+        c.outside ? 'cal-cell--outside' : '',
+        isToday ? 'cal-cell--today' : '',
+        isSelected ? 'cal-cell--selected' : '',
+        evts.length ? 'cal-cell--has-events' : '',
+      ].filter(Boolean).join(' ');
+
+      // Up to 3 colored dots indicating event categories on this day.
+      const dotOrder: Array<'game' | 'holiday' | 'leave'> = ['game', 'holiday', 'leave'];
+      const dotsHtml = dotOrder.filter((k) => kinds.has(k))
+        .map((k) => `<span class="cal-dot cal-dot--${k}"></span>`).join('');
+
+      return `<button type="button" class="${classes}" data-ymd="${c.ymd}" aria-label="${c.ymd}">
+        <span class="cal-cell-num">${c.day}</span>
+        ${dotsHtml ? `<span class="cal-cell-dots">${dotsHtml}</span>` : ''}
+      </button>`;
+    }).join('');
+  }
+
+  function renderDayDetails() {
+    const wrap = document.getElementById('calDayDetails');
+    if (!wrap) return;
+    if (!calSelectedDate) { wrap.innerHTML = ''; return; }
+
+    const eventMap = buildEventMap();
+    const events = eventMap[calSelectedDate] || [];
+    const parsed = parseYmd(calSelectedDate);
+    if (!parsed) { wrap.innerHTML = ''; return; }
+    const d = new Date(parsed.y, parsed.m, parsed.d);
+    const heading = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    const me = adminSession ? adminSession.username : '';
+
+    let body = '';
+    if (!events.length) {
+      body = '<p class="cal-empty">Nothing on this day.</p>';
+    } else {
+      body = events.map((e) => {
+        if (e.kind === 'game') {
+          const s = e.payload;
+          return `<div class="cal-event cal-event--game" data-kind="game" data-date="${calEsc(s.Date || '')}">
+            <span class="cal-event-icon">🏟</span>
+            <div class="cal-event-body">
+              <span class="cal-event-title">${calEsc(s['Session Name'] || 'Game')}</span>
+              <span class="cal-event-meta">${calEsc(s.Time || '')}${s.Location ? ' · ' + calEsc(s.Location) : ''}</span>
+            </div>
+            <svg class="cal-event-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>`;
+        }
+        if (e.kind === 'holiday') {
+          const h = e.payload;
+          return `<div class="cal-event cal-event--holiday">
+            <span class="cal-event-icon">🇲🇾</span>
+            <div class="cal-event-body">
+              <span class="cal-event-title">${calEsc(h.Name || 'Holiday')}</span>
+              <span class="cal-event-meta">${calEsc(h.Type || 'Custom')}</span>
+            </div>
+            <button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove holiday">&times;</button>
+          </div>`;
+        }
+        // leave
+        const lv = e.payload;
+        const isMine = String(lv.Username || '').trim().toLowerCase() === me;
+        const reason = lv.Reason ? calEsc(String(lv.Reason).slice(0, 120)) : '';
+        const span = lv['Date From'] !== lv['Date To'] && lv['Date To']
+          ? ` <span class="cal-event-span">(${calEsc(lv['Date From'])} → ${calEsc(lv['Date To'])})</span>`
+          : '';
+        return `<div class="cal-event cal-event--leave">
+          <span class="cal-event-icon">🛌</span>
+          <div class="cal-event-body">
+            <span class="cal-event-title">${calEsc(lv['Display Name'] || lv.Username || 'Admin')} on leave${span}</span>
+            ${reason ? `<span class="cal-event-meta">"${reason}"</span>` : ''}
+          </div>
+          ${isMine ? `<button type="button" class="cal-event-remove" data-kind="leave" data-created="${calEsc(lv['Created At'] || '')}" title="Cancel my leave">&times;</button>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    wrap.innerHTML = `
+      <div class="cal-details-head">
+        <span class="cal-details-date">${calEsc(heading)}</span>
+        <div class="cal-details-actions">
+          <button type="button" class="cal-mini-btn" id="calQuickLeave">+ Leave</button>
+          <button type="button" class="cal-mini-btn" id="calQuickHoliday">+ Holiday</button>
+        </div>
+      </div>
+      <div class="cal-events">${body}</div>
+    `;
+
+    const qLeave = document.getElementById('calQuickLeave') as HTMLButtonElement | null;
+    const qHoliday = document.getElementById('calQuickHoliday') as HTMLButtonElement | null;
+    if (qLeave) qLeave.addEventListener('click', () => openLeaveModal(calSelectedDate));
+    if (qHoliday) qHoliday.addEventListener('click', () => openHolidayModal(calSelectedDate));
+  }
+
+  // === Wire up navigation ===
+  document.getElementById('calPrevMonth')!.addEventListener('click', () => {
+    if (calViewMonth === 0) { calViewMonth = 11; calViewYear--; } else { calViewMonth--; }
+    renderCalendar();
+  });
+  document.getElementById('calNextMonth')!.addEventListener('click', () => {
+    if (calViewMonth === 11) { calViewMonth = 0; calViewYear++; } else { calViewMonth++; }
+    renderCalendar();
+  });
+  document.getElementById('calTodayBtn')!.addEventListener('click', () => {
+    const today = ymdToday();
+    const t = parseYmd(today);
+    if (!t) return;
+    calViewYear = t.y; calViewMonth = t.m; calSelectedDate = today;
+    renderCalendar();
+  });
 
   // Filter chip clicks
   document.getElementById('calFilters')!.addEventListener('click', (e) => {
@@ -1871,19 +2022,31 @@ import Layout from '../layouts/Layout.astro';
     renderCalendar();
   });
 
-  // "Show more" extends the visible window by another 90 days each click.
-  document.getElementById('calMoreBtn')!.addEventListener('click', () => {
-    calendarWindowDays += 90;
+  // Day cell clicks — selects the day and may jump months if user taps an
+  // outside-month spillover cell.
+  document.getElementById('calGrid')!.addEventListener('click', (e) => {
+    const cell = (e.target as HTMLElement).closest('.cal-cell') as HTMLElement | null;
+    if (!cell) return;
+    const ymd = cell.dataset.ymd || '';
+    if (!ymd) return;
+    const parsed = parseYmd(ymd);
+    if (!parsed) return;
+    if (parsed.y !== calViewYear || parsed.m !== calViewMonth) {
+      calViewYear = parsed.y;
+      calViewMonth = parsed.m;
+    }
+    calSelectedDate = ymd;
     renderCalendar();
   });
 
-  // Row interactions: tap a game row → switch to Schedule tab. Tap a holiday
-  // ✕ → confirm + delete via reconcile. Tap a leave ✕ → DELETE my own row.
-  document.getElementById('calendarList')!.addEventListener('click', async (e) => {
+  // Day-details event clicks: tap a game → switch to Schedule. Tap a remove
+  // ✕ → confirm + delete via reconcile (holiday) or DELETE (leave).
+  document.getElementById('calDayDetails')!.addEventListener('click', async (e) => {
     const target = e.target as HTMLElement;
-    const remove = target.closest('.cal-remove') as HTMLElement | null;
+    const remove = target.closest('.cal-event-remove') as HTMLElement | null;
     if (remove) {
       const kind = remove.dataset.kind;
+      e.stopPropagation();
       if (kind === 'holiday') {
         const date = remove.dataset.date || '';
         if (!date) return;
@@ -1925,13 +2088,11 @@ import Layout from '../layouts/Layout.astro';
       return;
     }
 
-    const row = target.closest('.cal-row--game') as HTMLElement | null;
-    if (row) {
-      const date = row.dataset.date || '';
-      // Switch to Schedule tab
+    const game = target.closest('.cal-event--game') as HTMLElement | null;
+    if (game) {
+      const date = game.dataset.date || '';
       const tab = document.querySelector('.tab[data-tab="schedule"]') as HTMLButtonElement | null;
       if (tab) tab.click();
-      // Optional: scroll the matching session card into view
       setTimeout(() => {
         const card = document.querySelector(`.s-input[data-field="Date"][value="${date}"]`) as HTMLElement | null;
         if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1939,9 +2100,73 @@ import Layout from '../layouts/Layout.astro';
     }
   });
 
+  // === Sync Malaysia 2026 Klang Valley public holidays ===
+  // Pre-curated list. Lunar/Islamic/Hindu dates are based on widely-published
+  // 2026 forecasts and may need adjustment by ±1 day once moon-sighting
+  // announcements land — admins can edit any row inline afterwards.
+  const KLANG_VALLEY_2026: Array<{ Date: string; Name: string; Type: string }> = [
+    { Date: '2026-01-01', Name: 'New Year\u2019s Day', Type: 'Federal' },
+    { Date: '2026-01-29', Name: 'Chinese New Year (Day 1)', Type: 'Federal' },
+    { Date: '2026-01-30', Name: 'Chinese New Year (Day 2)', Type: 'Federal' },
+    { Date: '2026-02-01', Name: 'Federal Territory Day', Type: 'KL/Putrajaya' },
+    { Date: '2026-02-02', Name: 'Federal Territory Day (observed)', Type: 'KL/Putrajaya' },
+    { Date: '2026-03-20', Name: 'Hari Raya Aidilfitri (Day 1)', Type: 'Federal' },
+    { Date: '2026-03-21', Name: 'Hari Raya Aidilfitri (Day 2)', Type: 'Federal' },
+    { Date: '2026-05-01', Name: 'Labour Day', Type: 'Federal' },
+    { Date: '2026-05-27', Name: 'Hari Raya Aidiladha', Type: 'Federal' },
+    { Date: '2026-05-31', Name: 'Wesak Day', Type: 'Federal' },
+    { Date: '2026-06-06', Name: 'Yang di-Pertuan Agong\u2019s Birthday', Type: 'Federal' },
+    { Date: '2026-06-17', Name: 'Awal Muharram', Type: 'Federal' },
+    { Date: '2026-08-26', Name: 'Maulidur Rasul', Type: 'Federal' },
+    { Date: '2026-08-31', Name: 'Hari Kebangsaan', Type: 'Federal' },
+    { Date: '2026-09-16', Name: 'Malaysia Day', Type: 'Federal' },
+    { Date: '2026-11-08', Name: 'Deepavali', Type: 'Federal' },
+    { Date: '2026-11-09', Name: 'Deepavali (observed)', Type: 'Federal' },
+    { Date: '2026-12-11', Name: 'Sultan of Selangor\u2019s Birthday', Type: 'Selangor' },
+    { Date: '2026-12-25', Name: 'Christmas Day', Type: 'Federal' },
+  ];
+
+  document.getElementById('syncMyHolidaysBtn')!.addEventListener('click', async () => {
+    if (!confirm('Pre-fill Malaysia (Klang Valley) 2026 public holidays?\n\nExisting custom holidays on different dates are kept; same-date entries are updated. You can still delete any row afterwards.')) return;
+    const btn = document.getElementById('syncMyHolidaysBtn') as HTMLButtonElement;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'SYNCING…';
+    try {
+      // Merge: keep all existing holidays, override or add the curated ones.
+      const seedByDate = new Map(KLANG_VALLEY_2026.map((h) => [h.Date, h]));
+      const merged = [...holidaysData];
+      for (let i = 0; i < merged.length; i++) {
+        const seed = seedByDate.get(merged[i].Date);
+        if (seed) {
+          merged[i] = { Date: seed.Date, Name: seed.Name, Type: seed.Type };
+          seedByDate.delete(merged[i].Date);
+        }
+      }
+      for (const seed of seedByDate.values()) merged.push(seed);
+
+      const res = await fetch(`${API}/admin/holidays`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+        body: JSON.stringify({ holidays: merged, deletes: [] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'failed');
+      holidaysData = Array.isArray(data.holidays) ? data.holidays : merged;
+      renderCalendar();
+      showToast(`${KLANG_VALLEY_2026.length} holidays synced`);
+    } catch (err: any) {
+      showToast(err.message || 'Sync failed', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+
   // === Apply for Leave modal ===
   const leaveModal = document.getElementById('leaveModal')!;
-  function openLeaveModal() {
+  // Optional preDate pre-fills both From and To when called from a day cell.
+  function openLeaveModal(preDate?: string) {
     if (!adminSession) return;
     if (adminSession.isOwner) {
       showToast('Owner sessions can\u2019t apply for leave. Log in as a real admin first.', 'error');
@@ -1949,14 +2174,14 @@ import Layout from '../layouts/Layout.astro';
     }
     const sub = document.getElementById('leaveModalSub')!;
     sub.textContent = `Logged in as ${adminSession.displayName}`;
-    const today = ymdToday();
-    (document.getElementById('leaveFrom') as HTMLInputElement).value = today;
-    (document.getElementById('leaveTo') as HTMLInputElement).value = today;
+    const seed = preDate || ymdToday();
+    (document.getElementById('leaveFrom') as HTMLInputElement).value = seed;
+    (document.getElementById('leaveTo') as HTMLInputElement).value = seed;
     (document.getElementById('leaveReason') as HTMLInputElement).value = '';
     (document.getElementById('leaveModalError') as HTMLElement).style.display = 'none';
     leaveModal.style.display = '';
   }
-  document.getElementById('addLeaveBtn')!.addEventListener('click', openLeaveModal);
+  document.getElementById('addLeaveBtn')!.addEventListener('click', () => openLeaveModal(calSelectedDate || undefined));
   document.getElementById('leaveModalClose')!.addEventListener('click', () => leaveModal.style.display = 'none');
   leaveModal.addEventListener('click', (e) => { if (e.target === leaveModal) leaveModal.style.display = 'none'; });
   document.getElementById('leaveSubmitBtn')!.addEventListener('click', async () => {
@@ -2003,14 +2228,14 @@ import Layout from '../layouts/Layout.astro';
 
   // === Add Holiday modal ===
   const holidayModal = document.getElementById('holidayModal')!;
-  function openHolidayModal() {
-    (document.getElementById('holidayDate') as HTMLInputElement).value = ymdToday();
+  function openHolidayModal(preDate?: string) {
+    (document.getElementById('holidayDate') as HTMLInputElement).value = preDate || ymdToday();
     (document.getElementById('holidayName') as HTMLInputElement).value = '';
     (document.getElementById('holidayType') as HTMLSelectElement).value = 'Custom';
     (document.getElementById('holidayModalError') as HTMLElement).style.display = 'none';
     holidayModal.style.display = '';
   }
-  document.getElementById('addHolidayBtn')!.addEventListener('click', openHolidayModal);
+  document.getElementById('addHolidayBtn')!.addEventListener('click', () => openHolidayModal(calSelectedDate || undefined));
   document.getElementById('holidayModalClose')!.addEventListener('click', () => holidayModal.style.display = 'none');
   holidayModal.addEventListener('click', (e) => { if (e.target === holidayModal) holidayModal.style.display = 'none'; });
   document.getElementById('holidaySubmitBtn')!.addEventListener('click', async () => {
@@ -2360,10 +2585,51 @@ import Layout from '../layouts/Layout.astro';
     border: 1px solid rgba(0,196,255,0.3);
   }
 
-  /* Calendar tab — chronological list */
-  .cal-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.8rem 0; }
+  /* Calendar tab — modern month-grid view, mobile-first */
+
+  /* Month nav: < APRIL 2026 >  [TODAY] */
+  .cal-monthnav {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin: 0.8rem 0 0.6rem;
+  }
+  .cal-nav-btn {
+    flex-shrink: 0; width: 38px; height: 38px; border-radius: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-nav-btn:hover { color: var(--neon); border-color: rgba(0,255,65,0.35); background: rgba(0,255,65,0.05); }
+  .cal-nav-btn:active { transform: scale(0.95); }
+  .cal-month-label {
+    flex: 1; text-align: center; display: flex; flex-direction: column; gap: 0.05rem;
+    line-height: 1;
+  }
+  .cal-month-name {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 800;
+    font-size: 1.1rem; letter-spacing: 0.04em;
+  }
+  .cal-month-year {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+    font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.18em;
+  }
+  .cal-today-btn {
+    flex-shrink: 0; height: 38px; padding: 0 0.9rem; border-radius: 12px;
+    background: rgba(0,255,65,0.08); border: 1px solid rgba(0,255,65,0.25);
+    color: var(--neon); cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.7rem; letter-spacing: 0.1em;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-today-btn:hover { background: rgba(0,255,65,0.16); border-color: rgba(0,255,65,0.5); }
+  .cal-today-btn:active { transform: scale(0.97); }
+
+  /* Filter chips */
+  .cal-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.6rem 0; }
   .cal-chip {
-    padding: 0.4rem 0.8rem; border-radius: 100px;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.4rem 0.85rem; border-radius: 100px;
     background: rgba(255,255,255,0.04); border: 1px solid var(--border);
     color: var(--text-muted); font-size: 0.72rem; font-weight: 600;
     font-family: 'Space Grotesk', sans-serif;
@@ -2375,54 +2641,122 @@ import Layout from '../layouts/Layout.astro';
     color: var(--neon); border-color: rgba(0,255,65,0.4);
     background: rgba(0,255,65,0.1);
   }
-  .cal-list { display: flex; flex-direction: column; gap: 0.4rem; }
-  .cal-month-head {
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-    font-size: 0.72rem; letter-spacing: 0.16em; color: var(--text-muted);
-    text-transform: uppercase;
-    padding: 0.6rem 0 0.3rem; margin-top: 0.4rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .cal-month-head:first-child { margin-top: 0; }
-  .cal-row {
-    display: flex; align-items: center; gap: 0.7rem;
-    padding: 0.7rem 0.85rem;
+
+  /* Month grid */
+  .cal-grid-wrap {
     background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 16px; padding: 0.8rem 0.7rem;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
+  }
+  .cal-weekdays, .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-weekday {
+    text-align: center; font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.14em;
+    color: var(--text-muted); padding: 0.3rem 0 0.5rem;
+    text-transform: uppercase;
+  }
+  .cal-cell {
+    position: relative; aspect-ratio: 1 / 1;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.35rem 0.4rem 0.45rem;
+    color: var(--text); cursor: pointer;
+    display: flex; flex-direction: column; align-items: stretch;
+    transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.08s;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+  }
+  .cal-cell:hover {
+    background: rgba(0,255,65,0.05); border-color: rgba(0,255,65,0.3);
+  }
+  .cal-cell:active { transform: scale(0.97); }
+  .cal-cell--outside { color: var(--text-muted); opacity: 0.5; background: transparent; }
+  .cal-cell--outside:hover { background: rgba(255,255,255,0.03); border-color: var(--border-light); }
+
+  .cal-cell--today {
+    border-color: rgba(0,255,65,0.45);
+    background: rgba(0,255,65,0.04);
+  }
+  .cal-cell--today .cal-cell-num { color: var(--neon); font-weight: 800; }
+
+  .cal-cell--selected {
+    background: rgba(0,255,65,0.18);
+    border-color: var(--neon);
+    box-shadow: 0 0 0 1px var(--neon), 0 0 18px rgba(0,255,65,0.18);
+  }
+  .cal-cell--selected .cal-cell-num { color: var(--neon); font-weight: 800; }
+
+  .cal-cell-num {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+    font-size: 0.85rem; line-height: 1; text-align: left;
+  }
+  .cal-cell-dots {
+    margin-top: auto; display: flex; gap: 3px; justify-content: center;
+    padding-top: 0.2rem;
+  }
+  .cal-dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cal-dot--game     { background: var(--neon); box-shadow: 0 0 6px rgba(0,255,65,0.5); }
+  .cal-dot--holiday  { background: #ff9500; box-shadow: 0 0 6px rgba(255,149,0,0.5); }
+  .cal-dot--leave    { background: #00c4ff; box-shadow: 0 0 6px rgba(0,196,255,0.5); }
+
+  /* Day-details panel below the grid */
+  .cal-day-details { margin-top: 1rem; }
+  .cal-details-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem;
+  }
+  .cal-details-date {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.95rem; color: var(--text);
+  }
+  .cal-details-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .cal-mini-btn {
+    height: 32px; padding: 0 0.7rem; border-radius: 9px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-light);
+    color: var(--text-secondary); cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-mini-btn:hover { color: var(--neon); border-color: rgba(0,255,65,0.35); background: rgba(0,255,65,0.05); }
+
+  .cal-events { display: flex; flex-direction: column; gap: 0.4rem; }
+  .cal-empty { padding: 1.2rem; text-align: center; color: var(--text-muted); font-size: 0.78rem; font-style: italic; }
+
+  .cal-event {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.65rem 0.8rem; background: var(--card);
+    border: 1px solid var(--border); border-radius: 12px;
     transition: background 0.12s, border-color 0.12s;
   }
-  .cal-row--game { cursor: pointer; }
-  .cal-row--game:hover { background: rgba(0,255,65,0.04); border-color: rgba(0,255,65,0.2); }
-  .cal-row--holiday { border-left: 3px solid #ff9500; }
-  .cal-row--leave { border-left: 3px solid #00c4ff; }
-  .cal-day {
-    flex-shrink: 0; width: 52px; text-align: center;
-    display: flex; flex-direction: column; gap: 0.1rem;
-  }
-  .cal-day-wd {
-    font-size: 0.6rem; color: var(--text-muted); font-weight: 700;
-    letter-spacing: 0.08em; text-transform: uppercase;
-  }
-  .cal-day-num {
-    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-    font-size: 0.92rem; color: var(--text);
-  }
-  .cal-icon {
-    flex-shrink: 0; width: 32px; height: 32px;
+  .cal-event--game { cursor: pointer; }
+  .cal-event--game:hover { background: rgba(0,255,65,0.04); border-color: rgba(0,255,65,0.25); }
+  .cal-event--holiday { border-left: 3px solid #ff9500; }
+  .cal-event--leave   { border-left: 3px solid #00c4ff; }
+  .cal-event-icon {
+    flex-shrink: 0; width: 30px; height: 30px;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(255,255,255,0.04); border-radius: 10px;
-    font-size: 1.05rem;
+    background: rgba(255,255,255,0.04); border-radius: 8px;
+    font-size: 0.95rem;
   }
-  .cal-body { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
-  .cal-title {
+  .cal-event-body { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+  .cal-event-title {
     font-size: 0.85rem; font-weight: 600; color: var(--text);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .cal-meta {
+  .cal-event-meta {
     font-size: 0.68rem; color: var(--text-muted);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .cal-remove {
+  .cal-event-span { color: var(--text-muted); font-weight: 500; }
+  .cal-event-arrow { color: var(--text-muted); flex-shrink: 0; }
+  .cal-event-remove {
     flex-shrink: 0; width: 28px; height: 28px; padding: 0;
     background: transparent; border: 1px solid var(--border-light);
     color: var(--text-muted); border-radius: 8px; cursor: pointer;
@@ -2430,9 +2764,25 @@ import Layout from '../layouts/Layout.astro';
     display: flex; align-items: center; justify-content: center;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
-  .cal-remove:hover {
+  .cal-event-remove:hover {
     color: var(--red); border-color: rgba(255,59,48,0.4);
     background: rgba(255,59,48,0.06);
+  }
+
+  /* Light theme tweaks for the calendar grid */
+  [data-theme="light"] .cal-cell { background: rgba(0,0,0,0.02); }
+  [data-theme="light"] .cal-cell:hover { background: rgba(0,134,58,0.06); }
+  [data-theme="light"] .cal-cell--today { background: rgba(0,134,58,0.06); }
+  [data-theme="light"] .cal-cell--selected { background: rgba(0,134,58,0.14); }
+  [data-theme="light"] .cal-grid-wrap { background: rgba(255,255,255,0.6); }
+
+  /* Phone tightening */
+  @media (max-width: 380px) {
+    .cal-grid-wrap { padding: 0.55rem 0.4rem; }
+    .cal-weekdays, .cal-grid { gap: 3px; }
+    .cal-cell { padding: 0.25rem 0.3rem 0.35rem; border-radius: 8px; }
+    .cal-cell-num { font-size: 0.78rem; }
+    .cal-dot { width: 5px; height: 5px; }
   }
 
   .login-card { max-width: 380px; margin: 3rem auto; padding: 2rem; text-align: center; }
