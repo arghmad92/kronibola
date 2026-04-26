@@ -2004,7 +2004,12 @@ import Layout from '../layouts/Layout.astro';
         }
         // leave
         const lv = e.payload;
-        const isMine = String(lv.Username || '').trim().toLowerCase() === me;
+        const lvUsername = String(lv.Username || '').trim().toLowerCase();
+        const isMine = lvUsername === me;
+        const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+        // Self can always cancel; superadmin can cancel anyone's. Other
+        // admins see no cancel button — server enforces this regardless.
+        const canCancel = isMine || meIsSA;
         const reason = lv.Reason ? calEsc(String(lv.Reason).slice(0, 120)) : '';
         const span = lv['Date From'] !== lv['Date To'] && lv['Date To']
           ? ` <span class="cal-event-span">(${calEsc(lv['Date From'])} → ${calEsc(lv['Date To'])})</span>`
@@ -2015,7 +2020,7 @@ import Layout from '../layouts/Layout.astro';
             <span class="cal-event-title">${calEsc(lv['Display Name'] || lv.Username || 'Admin')} on leave${span}</span>
             ${reason ? `<span class="cal-event-meta">"${reason}"</span>` : ''}
           </div>
-          ${isMine ? `<button type="button" class="cal-event-remove" data-kind="leave" data-created="${calEsc(lv['Created At'] || '')}" title="Cancel my leave">&times;</button>` : ''}
+          ${canCancel ? `<button type="button" class="cal-event-remove" data-kind="leave" data-created="${calEsc(lv['Created At'] || '')}" data-username="${calEsc(lvUsername)}" title="${isMine ? 'Cancel my leave' : 'Cancel ' + (lv['Display Name'] || lv.Username) + '\u2019s leave'}">&times;</button>` : ''}
         </div>`;
       }).join('');
     }
@@ -2110,17 +2115,24 @@ import Layout from '../layouts/Layout.astro';
         }
       } else if (kind === 'leave') {
         const createdAt = remove.dataset.created || '';
+        const targetUsername = (remove.dataset.username || '').toLowerCase();
         if (!createdAt) return;
-        if (!confirm('Cancel this leave?')) return;
+        const me = adminSession?.username || '';
+        const isMine = targetUsername === me;
+        const prompt = isMine ? 'Cancel this leave?' : `Cancel ${targetUsername}'s leave? They won\u2019t be notified.`;
+        if (!confirm(prompt)) return;
         try {
           const res = await fetch(`${API}/admin/leave`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json', Authorization: adminToken },
-            body: JSON.stringify({ createdAt }),
+            body: JSON.stringify({ createdAt, username: targetUsername }),
           });
           if (!res.ok) throw new Error('delete failed');
-          leavesData = leavesData.filter((lv: any) => String(lv['Created At'] || '') !== createdAt
-            || String(lv.Username || '').toLowerCase() !== (adminSession?.username || ''));
+          // Drop the matching row from local state so the next render hides it.
+          leavesData = leavesData.filter((lv: any) =>
+            !(String(lv['Created At'] || '') === createdAt
+              && String(lv.Username || '').toLowerCase() === targetUsername)
+          );
           renderCalendar();
           showToast('Leave cancelled');
         } catch {

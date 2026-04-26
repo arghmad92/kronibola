@@ -51,7 +51,9 @@ function publicView(row) {
 // Check whether the given session can manage OTHER admins. Owner-override
 // (env-var login) is always allowed; otherwise the session's username
 // must have Role=superadmin in the Admins sheet.
-async function isSuperadmin(env, session) {
+// Exported so other admin endpoints (e.g. /admin/leave) can authoritatively
+// gate privileged actions against the same source-of-truth check.
+export async function isSuperadmin(env, session) {
   if (!session) return false;
   if (session.isOwner) return true;
   try {

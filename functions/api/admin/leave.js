@@ -1,5 +1,6 @@
 import { readSheet, writeSheet, appendRow, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
+import { isSuperadmin } from './admins.js';
 
 const HEADERS = ['Username', 'Display Name', 'Date From', 'Date To', 'Reason', 'Created At'];
 
@@ -69,29 +70,45 @@ export async function onRequest(context) {
   }
 
   if (method === 'DELETE') {
-    // Cancel a leave entry. Match by (Username + Created At) so we identify
-    // the exact row — Created At is set server-side at append time so the
-    // client just sends back what it received from GET.
+    // Cancel a leave entry.
+    //
+    // Permission model:
+    //   - Regular admin: can only delete THEIR OWN leave. The row is matched
+    //     by (Created At + session.username); body.username is ignored to
+    //     prevent impersonation.
+    //   - Superadmin / owner: can delete any admin's leave. The row is
+    //     matched by (Created At + body.username) — username is required
+    //     in the body for superadmin deletes so we identify the exact row
+    //     even if two admins happened to apply at the same second.
     try {
       const body = await context.request.json();
       const createdAt = String((body && body.createdAt) || '').trim();
       if (!createdAt) return json({ error: '"createdAt" is required to cancel leave' }, 400);
 
-      const me = session.username;
+      const sa = await isSuperadmin(context.env, session);
+      const me = String(session.username || '').trim().toLowerCase();
+      const targetUser = String((body && body.username) || '').trim().toLowerCase();
+
       let current = [];
       try { current = await readSheet(context.env, 'Admin Leave'); } catch { current = []; }
 
       const remaining = [];
       let removed = 0;
       for (const row of current) {
-        const matches =
-          String(row['Created At'] || '').trim() === createdAt &&
-          String(row.Username || '').trim().toLowerCase() === me;
-        if (matches && removed === 0) { removed++; continue; }
+        const rowUser = String(row.Username || '').trim().toLowerCase();
+        const rowCreated = String(row['Created At'] || '').trim();
+        const sameTime = rowCreated === createdAt;
+        const isOwn = rowUser === me;
+        const isTarget = !!targetUser && rowUser === targetUser;
+
+        const allowedToDelete = sameTime && (isOwn || (sa && (isTarget || !targetUser)));
+        if (allowedToDelete && removed === 0) { removed++; continue; }
         remaining.push(row);
       }
 
       if (removed === 0) {
+        // Same generic 404 whether the row doesn't exist or the requester
+        // isn't allowed — avoids leaking leave-entry existence to non-owners.
         return json({ error: 'Leave entry not found, or not yours to cancel.' }, 404);
       }
 
