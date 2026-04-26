@@ -13,6 +13,13 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </a>
       <div class="header-right">
+        <div class="logged-in-as" id="loggedInAs" style="display:none" title="Logged in as">
+          <span class="logged-in-as-label">As</span>
+          <span class="logged-in-as-name" id="loggedInAsName">—</span>
+          <button type="button" class="logged-in-as-logout" id="logoutBtn" title="Log out">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
         <button type="button" class="notify-bell" id="notifyBell" style="display:none" aria-label="Pending notifications" title="Pending notifications">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
@@ -38,12 +45,17 @@ import Layout from '../layouts/Layout.astro';
         <h2>ADMIN <span class="neon-text">ACCESS</span></h2>
         <form id="loginForm">
           <div class="form-group">
+            <label class="form-label" for="adminUser">Username</label>
+            <input type="text" class="form-input" id="adminUser" placeholder="e.g. iman" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required style="width:100%;text-transform:lowercase" />
+          </div>
+          <div class="form-group">
             <label class="form-label" for="adminPass">Password</label>
-            <input type="password" class="form-input" id="adminPass" placeholder="Enter admin password" required style="width:100%" />
+            <input type="password" class="form-input" id="adminPass" placeholder="Your password" autocomplete="current-password" required style="width:100%" />
           </div>
           <button type="submit" class="btn btn--primary" style="width:100%;margin-top:0.5rem">UNLOCK</button>
         </form>
         <div id="loginError" style="display:none;margin-top:1rem"></div>
+        <p class="login-hint">Forgot your password? Ask another admin to reset it from Manage Admins, or use the owner password to recover.</p>
       </div>
     </div>
 
@@ -53,8 +65,10 @@ import Layout from '../layouts/Layout.astro';
         <button class="tab active" data-tab="schedule">Schedule</button>
         <button class="tab" data-tab="players">Players</button>
         <button class="tab" data-tab="orders">Orders</button>
+        <button class="tab" data-tab="calendar">Calendar</button>
         <button class="tab" data-tab="stats">Stats</button>
         <button class="tab" data-tab="notifs">Notifs</button>
+        <button class="tab" data-tab="admins">Admins</button>
       </div>
 
       <!-- Schedule Tab -->
@@ -230,8 +244,115 @@ import Layout from '../layouts/Layout.astro';
         <h4 class="sub-heading">REVENUE <span class="neon-text">BREAKDOWN</span></h4>
         <div id="revenueDashboard"></div>
       </div>
+
+      <!-- Calendar Tab — unified view of games, public holidays, admin leave -->
+      <div class="tab-panel" id="tab-calendar">
+        <div class="panel-top">
+          <h3 class="panel-title">CALENDAR <span class="neon-text">90 DAYS</span></h3>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+            <button class="btn btn--outline btn--sm" id="addLeaveBtn">+ APPLY LEAVE</button>
+            <button class="btn btn--outline btn--sm" id="addHolidayBtn">+ HOLIDAY</button>
+          </div>
+        </div>
+
+        <div class="cal-filters" id="calFilters">
+          <button type="button" class="cal-chip active" data-stream="all">All</button>
+          <button type="button" class="cal-chip" data-stream="games">🏟 Games</button>
+          <button type="button" class="cal-chip" data-stream="holidays">🇲🇾 Holidays</button>
+          <button type="button" class="cal-chip" data-stream="leave">🛌 Leave</button>
+        </div>
+
+        <div id="calendarList" class="cal-list"></div>
+        <div style="text-align:center;margin-top:0.8rem">
+          <button type="button" class="btn btn--outline btn--sm" id="calMoreBtn">Show more →</button>
+        </div>
+      </div>
+
+      <!-- Admins Tab — manage admin accounts -->
+      <div class="tab-panel" id="tab-admins">
+        <div class="panel-top">
+          <h3 class="panel-title">MANAGE <span class="neon-text">ADMINS</span></h3>
+          <button class="btn btn--primary btn--sm" id="addAdminBtn">+ ADD ADMIN</button>
+        </div>
+        <p class="admin-help">Create accounts for each admin so leave applications and notification logs are attributed to the right person. The owner password (env var) still works as a recovery login.</p>
+        <div id="adminsList" class="card-list"></div>
+      </div>
     </div>
   </main>
+
+  <!-- Apply for Leave modal -->
+  <div class="modal-overlay" id="leaveModal" style="display:none">
+    <div class="modal">
+      <button type="button" class="modal-close" id="leaveModalClose">&times;</button>
+      <h3 class="modal-title">APPLY <span class="neon-text">LEAVE</span></h3>
+      <p class="modal-sub" id="leaveModalSub">Logged in as —</p>
+      <div class="form-group">
+        <label class="form-label">From</label>
+        <input type="date" class="form-input" id="leaveFrom" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">To</label>
+        <input type="date" class="form-input" id="leaveTo" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reason <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+        <input type="text" class="form-input" id="leaveReason" placeholder="e.g. Family trip KK" maxlength="200" />
+      </div>
+      <button type="button" class="btn btn--primary" id="leaveSubmitBtn" style="width:100%;margin-top:0.4rem">SUBMIT</button>
+      <div id="leaveModalError" style="display:none;margin-top:0.6rem"></div>
+    </div>
+  </div>
+
+  <!-- Add Holiday modal -->
+  <div class="modal-overlay" id="holidayModal" style="display:none">
+    <div class="modal">
+      <button type="button" class="modal-close" id="holidayModalClose">&times;</button>
+      <h3 class="modal-title">ADD <span class="neon-text">HOLIDAY</span></h3>
+      <p class="modal-sub">Add a public holiday or community blackout day.</p>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="holidayDate" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-input" id="holidayName" placeholder="e.g. Hari Pekerja" maxlength="80" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="holidayType">
+          <option value="Federal">Federal</option>
+          <option value="State">State</option>
+          <option value="Custom" selected>Custom</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn--primary" id="holidaySubmitBtn" style="width:100%;margin-top:0.4rem">SAVE</button>
+      <div id="holidayModalError" style="display:none;margin-top:0.6rem"></div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Admin modal -->
+  <div class="modal-overlay" id="adminModal" style="display:none">
+    <div class="modal">
+      <button type="button" class="modal-close" id="adminModalClose">&times;</button>
+      <h3 class="modal-title" id="adminModalTitle">ADD <span class="neon-text">ADMIN</span></h3>
+      <p class="modal-sub" id="adminModalSub">Create a new admin account</p>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" class="form-input" id="adminUsername" placeholder="e.g. iman" autocapitalize="none" autocorrect="off" spellcheck="false" style="text-transform:lowercase" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Display Name</label>
+        <input type="text" class="form-input" id="adminDisplayName" placeholder="e.g. Iman" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="adminPasswordLabel">Password</label>
+        <input type="password" class="form-input" id="adminPassword" placeholder="At least 6 characters" autocomplete="new-password" />
+        <p class="form-hint" id="adminPasswordHint" style="display:none;font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem">Leave blank to keep the current password.</p>
+      </div>
+      <button type="button" class="btn btn--primary" id="adminSubmitBtn" style="width:100%;margin-top:0.4rem">CREATE</button>
+      <div id="adminModalError" style="display:none;margin-top:0.6rem"></div>
+    </div>
+  </div>
 
   <!-- Global save status toast (visible from any tab) -->
   <div class="save-toast" id="saveToast" role="status" aria-live="polite">Saved</div>
@@ -263,6 +384,10 @@ import Layout from '../layouts/Layout.astro';
 <script>
   const API = '/api';
   let adminToken = '';
+  // Session captured from /api/admin/auth response. Drives "Logged in as"
+  // header chip, leave-modal pre-fill, and Apply-Leave eligibility check
+  // (owner-override sessions can't apply for leave on someone's behalf).
+  let adminSession: { username: string; displayName: string; isOwner: boolean } | null = null;
 
   // --- Toast helper (global save confirmation) ---
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -780,34 +905,98 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('orderFilter')!.addEventListener('change', () => renderOrders());
 
   // --- LOGIN ---
+  // Pre-fill username from localStorage so returning admins only need to
+  // type their password. Username is stored unencrypted on purpose; it's
+  // not a secret.
+  (function prefillUsername() {
+    const last = localStorage.getItem('kb_admin_username') || '';
+    if (last) (document.getElementById('adminUser') as HTMLInputElement).value = last;
+  })();
+
+  function showLoggedInAs(name: string) {
+    const wrap = document.getElementById('loggedInAs') as HTMLElement | null;
+    const nameEl = document.getElementById('loggedInAsName') as HTMLElement | null;
+    if (wrap) wrap.style.display = '';
+    if (nameEl) nameEl.textContent = name;
+  }
+
+  function hideLoggedInAs() {
+    const wrap = document.getElementById('loggedInAs') as HTMLElement | null;
+    if (wrap) wrap.style.display = 'none';
+  }
+
   document.getElementById('loginForm')!.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const username = (document.getElementById('adminUser') as HTMLInputElement).value.trim().toLowerCase();
     const pass = (document.getElementById('adminPass') as HTMLInputElement).value;
     const errEl = document.getElementById('loginError')!;
+    if (!username || !pass) {
+      errEl.style.display = '';
+      errEl.innerHTML = '<div class="alert alert--error">Please enter both username and password.</div>';
+      return;
+    }
     try {
-      const res = await fetch(`${API}/admin/auth`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
-      const data = await res.json();
-      if (data.success) {
+      const res = await fetch(`${API}/admin/auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: pass }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         adminToken = data.token;
+        adminSession = {
+          username,
+          displayName: data.displayName || username,
+          isOwner: !!data.isOwner,
+        };
+        localStorage.setItem('kb_admin_username', username);
         document.getElementById('loginGate')!.style.display = 'none';
         document.getElementById('adminContent')!.style.display = '';
         document.getElementById('notifyBell')!.style.display = '';
+        showLoggedInAs(adminSession.isOwner ? `${adminSession.displayName} (owner)` : adminSession.displayName);
         // Schedule must finish first: loadAllPlayers() cross-references sessionsData
         // to classify dates as Upcoming vs Past. Running them in parallel races,
         // and when players resolves first every game falls into "Past Games".
         await loadSchedule();
         loadAllPlayers(); loadRevenue(); loadNotifs(); loadStats(); loadOrders();
-      } else { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Wrong password.</div>'; }
-    } catch { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>'; }
+        // Calendar + Admins lazy-load when those tabs are first opened
+      } else {
+        errEl.style.display = '';
+        errEl.innerHTML = `<div class="alert alert--error">${(data && data.error) || 'Invalid username or password.'}</div>`;
+      }
+    } catch {
+      errEl.style.display = '';
+      errEl.innerHTML = '<div class="alert alert--error">Connection error.</div>';
+    }
+  });
+
+  // Logout — clears the in-memory token and reloads to the login screen.
+  // Username stays in localStorage as a convenience for the next sign-in.
+  document.getElementById('logoutBtn')!.addEventListener('click', () => {
+    adminToken = '';
+    adminSession = null;
+    hideLoggedInAs();
+    document.getElementById('notifyBell')!.style.display = 'none';
+    document.getElementById('adminContent')!.style.display = 'none';
+    document.getElementById('loginGate')!.style.display = '';
+    (document.getElementById('adminPass') as HTMLInputElement).value = '';
   });
 
   // --- TABS ---
+  // Track which lazy-loaded tabs have already fetched so we don't refetch
+  // every time the admin clicks back to them — let an explicit Refresh
+  // button (or save/cancel actions) trigger reloads.
+  const tabsLoaded = { calendar: false, admins: false };
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById(`tab-${(tab as HTMLElement).dataset.tab}`)!.classList.add('active');
+      const which = (tab as HTMLElement).dataset.tab || '';
+      const panel = document.getElementById(`tab-${which}`);
+      if (panel) panel.classList.add('active');
+      if (which === 'calendar' && !tabsLoaded.calendar) { tabsLoaded.calendar = true; loadCalendar(); }
+      if (which === 'admins' && !tabsLoaded.admins) { tabsLoaded.admins = true; loadAdmins(); }
     });
   });
 
@@ -1506,6 +1695,529 @@ import Layout from '../layouts/Layout.astro';
       ` : '<p class="empty-msg">No paid sessions yet.</p>'}
     `;
   }
+
+  // ===========================================================================
+  // CALENDAR TAB — unified view of games, holidays, admin leave
+  // ===========================================================================
+  let holidaysData: any[] = [];
+  let leavesData: any[] = [];
+  let calendarWindowDays = 90;
+  let calendarFilter: 'all' | 'games' | 'holidays' | 'leave' = 'all';
+
+  function ymdToday(): string {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+  }
+
+  function calEsc(s: string): string {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]!));
+  }
+
+  function calFormatDay(ymd: string): { weekday: string; day: string; monthYear: string; key: string } {
+    try {
+      const d = new Date(`${ymd}T00:00:00+08:00`);
+      return {
+        weekday: d.toLocaleDateString('en-MY', { weekday: 'short', timeZone: 'Asia/Kuala_Lumpur' }),
+        day: d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', timeZone: 'Asia/Kuala_Lumpur' }),
+        monthYear: d.toLocaleDateString('en-MY', { month: 'long', year: 'numeric', timeZone: 'Asia/Kuala_Lumpur' }).toUpperCase(),
+        key: d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }),
+      };
+    } catch {
+      return { weekday: '', day: ymd, monthYear: '—', key: ymd };
+    }
+  }
+
+  async function loadCalendar() {
+    const list = document.getElementById('calendarList');
+    if (!list) return;
+    list.innerHTML = '<p class="empty-msg">Loading…</p>';
+    try {
+      const [hRes, lRes] = await Promise.all([
+        fetch(`${API}/admin/holidays`, { headers: { Authorization: adminToken } }),
+        fetch(`${API}/admin/leave`, { headers: { Authorization: adminToken } }),
+      ]);
+      const hData = await hRes.json().catch(() => ({}));
+      const lData = await lRes.json().catch(() => ({}));
+      holidaysData = Array.isArray(hData.holidays) ? hData.holidays : [];
+      leavesData = Array.isArray(lData.leaves) ? lData.leaves : [];
+      renderCalendar();
+    } catch {
+      list.innerHTML = '<p class="empty-msg">Failed to load calendar.</p>';
+    }
+  }
+
+  function renderCalendar() {
+    const list = document.getElementById('calendarList');
+    if (!list) return;
+
+    const today = ymdToday();
+    const horizon = (() => {
+      const d = new Date(`${today}T00:00:00+08:00`);
+      d.setDate(d.getDate() + calendarWindowDays);
+      return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+    })();
+
+    type Event = { date: string; kind: 'game' | 'holiday' | 'leave'; payload: any };
+    const events: Event[] = [];
+
+    if (calendarFilter === 'all' || calendarFilter === 'games') {
+      for (const s of sessionsData) {
+        if (!s.Date || s.Date < today || s.Date > horizon) continue;
+        events.push({ date: s.Date, kind: 'game', payload: s });
+      }
+    }
+    if (calendarFilter === 'all' || calendarFilter === 'holidays') {
+      for (const h of holidaysData) {
+        if (!h.Date || h.Date < today || h.Date > horizon) continue;
+        events.push({ date: h.Date, kind: 'holiday', payload: h });
+      }
+    }
+    if (calendarFilter === 'all' || calendarFilter === 'leave') {
+      for (const lv of leavesData) {
+        const from = String(lv['Date From'] || '');
+        const to = String(lv['Date To'] || from);
+        if (!from) continue;
+        // Expand multi-day leave into one event per affected day inside window.
+        const start = from < today ? today : from;
+        if (start > horizon) continue;
+        const end = to > horizon ? horizon : to;
+        for (let d = start; d <= end; ) {
+          events.push({ date: d, kind: 'leave', payload: lv });
+          const next = new Date(`${d}T00:00:00+08:00`);
+          next.setDate(next.getDate() + 1);
+          d = next.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+        }
+      }
+    }
+
+    events.sort((a, b) => a.date.localeCompare(b.date));
+
+    if (!events.length) {
+      list.innerHTML = '<p class="empty-msg">Nothing scheduled in the next ' + calendarWindowDays + ' days.</p>';
+      return;
+    }
+
+    let lastMonth = '';
+    let html = '';
+    for (const ev of events) {
+      const fmt = calFormatDay(ev.date);
+      if (fmt.monthYear !== lastMonth) {
+        html += `<div class="cal-month-head">${calEsc(fmt.monthYear)}</div>`;
+        lastMonth = fmt.monthYear;
+      }
+      if (ev.kind === 'game') {
+        const s = ev.payload;
+        html += `<div class="cal-row cal-row--game" data-date="${calEsc(ev.date)}">
+          <div class="cal-day"><span class="cal-day-wd">${calEsc(fmt.weekday)}</span><span class="cal-day-num">${calEsc(fmt.day)}</span></div>
+          <div class="cal-icon">🏟</div>
+          <div class="cal-body">
+            <span class="cal-title">${calEsc(s['Session Name'] || 'Game')}</span>
+            <span class="cal-meta">${calEsc(s.Time || '')}${s.Location ? ' · ' + calEsc(s.Location) : ''}</span>
+          </div>
+        </div>`;
+      } else if (ev.kind === 'holiday') {
+        const h = ev.payload;
+        html += `<div class="cal-row cal-row--holiday" data-date="${calEsc(ev.date)}">
+          <div class="cal-day"><span class="cal-day-wd">${calEsc(fmt.weekday)}</span><span class="cal-day-num">${calEsc(fmt.day)}</span></div>
+          <div class="cal-icon">🇲🇾</div>
+          <div class="cal-body">
+            <span class="cal-title">${calEsc(h.Name || 'Holiday')}</span>
+            <span class="cal-meta">${calEsc(h.Type || '—')}</span>
+          </div>
+          <button type="button" class="cal-remove" data-kind="holiday" data-date="${calEsc(h.Date)}" title="Remove holiday">&times;</button>
+        </div>`;
+      } else {
+        const lv = ev.payload;
+        const me = adminSession ? adminSession.username : '';
+        const isMine = String(lv.Username || '').trim().toLowerCase() === me;
+        const reason = lv.Reason ? ` · "${calEsc(String(lv.Reason).slice(0, 80))}"` : '';
+        const span = lv['Date From'] !== lv['Date To'] && lv['Date To']
+          ? ` (${calEsc(lv['Date From'])}–${calEsc(lv['Date To'])})`
+          : '';
+        html += `<div class="cal-row cal-row--leave" data-date="${calEsc(ev.date)}">
+          <div class="cal-day"><span class="cal-day-wd">${calEsc(fmt.weekday)}</span><span class="cal-day-num">${calEsc(fmt.day)}</span></div>
+          <div class="cal-icon">🛌</div>
+          <div class="cal-body">
+            <span class="cal-title">${calEsc(lv['Display Name'] || lv.Username || 'Admin')} on leave${calEsc(span)}</span>
+            <span class="cal-meta">${reason || '—'}</span>
+          </div>
+          ${isMine ? `<button type="button" class="cal-remove" data-kind="leave" data-created="${calEsc(lv['Created At'] || '')}" title="Cancel my leave">&times;</button>` : ''}
+        </div>`;
+      }
+    }
+
+    list.innerHTML = html;
+  }
+
+  // Filter chip clicks
+  document.getElementById('calFilters')!.addEventListener('click', (e) => {
+    const chip = (e.target as HTMLElement).closest('.cal-chip') as HTMLElement | null;
+    if (!chip) return;
+    document.querySelectorAll('#calFilters .cal-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    calendarFilter = (chip.dataset.stream as any) || 'all';
+    renderCalendar();
+  });
+
+  // "Show more" extends the visible window by another 90 days each click.
+  document.getElementById('calMoreBtn')!.addEventListener('click', () => {
+    calendarWindowDays += 90;
+    renderCalendar();
+  });
+
+  // Row interactions: tap a game row → switch to Schedule tab. Tap a holiday
+  // ✕ → confirm + delete via reconcile. Tap a leave ✕ → DELETE my own row.
+  document.getElementById('calendarList')!.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    const remove = target.closest('.cal-remove') as HTMLElement | null;
+    if (remove) {
+      const kind = remove.dataset.kind;
+      if (kind === 'holiday') {
+        const date = remove.dataset.date || '';
+        if (!date) return;
+        if (!confirm(`Remove holiday on ${date}?`)) return;
+        try {
+          const remaining = holidaysData.filter((h: any) => h.Date !== date);
+          const res = await fetch(`${API}/admin/holidays`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+            body: JSON.stringify({ holidays: remaining, deletes: [date] }),
+          });
+          if (!res.ok) throw new Error('save failed');
+          const data = await res.json().catch(() => ({}));
+          holidaysData = Array.isArray(data.holidays) ? data.holidays : remaining;
+          renderCalendar();
+          showToast('Holiday removed');
+        } catch {
+          showToast('Failed to remove holiday', 'error');
+        }
+      } else if (kind === 'leave') {
+        const createdAt = remove.dataset.created || '';
+        if (!createdAt) return;
+        if (!confirm('Cancel this leave?')) return;
+        try {
+          const res = await fetch(`${API}/admin/leave`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+            body: JSON.stringify({ createdAt }),
+          });
+          if (!res.ok) throw new Error('delete failed');
+          leavesData = leavesData.filter((lv: any) => String(lv['Created At'] || '') !== createdAt
+            || String(lv.Username || '').toLowerCase() !== (adminSession?.username || ''));
+          renderCalendar();
+          showToast('Leave cancelled');
+        } catch {
+          showToast('Failed to cancel leave', 'error');
+        }
+      }
+      return;
+    }
+
+    const row = target.closest('.cal-row--game') as HTMLElement | null;
+    if (row) {
+      const date = row.dataset.date || '';
+      // Switch to Schedule tab
+      const tab = document.querySelector('.tab[data-tab="schedule"]') as HTMLButtonElement | null;
+      if (tab) tab.click();
+      // Optional: scroll the matching session card into view
+      setTimeout(() => {
+        const card = document.querySelector(`.s-input[data-field="Date"][value="${date}"]`) as HTMLElement | null;
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    }
+  });
+
+  // === Apply for Leave modal ===
+  const leaveModal = document.getElementById('leaveModal')!;
+  function openLeaveModal() {
+    if (!adminSession) return;
+    if (adminSession.isOwner) {
+      showToast('Owner sessions can\u2019t apply for leave. Log in as a real admin first.', 'error');
+      return;
+    }
+    const sub = document.getElementById('leaveModalSub')!;
+    sub.textContent = `Logged in as ${adminSession.displayName}`;
+    const today = ymdToday();
+    (document.getElementById('leaveFrom') as HTMLInputElement).value = today;
+    (document.getElementById('leaveTo') as HTMLInputElement).value = today;
+    (document.getElementById('leaveReason') as HTMLInputElement).value = '';
+    (document.getElementById('leaveModalError') as HTMLElement).style.display = 'none';
+    leaveModal.style.display = '';
+  }
+  document.getElementById('addLeaveBtn')!.addEventListener('click', openLeaveModal);
+  document.getElementById('leaveModalClose')!.addEventListener('click', () => leaveModal.style.display = 'none');
+  leaveModal.addEventListener('click', (e) => { if (e.target === leaveModal) leaveModal.style.display = 'none'; });
+  document.getElementById('leaveSubmitBtn')!.addEventListener('click', async () => {
+    const from = (document.getElementById('leaveFrom') as HTMLInputElement).value;
+    const to = (document.getElementById('leaveTo') as HTMLInputElement).value || from;
+    const reason = (document.getElementById('leaveReason') as HTMLInputElement).value.trim();
+    const errEl = document.getElementById('leaveModalError') as HTMLElement;
+    if (!from) {
+      errEl.style.display = '';
+      errEl.innerHTML = '<div class="alert alert--error">Pick a start date.</div>';
+      return;
+    }
+    if (to < from) {
+      errEl.style.display = '';
+      errEl.innerHTML = '<div class="alert alert--error">"To" must be on or after "From".</div>';
+      return;
+    }
+    const btn = document.getElementById('leaveSubmitBtn') as HTMLButtonElement;
+    btn.disabled = true; btn.textContent = 'SUBMITTING…';
+    try {
+      const res = await fetch(`${API}/admin/leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+        body: JSON.stringify({ dateFrom: from, dateTo: to, reason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'failed');
+      leaveModal.style.display = 'none';
+      showToast('Leave applied');
+      // Refresh leave data so it appears in the calendar.
+      try {
+        const r = await fetch(`${API}/admin/leave`, { headers: { Authorization: adminToken } });
+        const d = await r.json();
+        leavesData = Array.isArray(d.leaves) ? d.leaves : leavesData;
+        renderCalendar();
+      } catch {}
+    } catch (err: any) {
+      errEl.style.display = '';
+      errEl.innerHTML = `<div class="alert alert--error">${err.message || 'Failed to apply.'}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = 'SUBMIT';
+    }
+  });
+
+  // === Add Holiday modal ===
+  const holidayModal = document.getElementById('holidayModal')!;
+  function openHolidayModal() {
+    (document.getElementById('holidayDate') as HTMLInputElement).value = ymdToday();
+    (document.getElementById('holidayName') as HTMLInputElement).value = '';
+    (document.getElementById('holidayType') as HTMLSelectElement).value = 'Custom';
+    (document.getElementById('holidayModalError') as HTMLElement).style.display = 'none';
+    holidayModal.style.display = '';
+  }
+  document.getElementById('addHolidayBtn')!.addEventListener('click', openHolidayModal);
+  document.getElementById('holidayModalClose')!.addEventListener('click', () => holidayModal.style.display = 'none');
+  holidayModal.addEventListener('click', (e) => { if (e.target === holidayModal) holidayModal.style.display = 'none'; });
+  document.getElementById('holidaySubmitBtn')!.addEventListener('click', async () => {
+    const date = (document.getElementById('holidayDate') as HTMLInputElement).value;
+    const name = (document.getElementById('holidayName') as HTMLInputElement).value.trim();
+    const type = (document.getElementById('holidayType') as HTMLSelectElement).value;
+    const errEl = document.getElementById('holidayModalError') as HTMLElement;
+    if (!date || !name) {
+      errEl.style.display = '';
+      errEl.innerHTML = '<div class="alert alert--error">Date and name are required.</div>';
+      return;
+    }
+    const btn = document.getElementById('holidaySubmitBtn') as HTMLButtonElement;
+    btn.disabled = true; btn.textContent = 'SAVING…';
+    try {
+      // Add to local list, post the merged set; server reconciles by Date so
+      // we don't need to worry about duplicate-by-date checks here.
+      const next = [...holidaysData.filter((h: any) => h.Date !== date), { Date: date, Name: name, Type: type }];
+      const res = await fetch(`${API}/admin/holidays`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+        body: JSON.stringify({ holidays: next, deletes: [] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'failed');
+      holidaysData = Array.isArray(data.holidays) ? data.holidays : next;
+      holidayModal.style.display = 'none';
+      showToast('Holiday added');
+      renderCalendar();
+    } catch (err: any) {
+      errEl.style.display = '';
+      errEl.innerHTML = `<div class="alert alert--error">${err.message || 'Failed to save.'}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = 'SAVE';
+    }
+  });
+
+  // ===========================================================================
+  // ADMINS TAB — manage admin accounts (add, reset password, toggle active)
+  // ===========================================================================
+  let adminsData: any[] = [];
+  let editingAdminUsername: string | null = null;
+
+  async function loadAdmins() {
+    const list = document.getElementById('adminsList');
+    if (!list) return;
+    list.innerHTML = '<p class="empty-msg">Loading…</p>';
+    try {
+      const res = await fetch(`${API}/admin/admins`, { headers: { Authorization: adminToken } });
+      const data = await res.json().catch(() => ({}));
+      adminsData = Array.isArray(data.admins) ? data.admins : [];
+      renderAdmins();
+    } catch {
+      list.innerHTML = '<p class="empty-msg">Failed to load admins.</p>';
+    }
+  }
+
+  function renderAdmins() {
+    const list = document.getElementById('adminsList');
+    if (!list) return;
+    if (!adminsData.length) {
+      list.innerHTML = '<p class="empty-msg">No admin accounts yet. Tap "+ Add Admin" to create the first one.</p>';
+      return;
+    }
+    list.innerHTML = adminsData.map((a: any) => {
+      const username = String(a.Username || '').toLowerCase();
+      const isMe = adminSession && adminSession.username === username;
+      const active = String(a.Active || '').toLowerCase() === 'yes';
+      return `<div class="player-card-admin">
+        <div class="pca-top">
+          <div class="pca-avatar" style="background:${active ? 'rgba(0,255,65,0.12)' : 'rgba(255,255,255,0.06)'};color:${active ? 'var(--neon)' : 'var(--text-muted)'};border-color:${active ? 'rgba(0,255,65,0.3)' : 'var(--border)'}">${calEsc((a['Display Name'] || username || '?')[0].toUpperCase())}</div>
+          <div class="pca-info">
+            <span class="pca-name">${calEsc(a['Display Name'] || username)}${isMe ? ' <span style="font-size:0.62rem;color:var(--neon)">(you)</span>' : ''}</span>
+            <span class="pca-phone">@${calEsc(username)} · ${active ? 'Active' : 'Inactive'}</span>
+          </div>
+        </div>
+        <div class="pca-controls">
+          <button type="button" class="pca-save admin-edit" data-username="${calEsc(username)}" title="Edit / reset password">EDIT</button>
+          <button type="button" class="pca-save ${active ? 'pca-save--info' : 'pca-save--danger'} admin-toggle" data-username="${calEsc(username)}" data-active="${active ? 'Yes' : 'No'}" title="${active ? 'Deactivate' : 'Reactivate'}">${active ? 'DEACTIVATE' : 'REACTIVATE'}</button>
+          ${!isMe ? `<button type="button" class="pca-save pca-save--danger admin-delete" data-username="${calEsc(username)}" title="Delete admin">DELETE</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // === Add / Edit Admin modal ===
+  const adminModal = document.getElementById('adminModal')!;
+  document.getElementById('addAdminBtn')!.addEventListener('click', () => {
+    editingAdminUsername = null;
+    (document.getElementById('adminModalTitle') as HTMLElement).innerHTML = 'ADD <span class="neon-text">ADMIN</span>';
+    (document.getElementById('adminModalSub') as HTMLElement).textContent = 'Create a new admin account';
+    (document.getElementById('adminUsername') as HTMLInputElement).value = '';
+    (document.getElementById('adminUsername') as HTMLInputElement).disabled = false;
+    (document.getElementById('adminDisplayName') as HTMLInputElement).value = '';
+    (document.getElementById('adminPassword') as HTMLInputElement).value = '';
+    (document.getElementById('adminPasswordLabel') as HTMLElement).textContent = 'Password';
+    (document.getElementById('adminPasswordHint') as HTMLElement).style.display = 'none';
+    (document.getElementById('adminSubmitBtn') as HTMLButtonElement).textContent = 'CREATE';
+    (document.getElementById('adminModalError') as HTMLElement).style.display = 'none';
+    adminModal.style.display = '';
+  });
+  document.getElementById('adminModalClose')!.addEventListener('click', () => adminModal.style.display = 'none');
+  adminModal.addEventListener('click', (e) => { if (e.target === adminModal) adminModal.style.display = 'none'; });
+
+  document.getElementById('adminsList')!.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    const editBtn = target.closest('.admin-edit') as HTMLElement | null;
+    const toggleBtn = target.closest('.admin-toggle') as HTMLElement | null;
+    const delBtn = target.closest('.admin-delete') as HTMLElement | null;
+
+    if (editBtn) {
+      const username = editBtn.dataset.username || '';
+      const row = adminsData.find((a: any) => String(a.Username || '').toLowerCase() === username);
+      if (!row) return;
+      editingAdminUsername = username;
+      (document.getElementById('adminModalTitle') as HTMLElement).innerHTML = 'EDIT <span class="neon-text">ADMIN</span>';
+      (document.getElementById('adminModalSub') as HTMLElement).textContent = `@${username}`;
+      (document.getElementById('adminUsername') as HTMLInputElement).value = username;
+      (document.getElementById('adminUsername') as HTMLInputElement).disabled = true;
+      (document.getElementById('adminDisplayName') as HTMLInputElement).value = row['Display Name'] || '';
+      (document.getElementById('adminPassword') as HTMLInputElement).value = '';
+      (document.getElementById('adminPasswordLabel') as HTMLElement).textContent = 'New Password';
+      (document.getElementById('adminPasswordHint') as HTMLElement).style.display = '';
+      (document.getElementById('adminSubmitBtn') as HTMLButtonElement).textContent = 'SAVE';
+      (document.getElementById('adminModalError') as HTMLElement).style.display = 'none';
+      adminModal.style.display = '';
+      return;
+    }
+
+    if (toggleBtn) {
+      const username = toggleBtn.dataset.username || '';
+      const wasActive = toggleBtn.dataset.active === 'Yes';
+      const next = wasActive ? 'No' : 'Yes';
+      try {
+        const res = await fetch(`${API}/admin/admins`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+          body: JSON.stringify({ username, active: next }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'failed');
+        showToast(wasActive ? 'Admin deactivated' : 'Admin reactivated');
+        await loadAdmins();
+      } catch (err: any) {
+        showToast(err.message || 'Failed to update', 'error');
+      }
+      return;
+    }
+
+    if (delBtn) {
+      const username = delBtn.dataset.username || '';
+      if (!confirm(`Delete admin "${username}"? Their leave history stays in the sheet but they can't log in anymore.`)) return;
+      try {
+        const res = await fetch(`${API}/admin/admins`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+          body: JSON.stringify({ username }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'failed');
+        showToast('Admin deleted');
+        await loadAdmins();
+      } catch (err: any) {
+        showToast(err.message || 'Failed to delete', 'error');
+      }
+      return;
+    }
+  });
+
+  document.getElementById('adminSubmitBtn')!.addEventListener('click', async () => {
+    const username = (document.getElementById('adminUsername') as HTMLInputElement).value.trim().toLowerCase();
+    const displayName = (document.getElementById('adminDisplayName') as HTMLInputElement).value.trim();
+    const password = (document.getElementById('adminPassword') as HTMLInputElement).value;
+    const errEl = document.getElementById('adminModalError') as HTMLElement;
+    const isCreate = editingAdminUsername === null;
+
+    if (!username) { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Username is required.</div>'; return; }
+    if (!displayName) { errEl.style.display = ''; errEl.innerHTML = '<div class="alert alert--error">Display name is required.</div>'; return; }
+    if (isCreate && (!password || password.length < 6)) {
+      errEl.style.display = '';
+      errEl.innerHTML = '<div class="alert alert--error">Password must be at least 6 characters.</div>';
+      return;
+    }
+    if (!isCreate && password && password.length < 6) {
+      errEl.style.display = '';
+      errEl.innerHTML = '<div class="alert alert--error">New password must be at least 6 characters (or leave blank).</div>';
+      return;
+    }
+
+    const btn = document.getElementById('adminSubmitBtn') as HTMLButtonElement;
+    btn.disabled = true; btn.textContent = isCreate ? 'CREATING…' : 'SAVING…';
+    try {
+      let res;
+      if (isCreate) {
+        res = await fetch(`${API}/admin/admins`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+          body: JSON.stringify({ username, displayName, password, active: 'Yes' }),
+        });
+      } else {
+        const body: any = { username, displayName };
+        if (password) body.password = password;
+        res = await fetch(`${API}/admin/admins`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+          body: JSON.stringify(body),
+        });
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) throw new Error(data.error || 'failed');
+      adminModal.style.display = 'none';
+      showToast(isCreate ? 'Admin created' : 'Admin updated');
+      await loadAdmins();
+    } catch (err: any) {
+      errEl.style.display = '';
+      errEl.innerHTML = `<div class="alert alert--error">${err.message || 'Failed to save.'}</div>`;
+    } finally {
+      btn.disabled = false; btn.textContent = isCreate ? 'CREATE' : 'SAVE';
+    }
+  });
 </script>
 
 <style is:global>
@@ -1547,6 +2259,115 @@ import Layout from '../layouts/Layout.astro';
     30%  { transform: scale(1.18); }
     60%  { transform: scale(0.94); }
     100% { transform: scale(1); }
+  }
+
+  /* "Logged in as <name>" chip in the header */
+  .logged-in-as {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    height: 32px; padding: 0 0.5rem 0 0.7rem;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 100px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem;
+  }
+  .logged-in-as-label { color: var(--text-muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .logged-in-as-name { color: var(--neon); font-weight: 700; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logged-in-as-logout {
+    width: 26px; height: 26px; border-radius: 50%; padding: 0;
+    background: transparent; border: 1px solid var(--border-light);
+    color: var(--text-muted); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 0.1rem;
+  }
+  .logged-in-as-logout:hover { color: var(--red); border-color: rgba(255,59,48,0.4); }
+  @media (max-width: 480px) {
+    .logged-in-as-label { display: none; }
+    .logged-in-as-name { max-width: 90px; }
+  }
+
+  .login-hint {
+    font-size: 0.7rem; color: var(--text-muted); margin-top: 1rem; line-height: 1.5;
+  }
+
+  .admin-help {
+    font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55;
+    margin: 0.4rem 0 1rem; padding: 0.6rem 0.8rem;
+    background: rgba(0,255,65,0.04); border: 1px solid rgba(0,255,65,0.15);
+    border-radius: 10px;
+  }
+
+  /* Calendar tab — chronological list */
+  .cal-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.8rem 0; }
+  .cal-chip {
+    padding: 0.4rem 0.8rem; border-radius: 100px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    color: var(--text-muted); font-size: 0.72rem; font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-chip:hover { color: var(--text); }
+  .cal-chip.active {
+    color: var(--neon); border-color: rgba(0,255,65,0.4);
+    background: rgba(0,255,65,0.1);
+  }
+  .cal-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .cal-month-head {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.72rem; letter-spacing: 0.16em; color: var(--text-muted);
+    text-transform: uppercase;
+    padding: 0.6rem 0 0.3rem; margin-top: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cal-month-head:first-child { margin-top: 0; }
+  .cal-row {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.7rem 0.85rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .cal-row--game { cursor: pointer; }
+  .cal-row--game:hover { background: rgba(0,255,65,0.04); border-color: rgba(0,255,65,0.2); }
+  .cal-row--holiday { border-left: 3px solid #ff9500; }
+  .cal-row--leave { border-left: 3px solid #00c4ff; }
+  .cal-day {
+    flex-shrink: 0; width: 52px; text-align: center;
+    display: flex; flex-direction: column; gap: 0.1rem;
+  }
+  .cal-day-wd {
+    font-size: 0.6rem; color: var(--text-muted); font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .cal-day-num {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.92rem; color: var(--text);
+  }
+  .cal-icon {
+    flex-shrink: 0; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.04); border-radius: 10px;
+    font-size: 1.05rem;
+  }
+  .cal-body { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+  .cal-title {
+    font-size: 0.85rem; font-weight: 600; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cal-meta {
+    font-size: 0.68rem; color: var(--text-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cal-remove {
+    flex-shrink: 0; width: 28px; height: 28px; padding: 0;
+    background: transparent; border: 1px solid var(--border-light);
+    color: var(--text-muted); border-radius: 8px; cursor: pointer;
+    font-size: 1rem; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .cal-remove:hover {
+    color: var(--red); border-color: rgba(255,59,48,0.4);
+    background: rgba(255,59,48,0.06);
   }
 
   .login-card { max-width: 380px; margin: 3rem auto; padding: 2rem; text-align: center; }

@@ -99,8 +99,8 @@ export async function onRequest(context) {
   // Require admin token
   const { verifyToken } = await import('./admin/auth.js');
   const token = context.request.headers.get('Authorization') || '';
-  const valid = await verifyToken(token, context.env.ADMIN_PASSWORD);
-  if (!valid) return json({ error: 'Unauthorized' }, 401);
+  const session = await verifyToken(token, context.env.ADMIN_PASSWORD);
+  if (!session) return json({ error: 'Unauthorized' }, 401);
 
   try {
     const result = await autoCloseSessions(context.env);

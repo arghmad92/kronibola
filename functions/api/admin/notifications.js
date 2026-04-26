@@ -4,10 +4,11 @@ import { verifyToken } from './auth.js';
 const HEADERS = ['Timestamp', 'Player Name', 'Phone', 'Status', 'Session Date', 'Message', 'Sent By'];
 
 export async function onRequest(context) {
-  // Auth check
+  // Auth check — capture session so we can attribute the log row to the
+  // logged-in admin instead of a hardcoded "Admin" string.
   const token = context.request.headers.get('Authorization') || '';
-  const valid = await verifyToken(token, context.env.ADMIN_PASSWORD);
-  if (!valid) return json({ error: 'Unauthorized' }, 401);
+  const session = await verifyToken(token, context.env.ADMIN_PASSWORD);
+  if (!session) return json({ error: 'Unauthorized' }, 401);
 
   const method = context.request.method;
 
@@ -37,7 +38,13 @@ export async function onRequest(context) {
         await writeSheet(context.env, 'Notifications', [], HEADERS);
       }
 
-      await appendRow(context.env, 'Notifications', [timestamp, playerName || '', phone || '', status || '', date || '', message || '', sentBy || 'Admin']);
+      // Sent By: prefer the logged-in admin's display name. Owner-override
+      // sessions get tagged "OWNER" so the audit trail shows when the
+      // shared password was used. The legacy `sentBy` body field is
+      // honoured only as a last fallback (kept for backward compatibility
+      // with any client that still posts it).
+      const author = session.displayName || sentBy || 'Admin';
+      await appendRow(context.env, 'Notifications', [timestamp, playerName || '', phone || '', status || '', date || '', message || '', author]);
       return json({ success: true });
     } catch (e) {
       return json({ error: e.message }, 500);

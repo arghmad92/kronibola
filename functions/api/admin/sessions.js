@@ -4,10 +4,12 @@ import { verifyToken } from './auth.js';
 const HEADERS = ['Session Name', 'Date', 'Time', 'Location', 'Fee', 'Status', 'Max Players', 'Require Car Plate'];
 
 export async function onRequest(context) {
-  // Auth check
+  // Auth check — verifyToken now returns the parsed session payload
+  // (or null on failure) so endpoints can attribute writes to a specific
+  // admin. We don't need it here yet but keep the variable for parity.
   const token = context.request.headers.get('Authorization') || '';
-  const valid = await verifyToken(token, context.env.ADMIN_PASSWORD);
-  if (!valid) return json({ error: 'Unauthorized' }, 401);
+  const session = await verifyToken(token, context.env.ADMIN_PASSWORD);
+  if (!session) return json({ error: 'Unauthorized' }, 401);
 
   const method = context.request.method;
 

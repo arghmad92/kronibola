@@ -10,8 +10,8 @@ const PROTECTED = ['Session Date', 'Player Name', 'Phone', 'Amount', 'Timestamp'
 export async function onRequest(context) {
   // Auth check
   const token = context.request.headers.get('Authorization') || '';
-  const valid = await verifyToken(token, context.env.ADMIN_PASSWORD);
-  if (!valid) return json({ error: 'Unauthorized' }, 401);
+  const session = await verifyToken(token, context.env.ADMIN_PASSWORD);
+  if (!session) return json({ error: 'Unauthorized' }, 401);
 
   const method = context.request.method;
 
