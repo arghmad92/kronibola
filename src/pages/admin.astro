@@ -2928,6 +2928,11 @@ import Layout from '../layouts/Layout.astro';
   .login-card { max-width: 380px; margin: 3rem auto; padding: 2rem; text-align: center; }
   .login-icon { color: var(--neon); margin-bottom: 0.8rem; }
   .login-card h2 { margin-bottom: 1.2rem; font-size: 1.2rem; }
+  /* Form labels and inputs inside the login card need to read naturally
+     left-to-right (the card itself is text-align: center for the title
+     and icon, which cascades into the form labels otherwise). */
+  .login-card .form-group { text-align: left; margin-bottom: 0.9rem; }
+  .login-card .form-input { text-align: left; }
 
   /* Stats Dashboard */
   .stats-grid {

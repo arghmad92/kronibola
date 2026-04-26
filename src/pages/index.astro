@@ -1283,21 +1283,26 @@ import Layout from '../layouts/Layout.astro';
     display: none !important;
   }
 
-  /* Secondary action row (active card only): Share · Google · Apple.
-     Equal-width ghost buttons that complement the primary REGISTER. */
+  /* Secondary action row (active card only).
+     Layout: Share spans full width on its own row above the calendar
+     pair so it reads as the next-most-important CTA after REGISTER.
+     Calendar buttons (Google + Apple) split row 2 evenly. */
   :global(.match-card.active .mc-actions) {
-    display: flex !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
     gap: 0.4rem; margin-top: 0.5rem;
   }
+  :global(.match-card .mc-share) { grid-column: 1 / -1; }
+
   :global(.match-card .mc-action-btn) {
-    flex: 1; min-width: 0;
+    min-width: 0;
     display: inline-flex; align-items: center; justify-content: center;
-    gap: 0.35rem; height: 38px; padding: 0 0.5rem;
+    gap: 0.4rem; height: 40px; padding: 0 0.7rem;
     background: rgba(255,255,255,0.04); border: 1px solid var(--border);
     color: var(--text-muted); border-radius: 11px;
-    font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.72rem;
     font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-    cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.1s;
+    cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.1s, box-shadow 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
   :global(.match-card .mc-action-btn:hover) {
@@ -1308,9 +1313,21 @@ import Layout from '../layouts/Layout.astro';
   :global(.match-card .mc-action-btn span) {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+
+  /* Share button: always neon-tinted (not just on hover) so it stands
+     out as the secondary CTA after REGISTER. Slightly larger height
+     than the calendar pair below + a subtle neon-glow on hover. */
+  :global(.match-card .mc-share) {
+    height: 44px;
+    background: rgba(0,255,65,0.1);
+    border-color: rgba(0,255,65,0.4);
+    color: var(--neon);
+    font-size: 0.78rem;
+  }
   :global(.match-card .mc-share:hover) {
-    color: var(--neon); border-color: rgba(0,255,65,0.35);
-    background: rgba(0,255,65,0.06);
+    background: rgba(0,255,65,0.2);
+    border-color: rgba(0,255,65,0.6);
+    box-shadow: 0 0 20px rgba(0,255,65,0.15);
   }
 
   [data-theme="light"] :global(.match-card .mc-action-btn) {
