@@ -878,12 +878,7 @@ const canonicalUrl = Astro.url.href;
     border-radius: 14px; padding: 0.85rem 1rem;
     font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary);
     white-space: pre-wrap; word-break: break-word;
-    margin-bottom: 1rem; max-height: 9.5em; overflow: hidden;
-    position: relative;
-  }
-  .share-preview::after {
-    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2em;
-    background: linear-gradient(transparent, var(--card)); pointer-events: none;
+    margin-bottom: 1rem;
   }
   .share-options { display: flex; flex-direction: column; gap: 0.55rem; }
   .share-option {
