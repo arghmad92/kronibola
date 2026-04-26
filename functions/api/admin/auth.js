@@ -80,19 +80,21 @@ export async function onRequest(context) {
   const username = String(usernameRaw).trim().toLowerCase();
   if (!password) return badCreds();
 
-  // Owner override: any username is accepted as long as the password matches
-  // ADMIN_PASSWORD. This unblocks bootstrap (no rows in `Admins` yet) and
-  // serves as the break-glass recovery if every per-admin password is lost.
-  // Owner sessions are flagged so feature endpoints can refuse mutations
-  // that need a real admin identity (e.g. applying for leave).
-  if (password === adminPassword) {
-    const displayName = username ? username.toUpperCase() : 'OWNER';
+  // Owner override is restricted to the reserved username "owner". Any other
+  // username has to authenticate against the Admins sheet — the override
+  // can no longer be used to impersonate a real admin account by typing
+  // their name in the username field. Reserves the bootstrap/recovery
+  // identity behind a single, well-known label.
+  //
+  // Bootstrap: log in with username `owner` + ADMIN_PASSWORD env var.
+  // Recovery: same path, even after real admins exist.
+  if (username === 'owner' && password === adminPassword) {
     const token = await issueToken({
-      username: username || 'owner',
-      displayName,
+      username: 'owner',
+      displayName: 'OWNER',
       isOwner: true,
     }, adminPassword);
-    return json({ success: true, token, displayName, isOwner: true });
+    return json({ success: true, token, displayName: 'OWNER', isOwner: true });
   }
 
   // Per-admin login: look up the username in the `Admins` sheet and verify

@@ -12,8 +12,16 @@ function normUsername(s) {
   return String(s || '').trim().toLowerCase();
 }
 
+// "owner" is reserved for the env-var owner-override session in auth.js.
+// Other names that could clash with audit display strings are also blocked.
+const RESERVED_USERNAMES = new Set(['owner', 'admin', 'root', 'system']);
+
 function isValidUsername(u) {
   return /^[a-z0-9._-]{2,32}$/.test(u);
+}
+
+function isReservedUsername(u) {
+  return RESERVED_USERNAMES.has(u);
 }
 
 // Strip the password hash from rows we send back to the client. The hash
@@ -55,6 +63,7 @@ export async function onRequest(context) {
       const active = String((body && body.active) || 'Yes');
 
       if (!isValidUsername(username)) return json({ error: 'Username must be 2–32 lowercase letters, digits, dot, underscore or dash' }, 400);
+      if (isReservedUsername(username)) return json({ error: `"${username}" is a reserved username — pick another` }, 400);
       if (!displayName) return json({ error: 'Display name is required' }, 400);
       if (password.length < 6) return json({ error: 'Password must be at least 6 characters' }, 400);
 
