@@ -58,7 +58,12 @@ async function issueToken({ username, displayName, isOwner }, secret) {
 }
 
 // Generic credentials error — never reveal whether a username exists.
-const BAD_CREDS = json({ success: false, error: 'Invalid username or password' }, 401);
+// Built per-call rather than cached at module scope: Cloudflare Workers v2
+// forbids constructing a Response object during global init (counts as
+// disallowed I/O setup), which broke the deploy.
+function badCreds() {
+  return json({ success: false, error: 'Invalid username or password' }, 401);
+}
 
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
@@ -73,7 +78,7 @@ export async function onRequest(context) {
   const usernameRaw = (body && body.username) || '';
   const password = (body && body.password) || '';
   const username = String(usernameRaw).trim().toLowerCase();
-  if (!password) return BAD_CREDS;
+  if (!password) return badCreds();
 
   // Owner override: any username is accepted as long as the password matches
   // ADMIN_PASSWORD. This unblocks bootstrap (no rows in `Admins` yet) and
@@ -92,7 +97,7 @@ export async function onRequest(context) {
 
   // Per-admin login: look up the username in the `Admins` sheet and verify
   // the PBKDF2 hash. Generic 401 on any failure — no user enumeration.
-  if (!username) return BAD_CREDS;
+  if (!username) return badCreds();
   let admins;
   try { admins = await readSheet(context.env, 'Admins'); }
   catch (e) {
@@ -104,11 +109,11 @@ export async function onRequest(context) {
     String(r.Username || '').trim().toLowerCase() === username
     && String(r.Active || '').trim().toLowerCase() === 'yes'
   );
-  if (!row) return BAD_CREDS;
+  if (!row) return badCreds();
 
   const hash = String(row['Password Hash'] || '');
   const ok = hash ? await verifyPassword(password, hash) : false;
-  if (!ok) return BAD_CREDS;
+  if (!ok) return badCreds();
 
   const displayName = String(row['Display Name'] || row.Username || username).trim() || username;
   const token = await issueToken({
