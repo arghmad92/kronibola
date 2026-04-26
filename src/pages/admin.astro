@@ -276,6 +276,7 @@ import Layout from '../layouts/Layout.astro';
           <button type="button" class="cal-chip active" data-stream="all">All</button>
           <button type="button" class="cal-chip" data-stream="games"><span class="cal-dot cal-dot--game"></span>Games</button>
           <button type="button" class="cal-chip" data-stream="holidays"><span class="cal-dot cal-dot--holiday"></span>Holidays</button>
+          <button type="button" class="cal-chip" data-stream="school"><span class="cal-dot cal-dot--school"></span>School</button>
           <button type="button" class="cal-chip" data-stream="leave"><span class="cal-dot cal-dot--leave"></span>Leave</button>
         </div>
 
@@ -1738,7 +1739,14 @@ import Layout from '../layouts/Layout.astro';
   // ===========================================================================
   let holidaysData: any[] = [];
   let leavesData: any[] = [];
-  let calendarFilter: 'all' | 'games' | 'holidays' | 'leave' = 'all';
+  let calendarFilter: 'all' | 'games' | 'holidays' | 'school' | 'leave' = 'all';
+  // A holiday row in the Holidays sheet whose Type contains "school" is
+  // surfaced as the dedicated `school` event kind (purple) instead of the
+  // generic `holiday` kind (amber). Lets us colour and filter them apart
+  // without needing a separate sheet.
+  function isSchoolHoliday(row: any): boolean {
+    return /school/i.test(String(row && row.Type || ''));
+  }
   // Month being viewed (year + 0-indexed month) and the day selected for
   // the details panel below the grid. Always interpreted in Malaysia time.
   let calViewYear = 0;
@@ -1803,20 +1811,29 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
+  type EventKind = 'game' | 'holiday' | 'school' | 'leave';
   // Build a map: ymd → array of events { kind, payload } so the grid render
   // can look up cells in O(1). Leave entries are expanded across each
-  // covered day. Filters drop entire categories from the map.
-  function buildEventMap(): Record<string, Array<{ kind: 'game' | 'holiday' | 'leave'; payload: any }>> {
-    const map: Record<string, Array<{ kind: 'game' | 'holiday' | 'leave'; payload: any }>> = {};
-    const push = (ymd: string, kind: 'game' | 'holiday' | 'leave', payload: any) => {
+  // covered day. School-holiday rows (Type contains "school") are emitted
+  // as the dedicated `school` kind so the UI can colour them apart from
+  // public holidays. Filters drop entire categories from the map.
+  function buildEventMap(): Record<string, Array<{ kind: EventKind; payload: any }>> {
+    const map: Record<string, Array<{ kind: EventKind; payload: any }>> = {};
+    const push = (ymd: string, kind: EventKind, payload: any) => {
       if (!map[ymd]) map[ymd] = [];
       map[ymd].push({ kind, payload });
     };
     if (calendarFilter === 'all' || calendarFilter === 'games') {
       for (const s of sessionsData) if (s.Date) push(s.Date, 'game', s);
     }
-    if (calendarFilter === 'all' || calendarFilter === 'holidays') {
-      for (const h of holidaysData) if (h.Date) push(h.Date, 'holiday', h);
+    for (const h of holidaysData) {
+      if (!h.Date) continue;
+      const isSchool = isSchoolHoliday(h);
+      if (isSchool && (calendarFilter === 'all' || calendarFilter === 'school')) {
+        push(h.Date, 'school', h);
+      } else if (!isSchool && (calendarFilter === 'all' || calendarFilter === 'holidays')) {
+        push(h.Date, 'holiday', h);
+      }
     }
     if (calendarFilter === 'all' || calendarFilter === 'leave') {
       for (const lv of leavesData) {
@@ -1902,16 +1919,27 @@ import Layout from '../layouts/Layout.astro';
       const kinds = new Set(evts.map((e) => e.kind));
       const isToday = c.ymd === today;
       const isSelected = c.ymd === calSelectedDate;
+
+      // Single tint class per cell, picked by priority. Match days take
+      // precedence so they pop visually on the grid; today/selected
+      // states are still applied on top via separate classes.
+      const tint =
+        kinds.has('game')    ? 'cal-cell--has-game'    :
+        kinds.has('school')  ? 'cal-cell--has-school'  :
+        kinds.has('holiday') ? 'cal-cell--has-holiday' :
+        kinds.has('leave')   ? 'cal-cell--has-leave'   : '';
+
       const classes = [
         'cal-cell',
         c.outside ? 'cal-cell--outside' : '',
         isToday ? 'cal-cell--today' : '',
         isSelected ? 'cal-cell--selected' : '',
         evts.length ? 'cal-cell--has-events' : '',
+        tint,
       ].filter(Boolean).join(' ');
 
-      // Up to 3 colored dots indicating event categories on this day.
-      const dotOrder: Array<'game' | 'holiday' | 'leave'> = ['game', 'holiday', 'leave'];
+      // Up to 4 colored dots indicating event categories on this day.
+      const dotOrder: EventKind[] = ['game', 'school', 'holiday', 'leave'];
       const dotsHtml = dotOrder.filter((k) => kinds.has(k))
         .map((k) => `<span class="cal-dot cal-dot--${k}"></span>`).join('');
 
@@ -1961,6 +1989,17 @@ import Layout from '../layouts/Layout.astro';
               <span class="cal-event-meta">${calEsc(h.Type || 'Custom')}</span>
             </div>
             <button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove holiday">&times;</button>
+          </div>`;
+        }
+        if (e.kind === 'school') {
+          const h = e.payload;
+          return `<div class="cal-event cal-event--school">
+            <span class="cal-event-icon">🎒</span>
+            <div class="cal-event-body">
+              <span class="cal-event-title">${calEsc(h.Name || 'School Holiday')}</span>
+              <span class="cal-event-meta">${calEsc(h.Type || 'School')}</span>
+            </div>
+            <button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove">&times;</button>
           </div>`;
         }
         // leave
@@ -2103,8 +2142,8 @@ import Layout from '../layouts/Layout.astro';
     }
   });
 
-  // === Sync Malaysia 2026 Klang Valley public holidays ===
-  // Pre-curated list. Lunar/Islamic/Hindu dates are based on widely-published
+  // === Sync Malaysia 2026 Klang Valley public holidays + school breaks ===
+  // Pre-curated. Lunar/Islamic/Hindu dates are based on widely-published
   // 2026 forecasts and may need adjustment by ±1 day once moon-sighting
   // announcements land — admins can edit any row inline afterwards.
   const KLANG_VALLEY_2026: Array<{ Date: string; Name: string; Type: string }> = [
@@ -2129,24 +2168,69 @@ import Layout from '../layouts/Layout.astro';
     { Date: '2026-12-25', Name: 'Christmas Day', Type: 'Federal' },
   ];
 
+  // School-term breaks for Group A (Klang Valley + most peninsula states).
+  // Based on the typical KPM/MoE calendar pattern; verify against the
+  // official 2026 academic year release if MOE published a different
+  // shape. Each range is expanded into one row per day at sync time.
+  const KLANG_VALLEY_SCHOOL_2026: Array<{ from: string; to: string; name: string }> = [
+    { from: '2026-03-28', to: '2026-04-05', name: 'School Holiday — Term 1 Break' },
+    { from: '2026-05-23', to: '2026-05-31', name: 'School Holiday — Mid-Year Break' },
+    { from: '2026-07-25', to: '2026-08-02', name: 'School Holiday — Term 3 Break' },
+    { from: '2026-11-28', to: '2026-12-31', name: 'School Holiday — Year-End Break' },
+  ];
+
+  function expandSchoolBreaks(): Array<{ Date: string; Name: string; Type: string }> {
+    const out: Array<{ Date: string; Name: string; Type: string }> = [];
+    for (const r of KLANG_VALLEY_SCHOOL_2026) {
+      const from = parseYmd(r.from);
+      const to = parseYmd(r.to);
+      if (!from || !to) continue;
+      const start = new Date(from.y, from.m, from.d);
+      const end = new Date(to.y, to.m, to.d);
+      for (let cur = start; cur <= end; cur.setDate(cur.getDate() + 1)) {
+        out.push({
+          Date: ymdFromYMD(cur.getFullYear(), cur.getMonth(), cur.getDate()),
+          Name: r.name,
+          Type: 'School',
+        });
+      }
+    }
+    return out;
+  }
+
   document.getElementById('syncMyHolidaysBtn')!.addEventListener('click', async () => {
-    if (!confirm('Pre-fill Malaysia (Klang Valley) 2026 public holidays?\n\nExisting custom holidays on different dates are kept; same-date entries are updated. You can still delete any row afterwards.')) return;
+    const schoolDays = expandSchoolBreaks();
+    const totalSeed = KLANG_VALLEY_2026.length + schoolDays.length;
+    if (!confirm(`Pre-fill Malaysia (Klang Valley) 2026 public holidays + school breaks?\n\n${KLANG_VALLEY_2026.length} public holidays\n${schoolDays.length} school-break days\n\nExisting custom holidays on different dates are kept; same-date entries are updated. You can still delete any row afterwards.`)) return;
     const btn = document.getElementById('syncMyHolidaysBtn') as HTMLButtonElement;
     btn.disabled = true;
     const original = btn.textContent;
     btn.textContent = 'SYNCING…';
     try {
-      // Merge: keep all existing holidays, override or add the curated ones.
-      const seedByDate = new Map(KLANG_VALLEY_2026.map((h) => [h.Date, h]));
-      const merged = [...holidaysData];
-      for (let i = 0; i < merged.length; i++) {
-        const seed = seedByDate.get(merged[i].Date);
+      // Merge order: school breaks first, public holidays second. So if a
+      // public holiday falls inside a school break window (which is the
+      // norm — that's why kids get the week off), the public holiday
+      // overrides the school-break entry on that exact date.
+      const seedByDate = new Map<string, { Date: string; Name: string; Type: string }>();
+      for (const s of schoolDays) seedByDate.set(s.Date, s);
+      for (const h of KLANG_VALLEY_2026) seedByDate.set(h.Date, h);
+
+      const merged: any[] = [];
+      const seenDates = new Set<string>();
+      for (const row of holidaysData) {
+        const seed = seedByDate.get(row.Date);
         if (seed) {
-          merged[i] = { Date: seed.Date, Name: seed.Name, Type: seed.Type };
-          seedByDate.delete(merged[i].Date);
+          merged.push({ Date: seed.Date, Name: seed.Name, Type: seed.Type });
+          seenDates.add(row.Date);
+          seedByDate.delete(row.Date);
+        } else {
+          merged.push(row);
+          seenDates.add(row.Date);
         }
       }
-      for (const seed of seedByDate.values()) merged.push(seed);
+      for (const seed of seedByDate.values()) {
+        if (!seenDates.has(seed.Date)) merged.push(seed);
+      }
 
       const res = await fetch(`${API}/admin/holidays`, {
         method: 'POST',
@@ -2157,7 +2241,7 @@ import Layout from '../layouts/Layout.astro';
       if (!res.ok || !data.success) throw new Error(data.error || 'failed');
       holidaysData = Array.isArray(data.holidays) ? data.holidays : merged;
       renderCalendar();
-      showToast(`${KLANG_VALLEY_2026.length} holidays synced`);
+      showToast(`${totalSeed} entries synced`);
     } catch (err: any) {
       showToast(err.message || 'Sync failed', 'error');
     } finally {
@@ -2712,7 +2796,30 @@ import Layout from '../layouts/Layout.astro';
   }
   .cal-dot--game     { background: var(--neon); box-shadow: 0 0 6px rgba(0,255,65,0.5); }
   .cal-dot--holiday  { background: #ff9500; box-shadow: 0 0 6px rgba(255,149,0,0.5); }
+  .cal-dot--school   { background: #a78bfa; box-shadow: 0 0 6px rgba(167,139,250,0.5); }
   .cal-dot--leave    { background: #00c4ff; box-shadow: 0 0 6px rgba(0,196,255,0.5); }
+
+  /* Cell tint per category. Game wins on conflicts (set in render order
+     in JS), so match days pop strongest on the grid even when they
+     coincide with a holiday or school break. Today/selected ring + fill
+     stack on top of these tints. */
+  .cal-cell--has-game {
+    background: rgba(0,255,65,0.08);
+    border-color: rgba(0,255,65,0.3);
+  }
+  .cal-cell--has-game .cal-cell-num { color: var(--neon); font-weight: 800; }
+  .cal-cell--has-school {
+    background: rgba(167,139,250,0.07);
+    border-color: rgba(167,139,250,0.22);
+  }
+  .cal-cell--has-holiday {
+    background: rgba(255,149,0,0.07);
+    border-color: rgba(255,149,0,0.22);
+  }
+  .cal-cell--has-leave {
+    background: rgba(0,196,255,0.05);
+    border-color: rgba(0,196,255,0.18);
+  }
 
   /* Day-details panel below the grid */
   .cal-day-details { margin-top: 1rem; }
@@ -2747,6 +2854,7 @@ import Layout from '../layouts/Layout.astro';
   .cal-event--game { cursor: pointer; }
   .cal-event--game:hover { background: rgba(0,255,65,0.04); border-color: rgba(0,255,65,0.25); }
   .cal-event--holiday { border-left: 3px solid #ff9500; }
+  .cal-event--school  { border-left: 3px solid #a78bfa; }
   .cal-event--leave   { border-left: 3px solid #00c4ff; }
   .cal-event-icon {
     flex-shrink: 0; width: 30px; height: 30px;
