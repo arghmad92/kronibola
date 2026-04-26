@@ -194,6 +194,10 @@ import Layout from '../layouts/Layout.astro';
           <div class="progress-track"><div class="progress-fill" id="bar-${i}" style="width:0%"></div></div>
         </div>
         <button class="btn btn--primary mc-register" data-idx="${i}" style="width:100%">REGISTER NOW</button>
+        <button type="button" class="mc-share" data-idx="${i}" aria-label="Share this match">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Share match</span>
+        </button>
       </div>
     `).join('');
 
@@ -201,7 +205,7 @@ import Layout from '../layouts/Layout.astro';
     cardsEl.querySelectorAll('.match-card').forEach((card) => {
       card.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('.mc-register') || target.closest('.mc-maps-btn')) return;
+        if (target.closest('.mc-register') || target.closest('.mc-maps-btn') || target.closest('.mc-share')) return;
         selectSession(parseInt((card as HTMLElement).dataset.idx!));
       });
     });
@@ -212,6 +216,15 @@ import Layout from '../layouts/Layout.astro';
         const idx = parseInt((btn as HTMLElement).dataset.idx!);
         selectSession(idx);
         openRegistration();
+      });
+    });
+
+    // Share button handlers — open the share modal for that specific match.
+    cardsEl.querySelectorAll('.mc-share').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt((btn as HTMLElement).dataset.idx!);
+        openShareModal(sessions[idx]);
       });
     });
 
@@ -713,6 +726,252 @@ import Layout from '../layouts/Layout.astro';
     reader.readAsDataURL(file);
   });
 
+  // --- Share match modal -------------------------------------------------
+  // Surfaced from the share button on each match card. Builds a friendly
+  // text payload for WhatsApp/clipboard, and lazily generates a 9:16
+  // story-format image for Instagram (Web Share API on mobile, download
+  // fallback on desktop). The modal lives in Layout.astro alongside the
+  // other modals so it inherits the same slide-up sheet styling.
+  const shareModal = document.getElementById('shareModal')!;
+  const sharePreview = document.getElementById('sharePreview')!;
+  const shareSub = document.getElementById('shareSub')!;
+  const shareIgSub = document.getElementById('shareIgSub')!;
+  const shareCopyTitle = document.getElementById('shareCopyTitle')!;
+  let currentShareSession: any = null;
+
+  document.getElementById('shareClose')!.addEventListener('click', () => { shareModal.style.display = 'none'; });
+  shareModal.addEventListener('click', (e) => { if (e.target === shareModal) shareModal.style.display = 'none'; });
+
+  function buildShareText(s: any): string {
+    const dateStr = (() => {
+      try {
+        return new Date(s.Date + 'T00:00:00+08:00').toLocaleDateString('en-MY', {
+          weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Kuala_Lumpur',
+        });
+      } catch { return s.Date; }
+    })();
+    const lines = [
+      `⚽ ${s['Session Name'] || 'KroniBola'} — Game On!`,
+      '',
+      `📅 ${dateStr}`,
+      `⏰ ${formatTime(s.Time || '')}`,
+      `📍 ${s.Location || ''}`,
+      `💰 RM ${s.Fee}/pax`,
+      '',
+      'Register here 👉 https://kronibola.com',
+    ];
+    return lines.filter(Boolean).join('\n');
+  }
+
+  function openShareModal(s: any) {
+    currentShareSession = s;
+    sharePreview.textContent = buildShareText(s);
+    shareSub.textContent = s['Session Name'] ? `${s['Session Name']} · ${s.Date}` : 'Tell your friends 👇';
+    shareCopyTitle.textContent = 'Copy link & details';
+    shareIgSub.textContent = 'Generates a story image';
+    shareModal.style.display = '';
+  }
+
+  document.getElementById('shareWa')!.addEventListener('click', () => {
+    if (!currentShareSession) return;
+    const text = buildShareText(currentShareSession);
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  });
+
+  document.getElementById('shareCopy')!.addEventListener('click', async () => {
+    if (!currentShareSession) return;
+    const btn = document.getElementById('shareCopy') as HTMLButtonElement;
+    try {
+      await navigator.clipboard.writeText(buildShareText(currentShareSession));
+      btn.classList.add('share-option--copied');
+      shareCopyTitle.textContent = 'Copied!';
+      setTimeout(() => {
+        btn.classList.remove('share-option--copied');
+        shareCopyTitle.textContent = 'Copy link & details';
+      }, 1800);
+    } catch {
+      shareCopyTitle.textContent = 'Copy failed — long-press the preview';
+    }
+  });
+
+  // --- Instagram story image generation ---
+  // Renders a 1080x1920 canvas with the match details + KB branding, then
+  // hands the resulting Blob to the Web Share API (mobile share sheet
+  // includes Instagram). Desktop browsers fall back to a download.
+  function loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+    if (!text) return [];
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let line = '';
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+        if (lines.length === maxLines - 1) {
+          // Last allowed line — append remaining as truncated
+          const rest = words.slice(words.indexOf(word)).join(' ');
+          let tail = rest;
+          while (ctx.measureText(tail + '…').width > maxWidth && tail.length) tail = tail.slice(0, -1);
+          lines.push(tail + (tail.length < rest.length ? '…' : ''));
+          return lines;
+        }
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  async function generateStoryImage(s: any): Promise<Blob> {
+    const W = 1080, H = 1920;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+
+    // Background — dark with a subtle neon glow at the top
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0a1505');
+    bgGrad.addColorStop(0.45, '#080808');
+    bgGrad.addColorStop(1, '#000000');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Top neon strip
+    ctx.fillStyle = '#00FF41';
+    ctx.fillRect(0, 0, W, 12);
+
+    // Radial glow behind the title
+    const glow = ctx.createRadialGradient(W / 2, 700, 50, W / 2, 700, 700);
+    glow.addColorStop(0, 'rgba(0,255,65,0.18)');
+    glow.addColorStop(1, 'rgba(0,255,65,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+
+    // Logo (best-effort — silent fallback if image fails to load)
+    try {
+      const logo = await loadImage('/logo-v2.png');
+      const lw = 160; const lh = 160;
+      ctx.drawImage(logo, (W - lw) / 2, 200, lw, lh);
+    } catch {}
+
+    ctx.textAlign = 'center';
+
+    // Brand wordmark
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = 'bold 38px system-ui, -apple-system, sans-serif';
+    ctx.fillText('KRONIBOLA', W / 2, 410);
+
+    // MATCH DAY label
+    ctx.fillStyle = '#00FF41';
+    ctx.font = 'bold 56px system-ui, -apple-system, sans-serif';
+    ctx.fillText('⚽  MATCH DAY  ⚽', W / 2, 530);
+
+    // Session name (uppercase, with simple wrap)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 96px system-ui, -apple-system, sans-serif';
+    const sessionName = String(s['Session Name'] || 'KRONIBOLA').toUpperCase();
+    const sessionLines = wrapText(ctx, sessionName, 940, 2);
+    let y = 700;
+    for (const line of sessionLines) { ctx.fillText(line, W / 2, y); y += 110; }
+
+    // Date — day of week (large) + numeric date (smaller)
+    let dayName = ''; let dateNum = '';
+    try {
+      const d = new Date(s.Date + 'T00:00:00+08:00');
+      dayName = d.toLocaleDateString('en-MY', { weekday: 'long', timeZone: 'Asia/Kuala_Lumpur' }).toUpperCase();
+      dateNum = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kuala_Lumpur' });
+    } catch { dayName = s.Date || ''; dateNum = ''; }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 78px system-ui, -apple-system, sans-serif';
+    ctx.fillText(dayName, W / 2, 1010);
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = '54px system-ui, -apple-system, sans-serif';
+    ctx.fillText(dateNum, W / 2, 1085);
+
+    // Time
+    ctx.fillStyle = '#00FF41';
+    ctx.font = 'bold 70px system-ui, -apple-system, sans-serif';
+    ctx.fillText(formatTime(s.Time || ''), W / 2, 1230);
+
+    // Location (wrapped)
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '46px system-ui, -apple-system, sans-serif';
+    const locLines = wrapText(ctx, `📍 ${s.Location || ''}`, 940, 2);
+    y = 1340;
+    for (const line of locLines) { ctx.fillText(line, W / 2, y); y += 64; }
+
+    // Fee
+    ctx.fillStyle = '#00FF41';
+    ctx.font = 'bold 84px system-ui, -apple-system, sans-serif';
+    ctx.fillText(`RM ${s.Fee}/PAX`, W / 2, 1560);
+
+    // Bottom CTA
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = '40px system-ui, -apple-system, sans-serif';
+    ctx.fillText('Register at', W / 2, 1750);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 64px system-ui, -apple-system, sans-serif';
+    ctx.fillText('kronibola.com', W / 2, 1830);
+
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/jpeg', 0.92);
+    });
+  }
+
+  document.getElementById('shareIg')!.addEventListener('click', async () => {
+    if (!currentShareSession) return;
+    const btn = document.getElementById('shareIg') as HTMLButtonElement;
+    btn.disabled = true;
+    shareIgSub.textContent = 'Generating image…';
+    try {
+      const blob = await generateStoryImage(currentShareSession);
+      const safeDate = String(currentShareSession.Date || 'match').replace(/[^a-zA-Z0-9-]/g, '');
+      const file = new File([blob], `kronibola-${safeDate}.jpg`, { type: 'image/jpeg' });
+      const shareData: any = {
+        files: [file],
+        title: `KroniBola — ${currentShareSession['Session Name'] || 'Match'}`,
+        text: buildShareText(currentShareSession),
+      };
+      // Web Share API with files works on most modern mobile browsers and
+      // surfaces Instagram in the share sheet. Desktop typically lacks
+      // file sharing — fall back to a download in that case.
+      if ((navigator as any).canShare && (navigator as any).canShare(shareData)) {
+        try {
+          await (navigator as any).share(shareData);
+          shareIgSub.textContent = 'Shared!';
+        } catch (err: any) {
+          // User cancelled, or share aborted — silent reset
+          shareIgSub.textContent = err && err.name === 'AbortError' ? 'Generates a story image' : 'Share cancelled';
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = file.name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        shareIgSub.textContent = 'Downloaded — open Instagram and post as story';
+      }
+    } catch {
+      shareIgSub.textContent = 'Could not generate image. Try Copy instead.';
+    } finally {
+      btn.disabled = false;
+      setTimeout(() => { shareIgSub.textContent = 'Generates a story image'; }, 6000);
+    }
+  });
+
   // --- Check Status Modal ---
   const statusModal = document.getElementById('statusModal')!;
   document.getElementById('checkStatusBtn')!.addEventListener('click', () => { statusModal.style.display = ''; });
@@ -1022,9 +1281,28 @@ import Layout from '../layouts/Layout.astro';
   :global(.match-card .mc-countdown),
   :global(.match-card .mc-slots),
   :global(.match-card .mc-register),
-  :global(.match-card .mc-maps-btn) {
+  :global(.match-card .mc-maps-btn),
+  :global(.match-card .mc-share) {
     display: none !important;
   }
+
+  /* Share button (active card only) — small ghost-style button under REGISTER. */
+  :global(.match-card.active .mc-share) {
+    display: inline-flex !important;
+    align-items: center; justify-content: center; gap: 0.4rem;
+    width: 100%; margin-top: 0.5rem; height: 38px; padding: 0 0.8rem;
+    background: transparent; border: 1px solid var(--border-light);
+    color: var(--text-muted); border-radius: 12px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.74rem;
+    font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :global(.match-card.active .mc-share:hover) {
+    color: var(--neon); border-color: rgba(0,255,65,0.35);
+    background: rgba(0,255,65,0.05);
+  }
+  :global(.match-card.active .mc-share:active) { transform: scale(0.985); }
 
   :global(.match-card .mc-details) { margin-bottom: 0; }
 

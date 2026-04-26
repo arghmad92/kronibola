@@ -304,6 +304,52 @@ const canonicalUrl = Astro.url.href;
       </div>
     </div>
 
+    <!-- Share Match Modal -->
+    <div class="modal-overlay" id="shareModal" style="display:none">
+      <div class="modal">
+        <button class="modal-close" id="shareClose">&times;</button>
+        <h3 class="modal-title">SHARE <span class="neon-text">MATCH</span></h3>
+        <p class="modal-sub" id="shareSub">Tell your friends 👇</p>
+
+        <div class="share-preview" id="sharePreview"></div>
+
+        <div class="share-options">
+          <button type="button" class="share-option share-option--wa" id="shareWa">
+            <span class="share-option-icon" style="background:#25D366;color:#fff">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.892c0 2.096.549 4.14 1.595 5.945L0 24l6.335-1.652c1.746.943 3.71 1.444 5.71 1.447h.006c6.585 0 11.946-5.336 11.949-11.896 0-3.176-1.24-6.165-3.495-8.411L20.52 3.449zM12.05 21.785h-.004c-1.78 0-3.527-.479-5.054-1.385l-.362-.215-3.762.98 1.005-3.66-.236-.376c-.99-1.575-1.514-3.394-1.512-5.26.003-5.45 4.456-9.886 9.929-9.886 2.65 0 5.142 1.034 7.018 2.91 1.876 1.875 2.913 4.367 2.911 7.014-.005 5.45-4.458 9.878-9.93 9.878z"/></svg>
+            </span>
+            <span class="share-option-body">
+              <span class="share-option-title">WhatsApp</span>
+              <span class="share-option-sub">Send to a friend or group</span>
+            </span>
+            <svg class="share-option-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <button type="button" class="share-option share-option--ig" id="shareIg">
+            <span class="share-option-icon" style="background:linear-gradient(135deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5);color:#fff">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            </span>
+            <span class="share-option-body">
+              <span class="share-option-title">Instagram Story</span>
+              <span class="share-option-sub" id="shareIgSub">Generates a story image</span>
+            </span>
+            <svg class="share-option-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <button type="button" class="share-option share-option--copy" id="shareCopy">
+            <span class="share-option-icon" style="background:rgba(0,255,65,0.12);color:var(--neon);border:1px solid rgba(0,255,65,0.3)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </span>
+            <span class="share-option-body">
+              <span class="share-option-title" id="shareCopyTitle">Copy link &amp; details</span>
+              <span class="share-option-sub">Paste anywhere</span>
+            </span>
+            <svg class="share-option-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Theme toggle logic -->
     <script is:inline>
       document.getElementById('themeToggle').addEventListener('click', function() {
@@ -825,6 +871,52 @@ const canonicalUrl = Astro.url.href;
   .modal-page.active { display: flex; }
   .qr-img { border-radius: 16px; border: 1px solid var(--border); width: 100%; height: auto; }
   .done-icon { font-size: 3.5rem; text-align: center; margin-bottom: 0.5rem; }
+
+  /* Share modal — surfaced from each match card */
+  .share-preview {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 14px; padding: 0.85rem 1rem;
+    font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary);
+    white-space: pre-wrap; word-break: break-word;
+    margin-bottom: 1rem; max-height: 9.5em; overflow: hidden;
+    position: relative;
+  }
+  .share-preview::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2em;
+    background: linear-gradient(transparent, var(--card)); pointer-events: none;
+  }
+  .share-options { display: flex; flex-direction: column; gap: 0.55rem; }
+  .share-option {
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 0.7rem 0.85rem;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 14px; cursor: pointer; text-align: left;
+    color: var(--text); font-family: inherit;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .share-option:hover { background: rgba(255,255,255,0.06); border-color: var(--border-light); }
+  .share-option:active { transform: scale(0.985); }
+  .share-option:disabled { opacity: 0.6; cursor: wait; }
+  .share-option-icon {
+    flex-shrink: 0; width: 42px; height: 42px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .share-option-body { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 0.15rem; }
+  .share-option-title {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.92rem; letter-spacing: 0.01em;
+  }
+  .share-option-sub { font-size: 0.7rem; color: var(--text-muted); }
+  .share-option-arrow { color: var(--text-muted); flex-shrink: 0; }
+  .share-option--copied { border-color: rgba(0,255,65,0.4); background: rgba(0,255,65,0.06); }
+  .share-option--copied .share-option-title { color: var(--neon); }
+
+  [data-theme="light"] .share-preview { background: rgba(0,0,0,0.03); }
+  [data-theme="light"] .share-preview::after { background: linear-gradient(transparent, var(--card)); }
+  [data-theme="light"] .share-option { background: rgba(0,0,0,0.02); }
+  [data-theme="light"] .share-option:hover { background: rgba(0,0,0,0.05); }
 
   /* Page header shared */
   .page-header {
