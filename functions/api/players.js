@@ -62,6 +62,19 @@ async function flagOverdue(env, players) {
   return players;
 }
 
+// Public projection — what we let leave the server. The lineup and
+// leaderboard only need name, status, and date; everything else is PII or
+// internal admin data. Anyone calling /api/players (this is unauthenticated)
+// gets only these fields. The admin equivalent /api/admin/players is auth-
+// gated and returns the full row.
+function publicPlayer(p) {
+  return {
+    'Session Date': p['Session Date'] || '',
+    'Player Name': p['Player Name'] || '',
+    'Payment Status': p['Payment Status'] || '',
+  };
+}
+
 export async function onRequest(context) {
   const url = new URL(context.request.url);
   const date = url.searchParams.get('date');
@@ -69,8 +82,8 @@ export async function onRequest(context) {
   try {
     let all = await readSheet(context.env, 'Registrations');
     all = await flagOverdue(context.env, all);
-    const players = date ? all.filter((p) => String(p['Session Date']) === date) : all;
-    return json({ players });
+    const filtered = date ? all.filter((p) => String(p['Session Date']) === date) : all;
+    return json({ players: filtered.map(publicPlayer) });
   } catch (e) {
     console.error('Players error:', e);
     return json({ error: 'An error occurred. Please try again.' }, 500);

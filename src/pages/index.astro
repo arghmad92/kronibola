@@ -1040,6 +1040,10 @@ import Layout from '../layouts/Layout.astro';
           const refCode = input.dataset.ref || '';
           const plate = input.value.replace(/\s/g, '').toUpperCase();
           if (!plate) { alert('Please enter a car plate number'); return; }
+          // Re-read the phone the user entered for the status lookup. The
+          // server requires it to verify the requester owns the row before
+          // accepting the plate change.
+          const phoneForAuth = (document.getElementById('statusPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
 
           saveBtn.disabled = true;
           saveBtn.textContent = '...';
@@ -1047,7 +1051,7 @@ import Layout from '../layouts/Layout.astro';
             const res = await fetch(`${API}/update-plate`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ refCode, carPlate: plate }),
+              body: JSON.stringify({ refCode, carPlate: plate, phone: phoneForAuth }),
             });
             const data = await res.json();
             if (data.success) {
