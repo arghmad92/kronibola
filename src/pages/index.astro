@@ -86,20 +86,6 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <svg class="wa-group-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
-      <button class="btn btn--ghost" id="shareBtn" style="width:100%;margin-top:0.5rem">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        INVITE FRIENDS VIA WHATSAPP
-      </button>
-      <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
-        <button class="btn btn--ghost" id="calendarBtn" style="flex:1">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          GOOGLE
-        </button>
-        <button class="btn btn--ghost" id="appleCalBtn" style="flex:1">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 5-2.5 5-6.24 0-4.5-4-7.76-6-7.76-1.25 0-2 .5-3 .5s-1.75-.5-3-.5c-2 0-6 3.26-6 7.76 0 3.74 2 6.24 5 6.24 1.25 0 2.5-1.06 4-1.06z"/><path d="M10 2c1 .5 2 2 2 3.5-1.5 0-3-1-3.5-2.5C9 2 10 2 10 2z"/></svg>
-          APPLE
-        </button>
-      </div>
     </div>
   </main>
 </Layout>
@@ -194,10 +180,20 @@ import Layout from '../layouts/Layout.astro';
           <div class="progress-track"><div class="progress-fill" id="bar-${i}" style="width:0%"></div></div>
         </div>
         <button class="btn btn--primary mc-register" data-idx="${i}" style="width:100%">REGISTER NOW</button>
-        <button type="button" class="mc-share" data-idx="${i}" aria-label="Share this match">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          <span>Share match</span>
-        </button>
+        <div class="mc-actions">
+          <button type="button" class="mc-action-btn mc-share" data-idx="${i}" aria-label="Share this match">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <span>Share</span>
+          </button>
+          <button type="button" class="mc-action-btn mc-cal-google" data-idx="${i}" aria-label="Add to Google Calendar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Google</span>
+          </button>
+          <button type="button" class="mc-action-btn mc-cal-apple" data-idx="${i}" aria-label="Add to Apple Calendar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 5-2.5 5-6.24 0-4.5-4-7.76-6-7.76-1.25 0-2 .5-3 .5s-1.75-.5-3-.5c-2 0-6 3.26-6 7.76 0 3.74 2 6.24 5 6.24 1.25 0 2.5-1.06 4-1.06z"/><path d="M10 2c1 .5 2 2 2 3.5-1.5 0-3-1-3.5-2.5C9 2 10 2 10 2z"/></svg>
+            <span>Apple</span>
+          </button>
+        </div>
       </div>
     `).join('');
 
@@ -641,17 +637,12 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('confirmWaitlist')!.addEventListener('click', submitRegistration);
 
   // Share
-  document.getElementById('shareBtn')!.addEventListener('click', () => {
-    if (!currentSession) return;
-    const msg = `⚽ Join us for football!\n\n🏟 ${currentSession['Session Name']}\n📅 ${currentSession.Date}\n⏰ ${currentSession.Time}\n📍 ${currentSession.Location}\n💰 RM ${currentSession.Fee}\n\nRegister here: ${location.origin}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-  });
-
-  // Add to Calendar
-  document.getElementById('calendarBtn')!.addEventListener('click', () => {
-    if (!currentSession) return;
-    const time = parseTime(currentSession.Time);
-    let dateStr = currentSession.Date.replace(/\//g, '-');
+  // Add to Calendar — Google + Apple (.ics) handlers attached via event
+  // delegation on the match-cards container. Uses sessions[idx] from the
+  // clicked card so the buttons work even when not the active session.
+  function calendarDateRange(s: any): { startDT: string; endDT: string } {
+    const time = parseTime(s.Time);
+    const dateStr = String(s.Date || '').replace(/\//g, '-');
     let startDT = dateStr.replace(/-/g, '');
     let endDT = startDT;
     if (time) {
@@ -661,24 +652,26 @@ import Layout from '../layouts/Layout.astro';
       const endH = String((time.hours + 2) % 24).padStart(2, '0');
       endDT += `T${endH}${mm}00`;
     }
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(currentSession['Session Name'])}&dates=${startDT}/${endDT}&location=${encodeURIComponent(currentSession.Location)}&details=${encodeURIComponent('KroniBola match')}`;
-    window.open(url, '_blank');
-  });
+    return { startDT, endDT };
+  }
 
-  // Apple Calendar (.ics download)
-  document.getElementById('appleCalBtn')!.addEventListener('click', () => {
-    if (!currentSession) return;
-    const time = parseTime(currentSession.Time);
-    const dateStr = currentSession.Date.replace(/\//g, '-');
-    let startDT = dateStr.replace(/-/g, '');
-    let endDT = startDT;
-    if (time) {
-      const hh = String(time.hours).padStart(2, '0');
-      const mm = String(time.minutes).padStart(2, '0');
-      startDT += `T${hh}${mm}00`;
-      const endH = String((time.hours + 2) % 24).padStart(2, '0');
-      endDT += `T${endH}${mm}00`;
+  cardsEl.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const gBtn = target.closest('.mc-cal-google') as HTMLElement | null;
+    const aBtn = target.closest('.mc-cal-apple') as HTMLElement | null;
+    if (!gBtn && !aBtn) return;
+    e.stopPropagation();
+    const idx = parseInt(((gBtn || aBtn) as HTMLElement).dataset.idx!);
+    const s = sessions[idx];
+    if (!s) return;
+    const { startDT, endDT } = calendarDateRange(s);
+    if (gBtn) {
+      const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(s['Session Name'])}&dates=${startDT}/${endDT}&location=${encodeURIComponent(s.Location || '')}&details=${encodeURIComponent('KroniBola match')}`;
+      window.open(url, '_blank');
+      return;
     }
+    // Apple — generate an .ics download for this match.
+    const safeDate = String(s.Date || 'match').replace(/[^a-zA-Z0-9-]/g, '');
     const ics = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -686,8 +679,8 @@ import Layout from '../layouts/Layout.astro';
       'BEGIN:VEVENT',
       `DTSTART:${startDT}`,
       `DTEND:${endDT}`,
-      `SUMMARY:${currentSession['Session Name']}`,
-      `LOCATION:${currentSession.Location}`,
+      `SUMMARY:${s['Session Name'] || 'KroniBola match'}`,
+      `LOCATION:${s.Location || ''}`,
       'DESCRIPTION:KroniBola match',
       `URL:${location.origin}`,
       'END:VEVENT',
@@ -696,7 +689,7 @@ import Layout from '../layouts/Layout.astro';
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `kronibola-${dateStr}.ics`;
+    link.download = `kronibola-${safeDate}.ics`;
     link.click();
     URL.revokeObjectURL(link.href);
   });
@@ -1282,27 +1275,49 @@ import Layout from '../layouts/Layout.astro';
   :global(.match-card .mc-slots),
   :global(.match-card .mc-register),
   :global(.match-card .mc-maps-btn),
-  :global(.match-card .mc-share) {
+  :global(.match-card .mc-actions) {
     display: none !important;
   }
 
-  /* Share button (active card only) — small ghost-style button under REGISTER. */
-  :global(.match-card.active .mc-share) {
-    display: inline-flex !important;
-    align-items: center; justify-content: center; gap: 0.4rem;
-    width: 100%; margin-top: 0.5rem; height: 38px; padding: 0 0.8rem;
-    background: transparent; border: 1px solid var(--border-light);
-    color: var(--text-muted); border-radius: 12px;
-    font-family: 'Space Grotesk', sans-serif; font-size: 0.74rem;
-    font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-    cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s;
+  /* Secondary action row (active card only): Share · Google · Apple.
+     Equal-width ghost buttons that complement the primary REGISTER. */
+  :global(.match-card.active .mc-actions) {
+    display: flex !important;
+    gap: 0.4rem; margin-top: 0.5rem;
+  }
+  :global(.match-card .mc-action-btn) {
+    flex: 1; min-width: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 0.35rem; height: 38px; padding: 0 0.5rem;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: 11px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem;
+    font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.1s;
     -webkit-tap-highlight-color: transparent;
   }
-  :global(.match-card.active .mc-share:hover) {
-    color: var(--neon); border-color: rgba(0,255,65,0.35);
-    background: rgba(0,255,65,0.05);
+  :global(.match-card .mc-action-btn:hover) {
+    color: var(--text); background: rgba(255,255,255,0.08);
+    border-color: var(--border-light);
   }
-  :global(.match-card.active .mc-share:active) { transform: scale(0.985); }
+  :global(.match-card .mc-action-btn:active) { transform: scale(0.97); }
+  :global(.match-card .mc-action-btn span) {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  :global(.match-card .mc-share:hover) {
+    color: var(--neon); border-color: rgba(0,255,65,0.35);
+    background: rgba(0,255,65,0.06);
+  }
+
+  [data-theme="light"] :global(.match-card .mc-action-btn) {
+    background: rgba(0,0,0,0.03);
+    border-color: var(--border);
+    color: var(--text-secondary);
+  }
+  [data-theme="light"] :global(.match-card .mc-action-btn:hover) {
+    background: rgba(0,0,0,0.06);
+    color: var(--text);
+  }
 
   :global(.match-card .mc-details) { margin-bottom: 0; }
 
