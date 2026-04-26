@@ -1923,11 +1923,12 @@ import Layout from '../layouts/Layout.astro';
       // Single tint class per cell, picked by priority. Match days take
       // precedence so they pop visually on the grid; today/selected
       // states are still applied on top via separate classes.
+      // Order: Match > Leave > Holiday > School.
       const tint =
         kinds.has('game')    ? 'cal-cell--has-game'    :
-        kinds.has('school')  ? 'cal-cell--has-school'  :
+        kinds.has('leave')   ? 'cal-cell--has-leave'   :
         kinds.has('holiday') ? 'cal-cell--has-holiday' :
-        kinds.has('leave')   ? 'cal-cell--has-leave'   : '';
+        kinds.has('school')  ? 'cal-cell--has-school'  : '';
 
       const classes = [
         'cal-cell',
