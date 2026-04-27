@@ -281,6 +281,48 @@ import Layout from '../layouts/Layout.astro';
           <button type="button" class="cal-chip" data-stream="leave"><span class="cal-dot cal-dot--leave"></span>Leave</button>
         </div>
 
+        <!-- Subscribe-to-feed (admin testing). Two URLs per admin: a public
+             matches feed and a token-protected full admin feed. Tap "Add to
+             iPhone" on phone for the webcal:// deep-link, or copy the URL
+             into Google Calendar / Outlook / Mac Calendar. Hidden behind a
+             <details> so it doesn't dominate the calendar header. -->
+        <details class="cal-feeds">
+          <summary>📲 Subscribe on your phone</summary>
+          <div class="cal-feeds-body">
+            <p class="cal-feeds-help">
+              Add your KroniBola calendar to iPhone or Google Calendar so it
+              stays in sync automatically. iOS refresh defaults to once a day —
+              set it to <em>Every 5 mins</em> in Settings → Calendar →
+              Accounts → Subscribed Calendars for near-realtime updates.
+            </p>
+
+            <div class="cal-feed">
+              <div class="cal-feed-meta">
+                <span class="cal-feed-label">⚽ Match schedule</span>
+                <span class="cal-feed-tag cal-feed-tag--public">PUBLIC</span>
+              </div>
+              <div class="cal-feed-row">
+                <input type="text" readonly id="feedMatchesUrl" class="cal-feed-url" placeholder="loading…" />
+                <button type="button" class="cal-feed-copy" data-target="feedMatchesUrl">Copy</button>
+                <a id="feedMatchesAdd" class="btn btn--primary btn--sm" href="#" target="_blank" rel="noopener">Add to iPhone</a>
+              </div>
+            </div>
+
+            <div class="cal-feed">
+              <div class="cal-feed-meta">
+                <span class="cal-feed-label">📅 Full admin calendar</span>
+                <span class="cal-feed-tag cal-feed-tag--admin">ADMIN ONLY</span>
+              </div>
+              <div class="cal-feed-row">
+                <input type="text" readonly id="feedAdminUrl" class="cal-feed-url" placeholder="loading…" />
+                <button type="button" class="cal-feed-copy" data-target="feedAdminUrl">Copy</button>
+                <a id="feedAdminAdd" class="btn btn--primary btn--sm" href="#" target="_blank" rel="noopener">Add to iPhone</a>
+              </div>
+              <p class="cal-feed-warning">⚠️ Includes leave + sports events. Only share with KroniBola admins.</p>
+            </div>
+          </div>
+        </details>
+
         <!-- Month grid -->
         <div class="cal-grid-wrap">
           <div class="cal-weekdays" id="calWeekdays"></div>
@@ -1821,6 +1863,10 @@ import Layout from '../layouts/Layout.astro';
       hBtn.textContent = meIsSA ? '+ HOLIDAY' : '+ SPORTS';
     }
     if (sBtn) sBtn.style.display = meIsSA ? '' : 'none';
+    // Fire-and-forget — populate the subscribe-feed URLs in parallel with
+    // the main calendar load. Failure is non-blocking; the section just
+    // stays empty.
+    loadCalendarFeeds().catch(() => {});
     const grid = document.getElementById('calGrid');
     if (grid) grid.innerHTML = '<p class="empty-msg" style="grid-column:1/-1">Loading…</p>';
     try {
@@ -2205,6 +2251,54 @@ import Layout from '../layouts/Layout.astro';
         const card = document.querySelector(`.s-input[data-field="Date"][value="${date}"]`) as HTMLElement | null;
         if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 50);
+    }
+  });
+
+  // === Subscribe to calendar feeds (admin testing) ===
+  // Fetches the per-admin feed URLs from /api/admin/calendar-feeds and
+  // populates the subscribe section. Token never leaves the server — we
+  // just receive the resulting URLs.
+  let feedsLoaded = false;
+  async function loadCalendarFeeds() {
+    if (feedsLoaded) return;
+    try {
+      const res = await fetch(`${API}/admin/calendar-feeds`, { headers: { Authorization: adminToken } });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => ({}));
+      const fillUrl = (id: string, url: string) => {
+        const el = document.getElementById(id) as HTMLInputElement | null;
+        if (el && url) el.value = url;
+      };
+      const fillHref = (id: string, url: string) => {
+        const el = document.getElementById(id) as HTMLAnchorElement | null;
+        if (el && url) el.href = url;
+      };
+      fillUrl('feedMatchesUrl', data.matches);
+      fillUrl('feedAdminUrl', data.admin);
+      fillHref('feedMatchesAdd', data.webcalMatches);
+      fillHref('feedAdminAdd', data.webcalAdmin);
+      feedsLoaded = true;
+    } catch {
+      // Silent — admin can refresh if they want to retry.
+    }
+  }
+
+  // Copy buttons on the subscribe section — clipboard write + brief
+  // visual feedback.
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('.cal-feed-copy') as HTMLButtonElement | null;
+    if (!btn) return;
+    const targetId = btn.dataset.target || '';
+    const inp = document.getElementById(targetId) as HTMLInputElement | null;
+    if (!inp || !inp.value) return;
+    try {
+      await navigator.clipboard.writeText(inp.value);
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig || 'Copy'; }, 1500);
+    } catch {
+      // Fallback — select the text so the user can copy manually
+      inp.select();
     }
   });
 
@@ -2806,6 +2900,96 @@ import Layout from '../layouts/Layout.astro';
   }
   .cal-today-btn:hover { background: rgba(0,255,65,0.16); border-color: rgba(0,255,65,0.5); }
   .cal-today-btn:active { transform: scale(0.97); }
+
+  /* Subscribe to calendar feeds — collapsible. */
+  .cal-feeds {
+    margin: 0.4rem 0 0.8rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+  }
+  .cal-feeds > summary {
+    padding: 0.7rem 0.95rem;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    list-style: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cal-feeds > summary::-webkit-details-marker { display: none; }
+  .cal-feeds > summary::after {
+    content: '▾';
+    float: right;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+  .cal-feeds[open] > summary::after { transform: rotate(180deg); display: inline-block; }
+  .cal-feeds-body {
+    padding: 0.4rem 0.95rem 0.95rem;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 0.7rem;
+  }
+  .cal-feeds-help {
+    font-size: 0.72rem; line-height: 1.55; color: var(--text-muted);
+    margin: 0.4rem 0 0.3rem;
+  }
+  .cal-feeds-help em { color: var(--text-secondary); font-style: normal; font-weight: 600; }
+  .cal-feed {
+    display: flex; flex-direction: column; gap: 0.4rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.65rem 0.8rem;
+  }
+  .cal-feed-meta {
+    display: flex; align-items: center; gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .cal-feed-label {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.78rem; color: var(--text);
+  }
+  .cal-feed-tag {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.55rem; letter-spacing: 0.12em;
+    padding: 0.12rem 0.45rem; border-radius: 100px;
+  }
+  .cal-feed-tag--public {
+    color: #00c4ff; background: rgba(0,196,255,0.1);
+    border: 1px solid rgba(0,196,255,0.3);
+  }
+  .cal-feed-tag--admin {
+    color: #ff4081; background: rgba(255,64,129,0.1);
+    border: 1px solid rgba(255,64,129,0.3);
+  }
+  .cal-feed-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: stretch; }
+  .cal-feed-url {
+    flex: 1 1 200px; min-width: 0;
+    height: 36px; padding: 0 0.6rem;
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    color: var(--text-secondary); border-radius: 8px;
+    font-family: 'JetBrains Mono', 'Menlo', monospace;
+    font-size: 0.7rem;
+    cursor: text;
+  }
+  .cal-feed-url:focus { outline: none; border-color: rgba(0,255,65,0.4); color: var(--text); }
+  .cal-feed-copy {
+    height: 36px; padding: 0 0.8rem; flex-shrink: 0;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-light);
+    color: var(--text-secondary); border-radius: 8px; cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 0.7rem; letter-spacing: 0.04em;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .cal-feed-copy:hover { color: var(--neon); border-color: rgba(0,255,65,0.35); background: rgba(0,255,65,0.05); }
+  .cal-feed-warning {
+    font-size: 0.66rem; color: #ff9500; margin: 0.1rem 0 0;
+    line-height: 1.4;
+  }
 
   /* Filter chips */
   .cal-filters { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.6rem 0; }
