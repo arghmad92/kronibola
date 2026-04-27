@@ -92,7 +92,13 @@ export async function onRequest(context) {
       highlight: f._folderHighlight || hasDescriptionMarker(f),
     }));
 
-    return json({ photos });
+    // Single source of truth for the "View all photos" link on /gallery.
+    // The page used to hardcode its own copy of the folder URL and would
+    // drift behind FOLDER_ID after every session swap.
+    return json({
+      photos,
+      folderUrl: `https://drive.google.com/drive/folders/${FOLDER_ID}?usp=sharing`,
+    });
   } catch (e) {
     return json({ error: e.message }, 500);
   }

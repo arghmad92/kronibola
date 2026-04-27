@@ -14,7 +14,7 @@ import Layout from '../layouts/Layout.astro';
     <div id="loading" class="loading"><div class="loader"></div></div>
     <div id="galleryGrid" class="gallery-grid"></div>
     <div id="viewAllWrap" style="display:none" class="view-all-wrap">
-      <a href="https://drive.google.com/drive/folders/1P5a06gF5ZE9okLGgiTAdZYUsvDUbDkTp?usp=sharing" target="_blank" class="btn btn--primary view-all-btn">
+      <a id="viewAllLink" href="#" target="_blank" rel="noopener" class="btn btn--primary view-all-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
         VIEW ALL PHOTOS
       </a>
@@ -44,6 +44,14 @@ import Layout from '../layouts/Layout.astro';
         return;
       }
       document.getElementById('viewAllWrap')!.style.display = '';
+      // Wire the "View all photos" link to whatever folder the API is
+      // serving. Stops the link from drifting behind FOLDER_ID after a
+      // session swap (which it had — it was still pointing at the 19/4
+      // session folder).
+      const folderUrl = (data && data.folderUrl) || '';
+      if (folderUrl) {
+        (document.getElementById('viewAllLink') as HTMLAnchorElement).href = folderUrl;
+      }
 
       const grid = document.getElementById('galleryGrid')!;
       grid.innerHTML = photos.map((p: any, i: number) => `
