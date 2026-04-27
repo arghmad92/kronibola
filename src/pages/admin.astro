@@ -2143,14 +2143,16 @@ import Layout from '../layouts/Layout.astro';
   }
 
   // === Wire up navigation ===
-  document.getElementById('calPrevMonth')!.addEventListener('click', () => {
+  function calGoPrevMonth() {
     if (calViewMonth === 0) { calViewMonth = 11; calViewYear--; } else { calViewMonth--; }
     renderCalendar();
-  });
-  document.getElementById('calNextMonth')!.addEventListener('click', () => {
+  }
+  function calGoNextMonth() {
     if (calViewMonth === 11) { calViewMonth = 0; calViewYear++; } else { calViewMonth++; }
     renderCalendar();
-  });
+  }
+  document.getElementById('calPrevMonth')!.addEventListener('click', calGoPrevMonth);
+  document.getElementById('calNextMonth')!.addEventListener('click', calGoNextMonth);
   document.getElementById('calTodayBtn')!.addEventListener('click', () => {
     const today = ymdToday();
     const t = parseYmd(today);
@@ -2158,6 +2160,47 @@ import Layout from '../layouts/Layout.astro';
     calViewYear = t.y; calViewMonth = t.m; calSelectedDate = today;
     renderCalendar();
   });
+
+  // Swipe-to-navigate between months on touch devices.
+  // Listens on the grid wrapper (not the whole tab) so the gesture
+  // doesn't fight with vertical scrolling of the day-details panel
+  // or the rest of the page. Threshold tuned for casual swipes:
+  //   - 50px horizontal minimum (filters out taps + tiny drifts)
+  //   - 60px vertical tolerance (anything more vertical than that
+  //     reads as "user trying to scroll the page", not swipe nav)
+  (function wireCalendarSwipe() {
+    const wrap = document.querySelector('.cal-grid-wrap') as HTMLElement | null;
+    if (!wrap) return;
+    let startX = 0;
+    let startY = 0;
+    let active = false;
+    wrap.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) { active = false; return; }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      active = true;
+    }, { passive: true });
+    wrap.addEventListener('touchend', (e) => {
+      if (!active) return;
+      active = false;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      const HORIZONTAL_THRESHOLD = 50;
+      const VERTICAL_TOLERANCE = 60;
+      if (Math.abs(dx) < HORIZONTAL_THRESHOLD) return;
+      if (Math.abs(dy) > VERTICAL_TOLERANCE) return;
+      // Swipe left → next month, swipe right → previous month
+      // (matches the visual: the next month is "to the right" of today,
+      // so dragging left reveals what's next).
+      if (dx < 0) calGoNextMonth();
+      else calGoPrevMonth();
+    }, { passive: true });
+    // Cancel tracking if the gesture is interrupted (e.g. multitouch
+    // pinch-zoom started, or system gesture took over).
+    wrap.addEventListener('touchcancel', () => { active = false; }, { passive: true });
+  })();
 
   // Filter chip clicks
   document.getElementById('calFilters')!.addEventListener('click', (e) => {
