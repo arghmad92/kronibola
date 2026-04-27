@@ -330,8 +330,8 @@ import Layout from '../layouts/Layout.astro';
   <div class="modal-overlay" id="holidayModal" style="display:none">
     <div class="modal">
       <button type="button" class="modal-close" id="holidayModalClose">&times;</button>
-      <h3 class="modal-title">ADD <span class="neon-text">HOLIDAY</span></h3>
-      <p class="modal-sub">Add a public holiday or community blackout day.</p>
+      <h3 class="modal-title" id="holidayModalTitle">ADD <span class="neon-text">HOLIDAY</span></h3>
+      <p class="modal-sub" id="holidayModalSub">Add a public holiday or community blackout day.</p>
       <div class="form-group">
         <label class="form-label">Date</label>
         <input type="date" class="form-input" id="holidayDate" />
@@ -340,7 +340,9 @@ import Layout from '../layouts/Layout.astro';
         <label class="form-label">Name</label>
         <input type="text" class="form-input" id="holidayName" placeholder="e.g. Hari Pekerja" maxlength="80" />
       </div>
-      <div class="form-group">
+      <!-- Type row hidden for regular admins (they can only add Sports
+           events; Type is forced server-side regardless). -->
+      <div class="form-group" id="holidayTypeRow">
         <label class="form-label">Type</label>
         <select class="form-select" id="holidayType">
           <option value="Federal">Federal</option>
@@ -1804,12 +1806,20 @@ import Layout from '../layouts/Layout.astro';
 
   async function loadCalendar() {
     if (!calViewYear) initCalendarView();
-    // Holiday management is superadmin-only. Hide the header buttons for
-    // regular admins (server enforces it regardless on POST).
+    // Permission split:
+    //   - Superadmin: full Holidays CRUD ("+ HOLIDAY", "SYNC MY 2026").
+    //   - Regular admin: limited to adding Sports events. Same button is
+    //     re-labelled "+ SPORTS" and the modal hides the Type dropdown
+    //     (Type is forced to "Sports" at submit).
+    //   The SYNC MY 2026 button stays superadmin-only — it touches federal
+    //   holidays + school breaks which regular admins shouldn't change.
     const meIsSA = !!(adminSession && adminSession.isSuperadmin);
     const hBtn = document.getElementById('addHolidayBtn') as HTMLElement | null;
     const sBtn = document.getElementById('syncMyHolidaysBtn') as HTMLElement | null;
-    if (hBtn) hBtn.style.display = meIsSA ? '' : 'none';
+    if (hBtn) {
+      hBtn.style.display = '';
+      hBtn.textContent = meIsSA ? '+ HOLIDAY' : '+ SPORTS';
+    }
     if (sBtn) sBtn.style.display = meIsSA ? '' : 'none';
     const grid = document.getElementById('calGrid');
     if (grid) grid.innerHTML = '<p class="empty-msg" style="grid-column:1/-1">Loading…</p>';
@@ -2029,14 +2039,16 @@ import Layout from '../layouts/Layout.astro';
         }
         if (e.kind === 'sports') {
           const h = e.payload;
-          const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+          // Sports events are removable by ANY logged-in admin (regular or
+          // superadmin). The server independently enforces that the row's
+          // Type is Sports before allowing the delete.
           return `<div class="cal-event cal-event--sports">
             <span class="cal-event-icon">🏆</span>
             <div class="cal-event-body">
               <span class="cal-event-title">${calEsc(h.Name || 'Sports Event')}</span>
               <span class="cal-event-meta">${calEsc(h.Type || 'Sports')}</span>
             </div>
-            ${meIsSA ? `<button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove">&times;</button>` : ''}
+            ${adminSession ? `<button type="button" class="cal-event-remove" data-kind="holiday" data-date="${calEsc(h.Date || '')}" title="Remove">&times;</button>` : ''}
           </div>`;
         }
         // leave
@@ -2063,12 +2075,16 @@ import Layout from '../layouts/Layout.astro';
     }
 
     const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+    // Quick "add" buttons in the day header. Regular admins get "+ Sports"
+    // (limited Type); superadmins get the full "+ Holiday" with the type
+    // dropdown. Both routes open the same modal — it adapts based on role.
+    const quickHolidayLabel = meIsSA ? '+ Holiday' : '+ Sports';
     wrap.innerHTML = `
       <div class="cal-details-head">
         <span class="cal-details-date">${calEsc(heading)}</span>
         <div class="cal-details-actions">
           <button type="button" class="cal-mini-btn" id="calQuickLeave">+ Leave</button>
-          ${meIsSA ? '<button type="button" class="cal-mini-btn" id="calQuickHoliday">+ Holiday</button>' : ''}
+          ${adminSession ? `<button type="button" class="cal-mini-btn" id="calQuickHoliday">${quickHolidayLabel}</button>` : ''}
         </div>
       </div>
       <div class="cal-events">${body}</div>
@@ -2363,12 +2379,30 @@ import Layout from '../layouts/Layout.astro';
     }
   });
 
-  // === Add Holiday modal ===
+  // === Add Holiday / Sports Event modal ===
   const holidayModal = document.getElementById('holidayModal')!;
   function openHolidayModal(preDate?: string) {
+    const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+    // Modal adapts to the role: regular admin sees a Sports-Event-only
+    // form (Type row hidden, defaulted to Sports). Superadmin sees the
+    // full form with the Type dropdown.
+    const titleEl = document.getElementById('holidayModalTitle') as HTMLElement | null;
+    const subEl = document.getElementById('holidayModalSub') as HTMLElement | null;
+    const typeRow = document.getElementById('holidayTypeRow') as HTMLElement | null;
+    if (titleEl) {
+      titleEl.innerHTML = meIsSA
+        ? 'ADD <span class="neon-text">HOLIDAY</span>'
+        : 'ADD <span class="neon-text">SPORTS EVENT</span>';
+    }
+    if (subEl) {
+      subEl.textContent = meIsSA
+        ? 'Add a public holiday or community blackout day.'
+        : 'Flag an external sports event so the team is aware.';
+    }
+    if (typeRow) typeRow.style.display = meIsSA ? '' : 'none';
     (document.getElementById('holidayDate') as HTMLInputElement).value = preDate || ymdToday();
     (document.getElementById('holidayName') as HTMLInputElement).value = '';
-    (document.getElementById('holidayType') as HTMLSelectElement).value = 'Custom';
+    (document.getElementById('holidayType') as HTMLSelectElement).value = meIsSA ? 'Custom' : 'Sports';
     (document.getElementById('holidayModalError') as HTMLElement).style.display = 'none';
     holidayModal.style.display = '';
   }
@@ -2378,7 +2412,12 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('holidaySubmitBtn')!.addEventListener('click', async () => {
     const date = (document.getElementById('holidayDate') as HTMLInputElement).value;
     const name = (document.getElementById('holidayName') as HTMLInputElement).value.trim();
-    const type = (document.getElementById('holidayType') as HTMLSelectElement).value;
+    const meIsSA = !!(adminSession && adminSession.isSuperadmin);
+    // Force Type=Sports for non-superadmins regardless of what the DOM
+    // reads — server enforces it too, this is just defence-in-depth.
+    const type = meIsSA
+      ? (document.getElementById('holidayType') as HTMLSelectElement).value
+      : 'Sports';
     const errEl = document.getElementById('holidayModalError') as HTMLElement;
     if (!date || !name) {
       errEl.style.display = '';
