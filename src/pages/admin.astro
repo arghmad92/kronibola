@@ -3172,7 +3172,87 @@ import Layout from '../layouts/Layout.astro';
   [data-theme="light"] .cal-cell--selected { background: rgba(0,134,58,0.14); }
   [data-theme="light"] .cal-grid-wrap { background: rgba(255,255,255,0.6); }
 
-  /* Phone tightening */
+  /* === Calendar tab: mobile tightening === */
+
+  /* Header row (title + action buttons): stack vertically on narrow phones
+     so the buttons can take full width instead of getting squeezed. The
+     button group keeps its own flex-wrap so 3-4 short buttons can sit on
+     a single row when there's just enough space. */
+  @media (max-width: 540px) {
+    #tab-calendar .panel-top {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+    #tab-calendar .panel-top > div {
+      width: 100%;
+      justify-content: flex-start;
+    }
+    #tab-calendar .panel-top .btn--sm {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  /* Month nav: keep the prev/next + label row tidy. Below 380px the
+     full month name + year on two lines may cramp; nudge the typography
+     down a touch and keep the TODAY chip compact. */
+  @media (max-width: 420px) {
+    .cal-monthnav { gap: 0.4rem; }
+    .cal-month-name { font-size: 0.95rem; letter-spacing: 0.02em; }
+    .cal-month-year { font-size: 0.62rem; letter-spacing: 0.14em; }
+    .cal-today-btn { padding: 0 0.65rem; font-size: 0.66rem; }
+    .cal-nav-btn { width: 36px; height: 36px; }
+  }
+
+  /* Filter chips wrap by default; on narrow screens give each chip a
+     consistent height so a 2-row wrap looks neat instead of staggered. */
+  @media (max-width: 480px) {
+    .cal-chip {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.66rem;
+    }
+  }
+
+  /* Subscribe-to-feed cards: on phones, force the URL + Copy + Add row
+     to stack vertically. The URL input gets full width so admins can
+     read it; the buttons sit side-by-side underneath. */
+  @media (max-width: 540px) {
+    .cal-feed-row { flex-direction: column; align-items: stretch; }
+    .cal-feed-url { flex: 1 1 auto; width: 100%; }
+    .cal-feed-row > .cal-feed-copy,
+    .cal-feed-row > .btn--sm {
+      width: 100%;
+    }
+    .cal-feeds > summary { font-size: 0.72rem; }
+    .cal-feed-label { font-size: 0.74rem; }
+  }
+
+  /* Day-details header: date + action buttons. On narrow viewports stack
+     so the date text doesn't truncate, and let the +Leave/+Sports buttons
+     share the full row underneath. */
+  @media (max-width: 480px) {
+    .cal-details-head {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+    .cal-details-actions { width: 100%; }
+    .cal-mini-btn { flex: 1 1 auto; }
+    .cal-details-date { font-size: 0.85rem; }
+  }
+
+  /* Event cards: tighten padding + icon size below 380px so a
+     long session name like "Football 11-aside" doesn't truncate
+     aggressively. */
+  @media (max-width: 380px) {
+    .cal-event { padding: 0.55rem 0.65rem; gap: 0.55rem; }
+    .cal-event-icon { width: 26px; height: 26px; font-size: 0.85rem; }
+    .cal-event-title { font-size: 0.78rem; }
+    .cal-event-meta { font-size: 0.62rem; }
+  }
+
+  /* Grid cell tightening for the smallest viewports. */
   @media (max-width: 380px) {
     .cal-grid-wrap { padding: 0.55rem 0.4rem; }
     .cal-weekdays, .cal-grid { gap: 3px; }
