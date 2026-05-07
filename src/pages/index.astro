@@ -61,7 +61,7 @@ import Layout from '../layouts/Layout.astro';
             </svg>
           </div>
           <p class="lineup-locked-title">Lineup locked</p>
-          <p class="lineup-locked-sub" id="lineupLockedSub">Revealed 2 days before the match. Register now to secure your spot.</p>
+          <p class="lineup-locked-sub" id="lineupLockedSub">Revealed the day before the match. Register now to secure your spot.</p>
         </div>
       </div>
     </div>
@@ -280,15 +280,16 @@ import Layout from '../layouts/Layout.astro';
         btn.textContent = isFull ? 'JOIN WAITLIST' : 'REGISTER NOW';
       });
 
-      // Lineup is hidden until 2 days before the match to encourage early
+      // Lineup is hidden until the day before the match to encourage early
       // registration. The count in the section header and the player cards
-      // are both suppressed — slot counts on session cards are kept so
-      // players still see overall scarcity.
+      // are both suppressed — slot bar/labels on session cards also enter
+      // a soft "tier" mode so players can't reverse-engineer how full a
+      // game is.
       const lineupCountEl = document.getElementById('lineupCount')!;
       if (shouldRevealLineup(date)) {
         lineupCountEl.textContent = `${paid.length} confirmed · ${nonRejected.length} total`;
       } else {
-        lineupCountEl.textContent = 'revealed 2 days before';
+        lineupCountEl.textContent = 'revealed the day before';
       }
 
       renderLineup(players, date);
@@ -305,7 +306,9 @@ import Layout from '../layouts/Layout.astro';
     const today = new Date(todayStr + 'T00:00:00+08:00').getTime();
     const match = new Date(matchDateStr + 'T00:00:00+08:00').getTime();
     const diffDays = Math.round((match - today) / (1000 * 60 * 60 * 24));
-    return diffDays <= 2;
+    // Reveal on match-eve (1 day before), match-day, and any past sessions
+    // (in case someone lands on a closed game's view).
+    return diffDays <= 1;
   }
 
   function updateSlots(idx: number, count: number, max: number, sessionDate?: string) {
@@ -340,15 +343,12 @@ import Layout from '../layouts/Layout.astro';
       else if (pct > 40) tier = 'Filling fast';
       spots.textContent = tier;
       spots.className = `mc-spots ${full ? 'mc-spots--full' : ''}`;
-      // Progress bar: snap to coarse buckets so the exact number can't be
-      // eyeballed from the bar width.
-      let softPct = 0;
-      if (full) softPct = 100;
-      else if (pct > 75) softPct = 80;
-      else if (pct > 40) softPct = 55;
-      else if (pct > 0) softPct = 25;
-      bar.style.width = `${softPct}%`;
-      bar.className = `progress-fill ${full ? 'progress-fill--full' : ''}`;
+      // Hide the progress bar entirely while locked. Even snapped to coarse
+      // buckets, a visible bar still tells players how full the game is —
+      // doubling up with the tier text and partly defeating the point of
+      // hiding the lineup. Tier label alone is enough urgency signal.
+      bar.style.width = '0%';
+      bar.className = `progress-fill progress-fill--hidden ${full ? 'progress-fill--full' : ''}`;
       return;
     }
 
@@ -375,9 +375,9 @@ import Layout from '../layouts/Layout.astro';
       // Update the sub-copy with the actual reveal date so it's concrete.
       const revealSub = document.getElementById('lineupLockedSub');
       if (revealSub && sessionDate) {
-        const revealDate = new Date(new Date(sessionDate + 'T00:00:00+08:00').getTime() - 2 * 24 * 60 * 60 * 1000);
+        const revealDate = new Date(new Date(sessionDate + 'T00:00:00+08:00').getTime() - 24 * 60 * 60 * 1000);
         const revealStr = revealDate.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kuala_Lumpur' });
-        revealSub.textContent = `Names revealed ${revealStr} (2 days before). Register now to secure your spot.`;
+        revealSub.textContent = `Names revealed ${revealStr} (the day before). Register now to secure your spot.`;
       }
       return;
     }
@@ -1432,6 +1432,10 @@ import Layout from '../layouts/Layout.astro';
   }
   :global(.progress-fill--full) { background: linear-gradient(90deg, #cc7a00, var(--orange)); box-shadow: 0 0 12px rgba(255,149,0,0.3); }
   :global(.progress-fill--full::after) { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+  /* When the lineup is locked we set the fill to .progress-fill--hidden.
+     Use :has() to also collapse the surrounding track so no empty grey
+     line is left behind — players shouldn't be able to read fullness. */
+  :global(.progress-track:has(.progress-fill--hidden)) { visibility: hidden; height: 0; margin: 0; }
 
   :global(.mc-maps-btn) {
     display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1rem;
