@@ -95,6 +95,8 @@ import Layout from '../layouts/Layout.astro';
             <option value="">Select a game...</option>
           </select>
         </div>
+        <!-- Per-game summary -->
+        <div id="playersSummary" class="order-summary" style="display:none"></div>
         <!-- Share to WhatsApp -->
         <div id="shareWaSection" style="display:none;margin-bottom:0.8rem">
           <div class="share-wa-btns">
@@ -1244,10 +1246,11 @@ import Layout from '../layouts/Layout.astro';
       const openDates = dates.filter(d => sessionsData.some((s: any) => s.Date === d && s.Status === 'Open'));
       const closedDates = dates.filter(d => !openDates.includes(d));
 
-      // Sort each group by date descending (newest first)
-      const sortDesc = (a: string, b: string) => b.localeCompare(a);
-      openDates.sort(sortDesc);
-      closedDates.sort(sortDesc);
+      // Open games sort ascending so the nearest upcoming game is first
+      // (and becomes the default selection). Past games stay descending so
+      // the most recent one is first.
+      openDates.sort((a, b) => a.localeCompare(b));
+      closedDates.sort((a, b) => b.localeCompare(a));
 
       // Build the dropdown label. Append the Session Name (e.g. "Futsal",
       // "7-a-side") so the admin can tell sessions apart at a glance when
@@ -1292,6 +1295,47 @@ import Layout from '../layouts/Layout.astro';
     if (addPlayerBox.style.display !== 'none') syncApPlateRow();
   });
 
+  function renderPlayersSummary(date: string, players: any[]) {
+    const summary = document.getElementById('playersSummary')!;
+    if (!date) { summary.style.display = 'none'; summary.innerHTML = ''; return; }
+
+    const session = sessionsData.find((s: any) => s.Date === date);
+    const max = parseInt(session && session['Max Players']) || 0;
+
+    const counts: Record<string, number> = { Paid: 0, Pending: 0, Overdue: 0, Waitlist: 0, Rejected: 0 };
+    let revenue = 0;
+    players.forEach((p: any) => {
+      const st = p['Payment Status'] || 'Pending';
+      if (counts[st] !== undefined) counts[st]++;
+      if (st === 'Paid') revenue += parseFloat(p.Amount) || 0;
+    });
+    const active = counts.Paid + counts.Pending + counts.Overdue;
+    const slotsLeft = max ? Math.max(0, max - active) : 0;
+    const slotsLabel = max ? `${active} / ${max}` : String(active);
+
+    const badge = (label: string, n: number, color: string) => n
+      ? `<span class="os-badge" style="color:${color};background:${color}1a;border-color:${color}33">${label}: ${n}</span>`
+      : '';
+
+    summary.style.display = '';
+    summary.innerHTML = `
+      <div class="os-stats">
+        <div class="os-stat"><div class="os-num">${slotsLabel}</div><div class="os-label">Slots Filled</div></div>
+        <div class="os-stat"><div class="os-num" style="color:#00FF41">${counts.Paid}</div><div class="os-label">Paid</div></div>
+        <div class="os-stat"><div class="os-num" style="color:var(--neon)">RM ${revenue}</div><div class="os-label">Collected</div></div>
+      </div>
+      <div class="os-status-row">
+        ${badge('Paid', counts.Paid, '#00FF41')}
+        ${badge('Pending', counts.Pending, '#ff9500')}
+        ${badge('Overdue', counts.Overdue, '#ff5722')}
+        ${badge('Waitlist', counts.Waitlist, '#00c4ff')}
+        ${badge('Rejected', counts.Rejected, '#ff3b30')}
+        ${max && slotsLeft > 0 ? `<span class="os-badge" style="color:var(--text-muted);background:rgba(255,255,255,0.04);border-color:var(--border)">${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} left</span>` : ''}
+        ${max && slotsLeft === 0 && active > 0 ? `<span class="os-badge" style="color:#ff3b30;background:rgba(255,59,48,0.1);border-color:rgba(255,59,48,0.2)">FULL</span>` : ''}
+      </div>
+    `;
+  }
+
   function renderPlayers(date: string) {
     const wrap = document.getElementById('playersList')!;
     const filtered = allPlayers
@@ -1302,6 +1346,7 @@ import Layout from '../layouts/Layout.astro';
         const tB = b.Timestamp || '';
         return tB.localeCompare(tA);
       });
+    renderPlayersSummary(date, filtered);
     if (!filtered.length) {
       wrap.innerHTML = '<p class="empty-msg">No players for this game.</p>';
       document.getElementById('carPlateSection')!.style.display = 'none';
