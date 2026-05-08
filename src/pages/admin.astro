@@ -1317,6 +1317,17 @@ import Layout from '../layouts/Layout.astro';
       ? `<span class="os-badge" style="color:${color};background:${color}1a;border-color:${color}33">${label}: ${n}</span>`
       : '';
 
+    // Status badges below — Paid is already in the stats row above so we
+    // skip it here to avoid duplication.
+    const badges = [
+      badge('Pending', counts.Pending, '#ff9500'),
+      badge('Overdue', counts.Overdue, '#ff5722'),
+      badge('Waitlist', counts.Waitlist, '#00c4ff'),
+      badge('Rejected', counts.Rejected, '#ff3b30'),
+      max && slotsLeft > 0 ? `<span class="os-badge" style="color:var(--text-muted);background:rgba(255,255,255,0.04);border-color:var(--border)">${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} left</span>` : '',
+      max && slotsLeft === 0 && active > 0 ? `<span class="os-badge" style="color:#ff3b30;background:rgba(255,59,48,0.1);border-color:rgba(255,59,48,0.2)">FULL</span>` : '',
+    ].filter(Boolean).join('');
+
     summary.style.display = '';
     summary.innerHTML = `
       <div class="os-stats">
@@ -1324,15 +1335,7 @@ import Layout from '../layouts/Layout.astro';
         <div class="os-stat"><div class="os-num" style="color:#00FF41">${counts.Paid}</div><div class="os-label">Paid</div></div>
         <div class="os-stat"><div class="os-num" style="color:var(--neon)">RM ${revenue}</div><div class="os-label">Collected</div></div>
       </div>
-      <div class="os-status-row">
-        ${badge('Paid', counts.Paid, '#00FF41')}
-        ${badge('Pending', counts.Pending, '#ff9500')}
-        ${badge('Overdue', counts.Overdue, '#ff5722')}
-        ${badge('Waitlist', counts.Waitlist, '#00c4ff')}
-        ${badge('Rejected', counts.Rejected, '#ff3b30')}
-        ${max && slotsLeft > 0 ? `<span class="os-badge" style="color:var(--text-muted);background:rgba(255,255,255,0.04);border-color:var(--border)">${slotsLeft} slot${slotsLeft !== 1 ? 's' : ''} left</span>` : ''}
-        ${max && slotsLeft === 0 && active > 0 ? `<span class="os-badge" style="color:#ff3b30;background:rgba(255,59,48,0.1);border-color:rgba(255,59,48,0.2)">FULL</span>` : ''}
-      </div>
+      ${badges ? `<div class="os-status-row players-badges">${badges}</div>` : ''}
     `;
   }
 
@@ -3601,6 +3604,11 @@ import Layout from '../layouts/Layout.astro';
 
   .footer { border-top: 1px solid var(--border); padding: 1.5rem 0; text-align: center; margin-top: 2rem; font-size: 0.72rem; color: var(--text-muted); }
   .ssm { font-size: 0.6rem; opacity: 0.5; margin-top: 0.2rem; }
+
+  /* Players summary — center the badge row to align with the 3-col stats grid above */
+  .players-badges { justify-content: center; margin-bottom: 0 !important; }
+  #playersSummary .os-stats { margin-bottom: 0; }
+  #playersSummary .os-stats:not(:last-child) { margin-bottom: 0.8rem; }
 
   /* Order Summary */
   .order-summary {
