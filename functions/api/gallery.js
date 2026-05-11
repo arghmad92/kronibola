@@ -1,6 +1,6 @@
 import { getGoogleToken, json } from './_sheets.js';
 
-const FOLDER_ID = '1ai-KT0uLE6CCkFSVEDA1HvDYOqUEcbZO';
+const FOLDER_ID = '1bl-Jg7bQzPauzcyFvUsWLRkF1qwMjuBA';
 
 // Any subfolder whose name matches this pattern (case-insensitive) is treated
 // as the curated highlights folder. Photos in that subfolder float to the top
