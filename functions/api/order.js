@@ -1,5 +1,6 @@
 import { appendRow, json } from './_sheets.js';
 import { escapeHtml, sanitize, sheetSafe, sendTelegramNotification } from './_utils.js';
+import { validateE164Mobile } from './_phone.js';
 
 function generateOrderRef(name) {
   const now = new Date();
@@ -33,11 +34,11 @@ export async function onRequest(context) {
     if (name.length < 2 || name.length > 100) return json({ error: 'Name must be between 2 and 100 characters' }, 400);
     if (!/^[a-zA-Z\s'.@\-]+$/.test(name)) return json({ error: 'Name contains invalid characters' }, 400);
 
-    // Validate phone
-    if (!phone || typeof phone !== 'string') return json({ error: 'Phone number is required' }, 400);
-    if (!/^[\d\s\-+]+$/.test(phone)) return json({ error: 'Phone number contains invalid characters' }, 400);
-    const cleanPhone = phone.replace(/[\s\-+]/g, '');
-    if (cleanPhone.length < 10 || cleanPhone.length > 15) return json({ error: 'Phone number must be 10-15 digits' }, 400);
+    // Validate phone — same E.164 rules as registration.
+    const trimmedPhone = typeof phone === 'string' ? phone.replace(/[\s\-()]/g, '') : '';
+    const phoneCheck = validateE164Mobile(trimmedPhone);
+    if (!phoneCheck.valid) return json({ error: phoneCheck.error }, 400);
+    phone = trimmedPhone;
 
     // Validate items (array of { size, qty })
     if (!Array.isArray(items) || items.length === 0) return json({ error: 'Select at least one size' }, 400);
@@ -61,7 +62,7 @@ export async function onRequest(context) {
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const orderDate = new Date().toISOString().slice(0, 10);
     const refCode = generateOrderRef(name);
-    const phoneForSheet = "'" + cleanPhone;
+    const phoneForSheet = "'" + phone;
     const deliveryLabel = isPostage ? 'Postage' : 'Pickup';
 
     // Columns: Order Date, Player Name, Phone, Size, Quantity, Total, Payment Status, Timestamp, Ref Code, Delivery, Address
@@ -72,7 +73,7 @@ export async function onRequest(context) {
       `👕 <b>New Jersey Order</b>`,
       ``,
       `👤 Name: <b>${escapeHtml(name)}</b>`,
-      `📱 Phone: ${escapeHtml(cleanPhone)}`,
+      `📱 Phone: ${escapeHtml(phone)}`,
       `📏 Sizes: <b>${sizesSummary}</b>`,
       `🔢 Total Qty: <b>${totalQty}</b>`,
       `🚚 Delivery: <b>${deliveryLabel}</b>`,

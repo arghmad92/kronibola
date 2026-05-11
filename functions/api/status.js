@@ -1,4 +1,5 @@
 import { readSheet, json } from './_sheets.js';
+import { phoneMatches } from './_phone.js';
 
 // NOTE: Rate limiting should be configured via Cloudflare WAF rules in the dashboard.
 // Recommended: set a rate limit of 20 requests per minute per IP on /api/status
@@ -6,23 +7,21 @@ import { readSheet, json } from './_sheets.js';
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const phone = (url.searchParams.get('phone') || '').replace(/[-\s']/g, '');
-
-  // Validate phone: must be digits only after cleaning, 10-15 characters
-  if (!phone || !/^\d+$/.test(phone) || phone.length < 10 || phone.length > 15) {
-    return json({ error: 'Invalid phone number. Must be 10-15 digits.' }, 400);
+  const phoneRaw = url.searchParams.get('phone') || '';
+  // Accept any format the user types — phoneMatches normalizes both sides.
+  // Just check we got at least 7 digits to weed out junk input.
+  const digitsOnly = phoneRaw.replace(/\D/g, '');
+  if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+    return json({ error: 'Invalid phone number.' }, 400);
   }
 
   try {
     const all = await readSheet(context.env, 'Registrations');
     const sessions = await readSheet(context.env, 'Sessions');
 
-    // Match by phone (strip leading ' and compare last 10 digits)
-    const cleanPhone = phone.replace(/^0/, '').slice(-10);
-    const matches = all.filter((p) => {
-      const pPhone = String(p.Phone || '').replace(/[-\s']/g, '').replace(/^0/, '').slice(-10);
-      return pPhone === cleanPhone;
-    });
+    // Fuzzy match against stored Phone — handles legacy formats
+    // (0123456789, 60123456789) as well as new E.164 (+60123456789).
+    const matches = all.filter((p) => phoneMatches(p.Phone, phoneRaw));
 
     // Enrich with session details
     const results = matches.map((m) => {

@@ -1,12 +1,5 @@
 import { readSheet, batchUpdateCells, json } from './_sheets.js';
-
-// Normalised phone match — strips formatting and a leading 0, keeps the
-// last 10 digits. Same logic the rest of the site uses (status.js,
-// register.js phone storage), so users can type 0123-456-789 / 123456789
-// / +60123456789 interchangeably and still match their stored value.
-function normalizePhone(s) {
-  return String(s || '').replace(/[-\s'+]/g, '').replace(/^0/, '').slice(-10);
-}
+import { phoneMatches } from './_phone.js';
 
 export async function onRequest(context) {
   if (context.request.method !== 'POST') return json({ error: 'POST only' }, 405);
@@ -36,9 +29,10 @@ export async function onRequest(context) {
     const idx = players.findIndex((p) => p['Ref Code'] === refCode);
     if (idx === -1) return json({ error: 'Registration not found' }, 404);
 
-    const requesterPhone = normalizePhone(phone);
-    const ownerPhone = normalizePhone(players[idx].Phone);
-    if (!requesterPhone || requesterPhone !== ownerPhone) {
+    // Fuzzy match so the requester can type any reasonable format
+    // (E.164, local 0-prefix, no prefix) and still authenticate against
+    // whatever format the row was stored in.
+    if (!phoneMatches(phone, players[idx].Phone)) {
       return json({ error: 'Registration not found' }, 404);
     }
 

@@ -608,8 +608,10 @@ import Layout from '../layouts/Layout.astro';
     }, 240);
   }
   function waLinkFor(item: NotifyItem): string | null {
-    const cleaned = (item.phone || '').replace(/\D/g, '');
-    return cleaned ? `https://wa.me/6${cleaned}?text=${encodeURIComponent(item.msg)}` : null;
+    // toWaNumber handles E.164 (new), legacy MY local 0-prefix, and bare
+    // international formats. Lives in Layout.astro's shared phone helper.
+    const num = (window as any).KB_PHONE?.toWaNumber(item.phone || '') || '';
+    return num ? `https://wa.me/${num}?text=${encodeURIComponent(item.msg)}` : null;
   }
 
   // Wire up the center once, after DOM is ready.
@@ -1369,7 +1371,8 @@ import Layout from '../layouts/Layout.astro';
       const playerName = esc(p['Player Name']);
       const initial = (p['Player Name'] || '?')[0].toUpperCase();
       const waMsg = encodeURIComponent(`Hi ${p['Player Name']}, this is regarding your registration (Ref: ${ref}) for the game on ${date}. `);
-      const waLink = phone ? `https://wa.me/6${esc(phone)}?text=${waMsg}` : '#';
+      const waNum = (window as any).KB_PHONE?.toWaNumber(phone) || '';
+      const waLink = waNum ? `https://wa.me/${waNum}?text=${waMsg}` : '#';
 
       return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
         <div class="pca-top">
@@ -1735,7 +1738,8 @@ import Layout from '../layouts/Layout.astro';
     wrap.innerHTML = logs.map((log: any) => {
       const color = statusColors[log.Status] || '#666';
       const phone = String(log.Phone || '').replace("'", '').trim();
-      const waLink = phone ? `https://wa.me/6${phone}?text=${encodeURIComponent(log.Message || '')}` : '#';
+      const waNum = (window as any).KB_PHONE?.toWaNumber(phone) || '';
+      const waLink = waNum ? `https://wa.me/${waNum}?text=${encodeURIComponent(log.Message || '')}` : '#';
       const timeAgo = getTimeAgo(log.Timestamp);
 
       return `<div class="notif-card">

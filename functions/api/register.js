@@ -1,5 +1,6 @@
 import { readSheet, appendRow, json } from './_sheets.js';
 import { escapeHtml, sanitize, sheetSafe, sendTelegramNotification } from './_utils.js';
+import { validateE164Mobile } from './_phone.js';
 
 function generateRefCode(date, name) {
   const dd = date.slice(8, 10);
@@ -22,11 +23,13 @@ export async function onRequest(context) {
     if (name.length < 2 || name.length > 100) return json({ error: 'Name must be between 2 and 100 characters' }, 400);
     if (!/^[a-zA-Z\s'.@\-]+$/.test(name)) return json({ error: 'Name contains invalid characters' }, 400);
 
-    // Validate phone
-    if (!phone || typeof phone !== 'string') return json({ error: 'Phone number is required' }, 400);
-    if (!/^[\d\s\-+]+$/.test(phone)) return json({ error: 'Phone number contains invalid characters' }, 400);
-    const cleanedPhone = phone.replace(/[\s\-+]/g, '');
-    if (cleanedPhone.length < 10 || cleanedPhone.length > 15) return json({ error: 'Phone number must be 10-15 digits' }, 400);
+    // Validate phone — must be E.164 international format (+<code><digits>)
+    // for a supported country. Frontend normalizes the user's input before
+    // sending; this server-side check is the safety net.
+    const trimmedPhone = typeof phone === 'string' ? phone.replace(/[\s\-()]/g, '') : '';
+    const phoneCheck = validateE164Mobile(trimmedPhone);
+    if (!phoneCheck.valid) return json({ error: phoneCheck.error }, 400);
+    phone = trimmedPhone; // canonical E.164 from this point on
 
     // Validate date
     if (!date || typeof date !== 'string' || !date.trim()) return json({ error: 'Session date is required' }, 400);
@@ -70,7 +73,9 @@ export async function onRequest(context) {
 
     const status = activeCount >= maxPlayers ? 'Waitlist' : 'Pending';
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-    const cleanPhone = "'" + phone.replace(/[-\s]/g, '');
+    // Stored as `'+60123456789` — leading apostrophe stops Sheets from
+    // parsing the `+` and interpreting it as a formula or scientific number.
+    const cleanPhone = "'" + phone;
     const refCode = generateRefCode(date, name);
 
     // Columns: Session Date, Player Name, Phone, Payment Status, Amount, Timestamp, Ref Code, Refund, Car Plate

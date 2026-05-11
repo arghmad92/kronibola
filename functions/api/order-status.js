@@ -1,16 +1,15 @@
 import { readSheet, json } from './_sheets.js';
+import { phoneMatches } from './_phone.js';
 
 export async function onRequest(context) {
   try {
     const url = new URL(context.request.url);
-    const phone = (url.searchParams.get('phone') || '').replace(/[\s\-+'"]/g, '');
-    if (!phone || !/^\d+$/.test(phone) || phone.length < 10 || phone.length > 15) return json({ error: 'Valid phone number required (10-15 digits)' }, 400);
+    const phoneRaw = url.searchParams.get('phone') || '';
+    const digitsOnly = phoneRaw.replace(/\D/g, '');
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) return json({ error: 'Valid phone number required' }, 400);
 
     const orders = await readSheet(context.env, 'Orders');
-    const matches = orders.filter((o) => {
-      const oPhone = String(o.Phone || '').replace(/[\s\-+'"]/g, '');
-      return oPhone === phone || oPhone.endsWith(phone.slice(-10)) || phone.endsWith(oPhone.slice(-10));
-    });
+    const matches = orders.filter((o) => phoneMatches(o.Phone, phoneRaw));
 
     return json({
       orders: matches.map((m) => ({

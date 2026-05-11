@@ -115,7 +115,11 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <div class="form-group">
           <label class="form-label" for="orderPhone">Phone Number</label>
-          <input type="tel" class="form-input" id="orderPhone" placeholder="01X-XXXXXXX" required />
+          <div class="phone-row">
+            <select class="form-input phone-country" id="orderCountry" data-kb-country data-target="orderPhone" aria-label="Country code"></select>
+            <input type="tel" class="form-input phone-number" id="orderPhone" placeholder="123456789" inputmode="numeric" autocomplete="tel-national" required />
+          </div>
+          <p class="form-hint" style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem">Mobile only.</p>
         </div>
         <div class="form-group">
           <label class="form-label">Size & Quantity</label>
@@ -237,7 +241,10 @@ import Layout from '../layouts/Layout.astro';
       <h3 class="modal-title">CHECK <span class="neon-text">ORDER</span></h3>
       <div class="form-group">
         <label class="form-label" for="statusPhone">Phone Number</label>
-        <input type="tel" class="form-input" id="statusPhone" placeholder="01X-XXXXXXX" />
+        <div class="phone-row">
+          <select class="form-input phone-country" id="statusCountry" data-kb-country data-target="statusPhone" aria-label="Country code"></select>
+          <input type="tel" class="form-input phone-number" id="statusPhone" placeholder="123456789" inputmode="numeric" autocomplete="tel-national" />
+        </div>
       </div>
       <button class="btn btn--primary" id="statusLookup" style="width:100%">LOOK UP</button>
       <div id="statusResult" style="margin-top:1rem"></div>
@@ -408,11 +415,12 @@ import Layout from '../layouts/Layout.astro';
   // --- Step 1 → Step 2 ---
   document.getElementById('toStep2')!.addEventListener('click', () => {
     const name = (document.getElementById('orderName') as HTMLInputElement).value.trim();
-    const phone = (document.getElementById('orderPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const orderCountrySel = document.getElementById('orderCountry') as HTMLSelectElement;
+    const orderPhoneInput = document.getElementById('orderPhone') as HTMLInputElement;
     const errEl = document.getElementById('orderError')!;
-
-    if (!name || !phone) { showErr(errEl, 'Fill in both fields.'); return; }
-    if (!/^\d{10,13}$/.test(phone)) { showErr(errEl, 'Invalid phone number.'); return; }
+    if (!name) { showErr(errEl, 'Please enter your name.'); return; }
+    const phoneCheck = (window as any).KB_PHONE.buildAndValidate(orderCountrySel, orderPhoneInput);
+    if (!phoneCheck.valid) { showErr(errEl, phoneCheck.error); return; }
     const orders = getSizeOrders();
     if (!orders.length) { showErr(errEl, 'Select at least one size.'); return; }
     const delivery = getDelivery();
@@ -451,7 +459,10 @@ import Layout from '../layouts/Layout.astro';
   // --- Confirm order ---
   document.getElementById('confirmOrder')!.addEventListener('click', async () => {
     const name = (document.getElementById('orderName') as HTMLInputElement).value.trim();
-    const phone = (document.getElementById('orderPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const _orderCountrySel = document.getElementById('orderCountry') as HTMLSelectElement;
+    const _orderPhoneInput = document.getElementById('orderPhone') as HTMLInputElement;
+    const _orderPhoneCheck = (window as any).KB_PHONE.buildAndValidate(_orderCountrySel, _orderPhoneInput);
+    const phone = _orderPhoneCheck.valid ? _orderPhoneCheck.e164 : '';
     const items = getSizeOrders();
     const quantity = getTotalQty();
     const delivery = getDelivery();
@@ -545,9 +556,12 @@ import Layout from '../layouts/Layout.astro';
   statusModal.addEventListener('click', (e) => { if (e.target === statusModal) closeModal(statusModal); });
 
   document.getElementById('statusLookup')!.addEventListener('click', async () => {
-    const phone = (document.getElementById('statusPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const _statusCountrySel = document.getElementById('statusCountry') as HTMLSelectElement;
+    const _statusPhoneInput = document.getElementById('statusPhone') as HTMLInputElement;
     const result = document.getElementById('statusResult')!;
-    if (!phone || phone.length < 10) { result.innerHTML = '<div class="alert alert--error">Enter a valid phone number.</div>'; return; }
+    const _statusCheck = (window as any).KB_PHONE.buildAndValidate(_statusCountrySel, _statusPhoneInput);
+    if (!_statusCheck.valid) { result.innerHTML = `<div class="alert alert--error">${_statusCheck.error}</div>`; return; }
+    const phone = _statusCheck.e164;
 
     result.innerHTML = '<div class="loading-sm"><div class="loader-sm"></div> Checking…</div>';
 

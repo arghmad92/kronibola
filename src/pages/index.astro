@@ -508,11 +508,13 @@ import Layout from '../layouts/Layout.astro';
 
   document.getElementById('toStep2')!.addEventListener('click', () => {
     const name = (document.getElementById('regName') as HTMLInputElement).value.trim();
-    const phone = (document.getElementById('regPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const countrySel = document.getElementById('regCountry') as HTMLSelectElement;
+    const phoneInput = document.getElementById('regPhone') as HTMLInputElement;
     const errEl = document.getElementById('regError')!;
-
-    if (!name || !phone) { showErr(errEl, 'Fill in both fields.'); return; }
-    if (!/^\d{10,13}$/.test(phone)) { showErr(errEl, 'Invalid phone number.'); return; }
+    if (!name) { showErr(errEl, 'Please enter your nickname.'); return; }
+    const phoneCheck = (window as any).KB_PHONE.buildAndValidate(countrySel, phoneInput);
+    if (!phoneCheck.valid) { showErr(errEl, phoneCheck.error); return; }
+    const phone = phoneCheck.e164;
 
     // Validate car plate if required
     if (currentSession && currentSession['Require Car Plate'] === 'Yes') {
@@ -541,7 +543,10 @@ import Layout from '../layouts/Layout.astro';
     if (wlBtn) { wlBtn.disabled = true; wlBtn.textContent = 'SUBMITTING...'; }
 
     const name = (document.getElementById('regName') as HTMLInputElement).value.trim();
-    const phone = (document.getElementById('regPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const countrySel = document.getElementById('regCountry') as HTMLSelectElement;
+    const phoneInput = document.getElementById('regPhone') as HTMLInputElement;
+    const phoneCheck = (window as any).KB_PHONE.buildAndValidate(countrySel, phoneInput);
+    const phone = phoneCheck.valid ? phoneCheck.e164 : '';
     const carPlate = (document.getElementById('regCarPlate') as HTMLInputElement).value.replace(/\s/g, '').toUpperCase();
     const errEl = document.getElementById('regError')!;
 
@@ -972,9 +977,12 @@ import Layout from '../layouts/Layout.astro';
   statusModal.addEventListener('click', (e) => { if (e.target === statusModal) statusModal.style.display = 'none'; });
 
   document.getElementById('statusCheck')!.addEventListener('click', async () => {
-    const phone = (document.getElementById('statusPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+    const countrySel = document.getElementById('statusCountry') as HTMLSelectElement;
+    const phoneInput = document.getElementById('statusPhone') as HTMLInputElement;
     const result = document.getElementById('statusResult')!;
-    if (!phone || phone.length < 10) { result.innerHTML = '<div class="alert alert--error">Enter a valid phone number.</div>'; return; }
+    const phoneCheck = (window as any).KB_PHONE.buildAndValidate(countrySel, phoneInput);
+    if (!phoneCheck.valid) { result.innerHTML = `<div class="alert alert--error">${phoneCheck.error}</div>`; return; }
+    const phone = phoneCheck.e164;
 
     result.innerHTML = '<div class="loading-sm"><div class="loader-sm"></div>Checking…</div>';
 
@@ -1042,8 +1050,12 @@ import Layout from '../layouts/Layout.astro';
           if (!plate) { alert('Please enter a car plate number'); return; }
           // Re-read the phone the user entered for the status lookup. The
           // server requires it to verify the requester owns the row before
-          // accepting the plate change.
-          const phoneForAuth = (document.getElementById('statusPhone') as HTMLInputElement).value.replace(/[-\s]/g, '');
+          // accepting the plate change. Sends E.164 for new data; the
+          // server's fuzzy match handles legacy stored formats too.
+          const _countrySel = document.getElementById('statusCountry') as HTMLSelectElement;
+          const _phoneInput = document.getElementById('statusPhone') as HTMLInputElement;
+          const _phoneCheck = (window as any).KB_PHONE.buildAndValidate(_countrySel, _phoneInput);
+          const phoneForAuth = _phoneCheck.valid ? _phoneCheck.e164 : _phoneInput.value.replace(/[-\s]/g, '');
 
           saveBtn.disabled = true;
           saveBtn.textContent = '...';
@@ -1134,27 +1146,32 @@ import Layout from '../layouts/Layout.astro';
   const checkSection = document.getElementById('checkStatusSection')!;
 
   // --- Phone lookup on registration (auto-fill name) ---
+  const regCountrySel = document.getElementById('regCountry') as HTMLSelectElement;
   const regPhoneInput = document.getElementById('regPhone') as HTMLInputElement;
   const regNameInput = document.getElementById('regName') as HTMLInputElement;
   let lookupTimeout: any;
 
-  regPhoneInput.addEventListener('input', () => {
+  function tryAutoFill() {
     clearTimeout(lookupTimeout);
-    const phone = regPhoneInput.value.replace(/[-\s]/g, '');
-    if (phone.length >= 10) {
-      lookupTimeout = setTimeout(async () => {
-        try {
-          const res = await fetch(`${API}/status?phone=${encodeURIComponent(phone)}`);
-          const data = await res.json();
-          if (data.knownName && !regNameInput.value) {
-            regNameInput.value = data.knownName;
-            regNameInput.style.borderColor = 'var(--neon)';
-            setTimeout(() => { regNameInput.style.borderColor = ''; }, 2000);
-          }
-        } catch {}
-      }, 500);
-    }
-  });
+    // Build a candidate E.164 — auto-fill only when the input parses
+    // cleanly, otherwise wait for the user to finish typing.
+    const check = (window as any).KB_PHONE.buildAndValidate(regCountrySel, regPhoneInput);
+    if (!check.valid) return;
+    const phone = check.e164;
+    lookupTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API}/status?phone=${encodeURIComponent(phone)}`);
+        const data = await res.json();
+        if (data.knownName && !regNameInput.value) {
+          regNameInput.value = data.knownName;
+          regNameInput.style.borderColor = 'var(--neon)';
+          setTimeout(() => { regNameInput.style.borderColor = ''; }, 2000);
+        }
+      } catch {}
+    }, 500);
+  }
+  regPhoneInput.addEventListener('input', tryAutoFill);
+  regCountrySel.addEventListener('change', tryAutoFill);
 
   function showErr(el: HTMLElement, msg: string) {
     el.style.display = '';
