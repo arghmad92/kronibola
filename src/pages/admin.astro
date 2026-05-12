@@ -1153,7 +1153,9 @@ import Layout from '../layouts/Layout.astro';
   document.getElementById('refreshBlockedBtn')!.addEventListener('click', () => loadBlocked());
 
   async function addBlockEntry(kind: 'phone' | 'ip') {
-    const label = kind === 'phone' ? 'phone (E.164, e.g. +60123456789)' : 'IP address';
+    const label = kind === 'phone'
+      ? 'phone (E.164, e.g. +60123456789)'
+      : 'IP or CIDR (IPv6 will auto-expand to /64 household block)';
     const value = prompt(`Enter ${label} to block:`);
     if (!value) return;
     const reason = prompt('Reason (optional):') || '';
