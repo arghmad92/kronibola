@@ -1,11 +1,13 @@
 import { readSheet, writeSheet, reconcileByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
 
-const HEADERS = ['Session Date', 'Player Name', 'Phone', 'Payment Status', 'Amount', 'Timestamp', 'Ref Code', 'Refund', 'Car Plate'];
+const HEADERS = ['Session Date', 'Player Name', 'Phone', 'Payment Status', 'Amount', 'Timestamp', 'Ref Code', 'Refund', 'Car Plate', 'IP', 'Country', 'User Agent'];
 // Fields the admin UI never edits on existing players. If a stale client
 // posts an empty string for one of these, treat it as "no change" — this
 // is what stopped the car-plate wipe after update-plate.js writes.
-const PROTECTED = ['Session Date', 'Player Name', 'Phone', 'Amount', 'Timestamp', 'Car Plate'];
+// IP/Country/User Agent are captured server-side at registration time
+// for abuse tracing and must never be wiped by an admin save.
+const PROTECTED = ['Session Date', 'Player Name', 'Phone', 'Amount', 'Timestamp', 'Car Plate', 'IP', 'Country', 'User Agent'];
 
 export async function onRequest(context) {
   // Auth check

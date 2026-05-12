@@ -1,6 +1,7 @@
 import { readSheet, appendRow, json } from './_sheets.js';
 import { escapeHtml, sanitize, sheetSafe, sendTelegramNotification } from './_utils.js';
 import { validateE164Mobile } from './_phone.js';
+import { checkBlocked } from './_blocklist.js';
 
 function generateRefCode(date, name) {
   const dd = date.slice(8, 10);
@@ -30,6 +31,22 @@ export async function onRequest(context) {
     const phoneCheck = validateE164Mobile(trimmedPhone);
     if (!phoneCheck.valid) return json({ error: phoneCheck.error }, 400);
     phone = trimmedPhone; // canonical E.164 from this point on
+
+    // Capture request metadata (IP, country, UA) — used for blocklist
+    // check below and stored alongside the registration for tracing.
+    const reqHeaders = context.request.headers;
+    const reqIp = reqHeaders.get('CF-Connecting-IP') || reqHeaders.get('X-Forwarded-For') || '';
+    const reqCountry = reqHeaders.get('CF-IPCountry') || '';
+    const reqUA = (reqHeaders.get('User-Agent') || '').slice(0, 300);
+
+    // Blocklist check — reject phones or IPs flagged by admins. Returns a
+    // generic 403 so we don't tell the actor whether their phone, their IP,
+    // or both are blocked (no enumeration).
+    const block = await checkBlocked(context.env, { phone, ip: reqIp });
+    if (block.blocked) {
+      console.warn(`Blocked registration attempt: kind=${block.kind} phone=${phone} ip=${reqIp}`);
+      return json({ error: 'Registration unavailable. Please contact us if you believe this is a mistake.' }, 403);
+    }
 
     // Validate date
     if (!date || typeof date !== 'string' || !date.trim()) return json({ error: 'Session date is required' }, 400);
@@ -78,8 +95,12 @@ export async function onRequest(context) {
     const cleanPhone = "'" + phone;
     const refCode = generateRefCode(date, name);
 
-    // Columns: Session Date, Player Name, Phone, Payment Status, Amount, Timestamp, Ref Code, Refund, Car Plate
-    await appendRow(context.env, 'Registrations', [date, sheetSafe(name), cleanPhone, status, fee, timestamp, refCode, '', cleanedCarPlate]);
+    // Columns: Session Date, Player Name, Phone, Payment Status, Amount,
+    // Timestamp, Ref Code, Refund, Car Plate, IP, Country, User Agent.
+    // The last three are for tracing fake-receipt abuse — IP from
+    // Cloudflare's CF-Connecting-IP header, Country from CF-IPCountry,
+    // UA truncated to 300 chars to stay sane on long mobile UAs.
+    await appendRow(context.env, 'Registrations', [date, sheetSafe(name), cleanPhone, status, fee, timestamp, refCode, '', cleanedCarPlate, reqIp, reqCountry, sheetSafe(reqUA)]);
 
     // Send Telegram notification
     const spotsLeft = maxPlayers - activeCount - (status === 'Waitlist' ? 0 : 1);

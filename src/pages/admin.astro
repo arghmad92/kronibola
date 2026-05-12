@@ -68,6 +68,7 @@ import Layout from '../layouts/Layout.astro';
         <button class="tab" data-tab="calendar">Calendar</button>
         <button class="tab" data-tab="stats">Stats</button>
         <button class="tab" data-tab="notifs">Notifs</button>
+        <button class="tab" data-tab="blocked">Blocked</button>
         <button class="tab" data-tab="admins">Admins</button>
       </div>
 
@@ -333,6 +334,31 @@ import Layout from '../layouts/Layout.astro';
 
         <!-- Selected-day details panel -->
         <div class="cal-day-details" id="calDayDetails"></div>
+      </div>
+
+      <!-- Blocked Tab — manage phone & IP blocklist for spam / fake receipts -->
+      <div class="tab-panel" id="tab-blocked">
+        <div class="panel-top">
+          <h3 class="panel-title">BLOCK <span class="neon-text">LIST</span></h3>
+          <button class="btn btn--outline btn--sm" id="refreshBlockedBtn">Refresh</button>
+        </div>
+        <p class="admin-help">Phones and IPs in these lists are rejected at registration with a generic error. Useful for shutting down repeat fake-receipt offenders without exposing them to enumeration.</p>
+
+        <div class="block-section">
+          <div class="block-section-head">
+            <h4 class="sub-heading" style="margin:0">BLOCKED <span class="neon-text">PHONES</span></h4>
+            <button class="btn btn--primary btn--sm" id="addBlockedPhoneBtn">+ Add</button>
+          </div>
+          <div id="blockedPhonesList" class="card-list"></div>
+        </div>
+
+        <div class="block-section" style="margin-top:1.5rem">
+          <div class="block-section-head">
+            <h4 class="sub-heading" style="margin:0">BLOCKED <span class="neon-text">IPs</span></h4>
+            <button class="btn btn--primary btn--sm" id="addBlockedIpBtn">+ Add</button>
+          </div>
+          <div id="blockedIpsList" class="card-list"></div>
+        </div>
       </div>
 
       <!-- Admins Tab — manage admin accounts -->
@@ -1075,7 +1101,7 @@ import Layout from '../layouts/Layout.astro';
   // Track which lazy-loaded tabs have already fetched so we don't refetch
   // every time the admin clicks back to them — let an explicit Refresh
   // button (or save/cancel actions) trigger reloads.
-  const tabsLoaded = { calendar: false, admins: false };
+  const tabsLoaded = { calendar: false, admins: false, blocked: false };
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1086,7 +1112,84 @@ import Layout from '../layouts/Layout.astro';
       if (panel) panel.classList.add('active');
       if (which === 'calendar' && !tabsLoaded.calendar) { tabsLoaded.calendar = true; loadCalendar(); }
       if (which === 'admins' && !tabsLoaded.admins) { tabsLoaded.admins = true; loadAdmins(); }
+      if (which === 'blocked' && !tabsLoaded.blocked) { tabsLoaded.blocked = true; loadBlocked(); }
     });
+  });
+
+  // --- BLOCK LIST ---
+  async function loadBlocked() {
+    const phonesEl = document.getElementById('blockedPhonesList')!;
+    const ipsEl = document.getElementById('blockedIpsList')!;
+    phonesEl.innerHTML = '<p class="empty-msg">Loading…</p>';
+    ipsEl.innerHTML = '<p class="empty-msg">Loading…</p>';
+    try {
+      const res = await fetch(`${API}/admin/blocklist`, { headers: { Authorization: adminToken } });
+      const data = await res.json();
+      const phones = data.phones || [];
+      const ips = data.ips || [];
+
+      const renderRow = (kind: string, value: string, reason: string, when: string, by: string) =>
+        `<div class="block-row">
+          <div class="block-row-main">
+            <div class="block-row-value">${esc(value)}</div>
+            ${reason ? `<div class="block-row-reason">${esc(reason)}</div>` : ''}
+            <div class="block-row-meta">${esc(when)} · by ${esc(by)}</div>
+          </div>
+          <button type="button" class="pca-save pca-save--danger block-remove" data-kind="${kind}" data-value="${esc(value)}">Remove</button>
+        </div>`;
+
+      phonesEl.innerHTML = phones.length
+        ? phones.map((r: any) => renderRow('phone', String(r.Phone || ''), String(r.Reason || ''), String(r['Blocked At'] || ''), String(r['Blocked By'] || ''))).join('')
+        : '<p class="empty-msg">No phones blocked.</p>';
+      ipsEl.innerHTML = ips.length
+        ? ips.map((r: any) => renderRow('ip', String(r.IP || ''), String(r.Reason || ''), String(r['Blocked At'] || ''), String(r['Blocked By'] || ''))).join('')
+        : '<p class="empty-msg">No IPs blocked.</p>';
+    } catch {
+      phonesEl.innerHTML = '<p class="empty-msg">Failed to load.</p>';
+      ipsEl.innerHTML = '';
+    }
+  }
+
+  document.getElementById('refreshBlockedBtn')!.addEventListener('click', () => loadBlocked());
+
+  async function addBlockEntry(kind: 'phone' | 'ip') {
+    const label = kind === 'phone' ? 'phone (E.164, e.g. +60123456789)' : 'IP address';
+    const value = prompt(`Enter ${label} to block:`);
+    if (!value) return;
+    const reason = prompt('Reason (optional):') || '';
+    try {
+      const res = await fetch(`${API}/admin/blocklist`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+        body: JSON.stringify({ kind, value: value.trim(), reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || 'Add failed'); return; }
+      if (data.alreadyBlocked) alert('Already blocked.');
+      await loadBlocked();
+    } catch { alert('Add failed.'); }
+  }
+
+  document.getElementById('addBlockedPhoneBtn')!.addEventListener('click', () => addBlockEntry('phone'));
+  document.getElementById('addBlockedIpBtn')!.addEventListener('click', () => addBlockEntry('ip'));
+
+  document.getElementById('tab-blocked')!.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('.block-remove') as HTMLButtonElement | null;
+    if (!btn) return;
+    const kind = btn.dataset.kind || '';
+    const value = btn.dataset.value || '';
+    if (!kind || !value) return;
+    if (!confirm(`Remove this ${kind} from the blocklist?`)) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${API}/admin/blocklist?kind=${encodeURIComponent(kind)}&value=${encodeURIComponent(value)}`, {
+        method: 'DELETE', headers: { Authorization: adminToken },
+      });
+      if (!res.ok) throw new Error('delete failed');
+      await loadBlocked();
+    } catch {
+      btn.disabled = false;
+      alert('Remove failed.');
+    }
   });
 
   // --- SCHEDULE (Card Layout) ---
@@ -1374,15 +1477,30 @@ import Layout from '../layouts/Layout.astro';
       const waNum = (window as any).KB_PHONE?.toWaNumber(phone) || '';
       const waLink = waNum ? `https://wa.me/${waNum}?text=${waMsg}` : '#';
 
+      // Tracing metadata captured at registration time. Older rows
+      // (pre-blocklist deploy) will have these empty — the expander just
+      // shows what's there.
+      const ip = String(p.IP || '').trim();
+      const country = String(p.Country || '').trim();
+      const ua = String(p['User Agent'] || '').trim();
+      const hasTraceData = !!(ip || country || ua);
+
       return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
         <div class="pca-top">
           <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">${esc(initial)}</div>
           <div class="pca-info">
             <span class="pca-name">${playerName}</span>
-            <span class="pca-phone">${esc(phone)}</span>
+            <span class="pca-phone">${esc(phone)} ${country ? `<span class="pca-country">${esc(country)}</span>` : ''}</span>
             ${ref ? `<span class="pca-ref">${esc(ref)}</span>` : ''}
           </div>
+          ${hasTraceData ? `<button type="button" class="pca-trace-toggle" data-ref="${esc(ref)}" title="Show registration details">🔍</button>` : ''}
         </div>
+        ${hasTraceData ? `<div class="pca-trace" id="trace-${esc(ref)}" style="display:none">
+          ${ip ? `<div><span class="trace-label">IP</span><span class="trace-val">${esc(ip)}</span></div>` : ''}
+          ${country ? `<div><span class="trace-label">Country</span><span class="trace-val">${esc(country)}</span></div>` : ''}
+          ${ua ? `<div><span class="trace-label">Device</span><span class="trace-val" title="${esc(ua)}">${esc(ua.slice(0, 80))}${ua.length > 80 ? '…' : ''}</span></div>` : ''}
+          <button type="button" class="pca-block" data-phone="${esc(phone)}" data-ip="${esc(ip)}" data-name="${playerName}">🚫 BLOCK PHONE${ip ? ' + IP' : ''}</button>
+        </div>` : ''}
         <div class="pca-controls">
           <div class="pca-field">
             <label>Status</label>
@@ -1649,6 +1767,45 @@ import Layout from '../layouts/Layout.astro';
 
   // --- Per-player save & delete (event delegation on players list) ---
   document.getElementById('playersList')!.addEventListener('click', async (e) => {
+    // Trace expander — toggles the IP/Country/UA detail panel under each card.
+    const traceBtn = (e.target as HTMLElement).closest('.pca-trace-toggle') as HTMLButtonElement | null;
+    if (traceBtn) {
+      const ref = traceBtn.dataset.ref || '';
+      const panel = document.getElementById(`trace-${ref}`);
+      if (panel) panel.style.display = panel.style.display === 'none' ? '' : 'none';
+      return;
+    }
+    // Block button — adds the player's phone (and IP if captured) to the
+    // blocklist sheets, then optionally marks the registration Rejected.
+    const blockBtn = (e.target as HTMLElement).closest('.pca-block') as HTMLButtonElement | null;
+    if (blockBtn) {
+      const blkPhone = blockBtn.dataset.phone || '';
+      const blkIp = blockBtn.dataset.ip || '';
+      const blkName = blockBtn.dataset.name || 'this player';
+      const reason = prompt(`Block ${blkName}? Enter a reason (optional, shown only in admin):`, 'Fake receipt');
+      if (reason === null) return; // user hit Cancel
+      blockBtn.disabled = true;
+      blockBtn.textContent = '...';
+      try {
+        const calls: Promise<Response>[] = [];
+        if (blkPhone) calls.push(fetch(`${API}/admin/blocklist`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+          body: JSON.stringify({ kind: 'phone', value: blkPhone, reason }),
+        }));
+        if (blkIp) calls.push(fetch(`${API}/admin/blocklist`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: adminToken },
+          body: JSON.stringify({ kind: 'ip', value: blkIp, reason }),
+        }));
+        await Promise.all(calls);
+        blockBtn.textContent = '✓ BLOCKED';
+        blockBtn.style.background = 'rgba(255,59,48,0.25)';
+      } catch (err) {
+        blockBtn.textContent = '🚫 BLOCK';
+        blockBtn.disabled = false;
+        alert('Block failed. Try again.');
+      }
+      return;
+    }
     const deleteBtn = (e.target as HTMLElement).closest('.pca-delete') as HTMLButtonElement | null;
     const saveBtn = !deleteBtn ? (e.target as HTMLElement).closest('.pca-save') as HTMLButtonElement | null : null;
     const target = deleteBtn || saveBtn;
@@ -2943,6 +3100,52 @@ import Layout from '../layouts/Layout.astro';
     background: rgba(0,255,65,0.04); border: 1px solid rgba(0,255,65,0.15);
     border-radius: 10px;
   }
+
+  /* Player trace details (IP/Country/UA) — collapsed by default, toggled by 🔍 */
+  .pca-trace-toggle {
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all 0.15s; padding: 0;
+  }
+  .pca-trace-toggle:hover { color: var(--text); border-color: var(--border-light); background: rgba(255,255,255,0.03); }
+  .pca-trace {
+    margin-top: 0.6rem; padding: 0.6rem 0.7rem; border-radius: 10px;
+    background: rgba(255,255,255,0.02); border: 1px dashed var(--border);
+    font-size: 0.74rem; font-family: 'Space Grotesk', sans-serif;
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .pca-trace > div { display: flex; gap: 0.5rem; }
+  .pca-trace .trace-label { color: var(--text-muted); min-width: 56px; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.5px; }
+  .pca-trace .trace-val { color: var(--text); flex: 1; word-break: break-all; }
+  .pca-trace .pca-block {
+    margin-top: 0.4rem; align-self: flex-start;
+    background: rgba(255,59,48,0.1); color: #ff3b30; border: 1px solid rgba(255,59,48,0.3);
+    padding: 0.35rem 0.75rem; border-radius: 8px; font-size: 0.72rem; font-weight: 700;
+    font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.5px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pca-trace .pca-block:hover:not(:disabled) { background: rgba(255,59,48,0.2); }
+  .pca-trace .pca-block:disabled { opacity: 0.6; cursor: not-allowed; }
+  .pca-country {
+    margin-left: 0.4rem; padding: 1px 6px; border-radius: 100px;
+    background: rgba(0,255,65,0.08); color: var(--neon); border: 1px solid rgba(0,255,65,0.25);
+    font-size: 0.6rem; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    letter-spacing: 0.5px; vertical-align: middle;
+  }
+
+  /* Block-list rows in the Blocked tab */
+  .block-section { display: flex; flex-direction: column; gap: 0.6rem; }
+  .block-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
+  .block-row {
+    display: flex; gap: 0.7rem; align-items: center;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    border-radius: 12px; padding: 0.7rem 0.85rem;
+  }
+  .block-row-main { flex: 1; min-width: 0; }
+  .block-row-value { color: var(--text); font-weight: 600; font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem; word-break: break-all; }
+  .block-row-reason { color: var(--text-secondary); font-size: 0.72rem; margin-top: 2px; }
+  .block-row-meta { color: var(--text-muted); font-size: 0.64rem; margin-top: 4px; letter-spacing: 0.3px; }
 
   .admin-role-chip {
     display: inline-block; margin-left: 0.4rem; padding: 0.1rem 0.5rem;
