@@ -83,7 +83,21 @@ export async function onRequest(context) {
     let all = await readSheet(context.env, 'Registrations');
     all = await flagOverdue(context.env, all);
     const filtered = date ? all.filter((p) => String(p['Session Date']) === date) : all;
-    return json({ players: filtered.map(publicPlayer) });
+
+    // Aggregate momentum signal: how many real registrations landed in the
+    // last 24h for this session. Single int — no per-player timestamps leave
+    // the server, so publicPlayer's PII boundary is preserved.
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    const recentJoins24h = filtered.reduce((n, p) => {
+      if (p['Payment Status'] === 'Rejected') return n;
+      const ts = p['Timestamp'];
+      if (!ts) return n;
+      const parsed = new Date(ts.replace(' ', 'T') + 'Z').getTime();
+      return !isNaN(parsed) && now - parsed < DAY ? n + 1 : n;
+    }, 0);
+
+    return json({ players: filtered.map(publicPlayer), recentJoins24h });
   } catch (e) {
     console.error('Players error:', e);
     return json({ error: 'An error occurred. Please try again.' }, 500);

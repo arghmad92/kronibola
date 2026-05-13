@@ -41,15 +41,6 @@ const canonicalUrl = Astro.url.href;
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-XXXXXXXXXX');
-    </script>
-
     <link rel="icon" type="image/png" href="/logo-v2.png" />
     <link rel="apple-touch-icon" href="/logo-v2.png" />
     <link rel="manifest" href="/manifest.json" />
@@ -267,7 +258,17 @@ const canonicalUrl = Astro.url.href;
         </div>
 
         <div class="modal-page" id="step3">
-          <div class="done-icon">&#9917;</div>
+          <div class="done-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 7l4.76 3.45l-1.76 5.55h-6l-1.76 -5.55z"/>
+              <path d="M12 7v-5"/>
+              <path d="M15 16l3 4"/>
+              <path d="M16.85 10.45l4.15 -1.45"/>
+              <path d="M9 16l-3 4"/>
+              <path d="M7.15 10.45l-4.15 -1.45"/>
+            </svg>
+          </div>
           <h3 class="modal-title" id="doneTitle">YOU'RE <span class="neon-text">IN!</span></h3>
           <p class="modal-sub" id="doneSub">Slot confirmed. See you on the pitch!</p>
           <!-- Confirmation receipt -->
@@ -679,7 +680,7 @@ const canonicalUrl = Astro.url.href;
     --card: rgba(255, 255, 255, 0.85);
     --text: #1a1a1a;
     --text-secondary: #5a5a5a;
-    --text-muted: #999999;
+    --text-muted: #6b6b6b;
     --border: #e2e2dd;
     --border-light: #d5d5cf;
     --orange: #e87800;
@@ -1086,12 +1087,12 @@ const canonicalUrl = Astro.url.href;
   }
 
   .nav-item {
-    display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
-    padding: 0.35rem 0.4rem; color: var(--text-muted); font-size: 0.5rem;
-    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    padding: 0.4rem 0.4rem; color: var(--text-muted); font-size: 0.625rem;
+    font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
     transition: all 0.2s; position: relative; min-width: 0;
   }
-  .nav-item svg { width: 18px; height: 18px; }
+  .nav-item svg { width: 20px; height: 20px; }
   .nav-item.active { color: var(--neon); }
   .nav-item.active::after {
     content: ''; position: absolute; top: -0.4rem; left: 50%; transform: translateX(-50%);
@@ -1149,7 +1150,8 @@ const canonicalUrl = Astro.url.href;
   .modal-page { display: none; flex-direction: column; gap: 1rem; }
   .modal-page.active { display: flex; }
   .qr-img { border-radius: 16px; border: 1px solid var(--border); width: 100%; height: auto; }
-  .done-icon { font-size: 3.5rem; text-align: center; margin-bottom: 0.5rem; }
+  .done-icon { text-align: center; margin-bottom: 0.5rem; color: var(--neon); }
+  .done-icon svg { width: 56px; height: 56px; margin: 0 auto; display: block; filter: drop-shadow(0 0 12px var(--neon-glow)); }
 
   /* Share modal — surfaced from each match card */
   .share-preview {
@@ -1278,5 +1280,36 @@ const canonicalUrl = Astro.url.href;
     .modal-overlay { align-items: center; padding: 1rem; }
     .modal { border-radius: 24px; }
     @keyframes slideUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: none; } }
+  }
+
+  /* Keyboard focus — visible ring without disrupting mouse-click styling.
+     Most form-input/btn :focus rules use neon border/shadow; this layers
+     an outline on top for keyboard users only (WCAG 2.4.7). */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid var(--neon);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .btn:focus-visible,
+  .nav-item:focus-visible,
+  .form-input:focus-visible,
+  .form-select:focus-visible,
+  .modal-close:focus-visible,
+  .theme-toggle:focus-visible {
+    outline-offset: 3px;
+  }
+
+  /* Respect OS motion preference (WCAG 2.3.3).
+     Cuts decorative animations: floating bg orbs, blinking overdue badge,
+     pulsing live countdown, modal slide-up, install banner transitions. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .bg-orb, .bg-grid { animation: none; }
   }
 </style>
