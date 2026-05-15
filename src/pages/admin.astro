@@ -107,14 +107,18 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
              Click a filled slot to jump to that player's card; click an
              empty slot to open the Add Player form pre-filled. -->
         <div id="adminTeamView" style="display:none;margin-bottom:0.8rem"></div>
-        <!-- Share to WhatsApp -->
-        <div id="shareWaSection" style="display:none;margin-bottom:0.8rem">
-          <div class="share-wa-btns">
-            <button class="btn btn--wa btn--sm" id="shareWaOpen">🟢 Open</button>
-            <button class="btn btn--wa btn--sm" id="shareWaFilling">🔥 Filling Up</button>
-            <button class="btn btn--wa btn--sm" id="shareWaLast">🚨 Last Slots</button>
-            <button class="btn btn--wa btn--sm" id="shareWaFull">🔴 Full</button>
-          </div>
+        <!-- Share to WhatsApp — collapsed into a <details> so the four
+             templates don't dominate the page. Click to expand. -->
+        <div id="shareWaSection" style="display:none;margin-bottom:0.7rem">
+          <details class="share-wa">
+            <summary class="share-wa-toggle">📣 Share to WhatsApp</summary>
+            <div class="share-wa-btns">
+              <button class="btn btn--wa btn--sm" id="shareWaOpen">🟢 Open</button>
+              <button class="btn btn--wa btn--sm" id="shareWaFilling">🔥 Filling Up</button>
+              <button class="btn btn--wa btn--sm" id="shareWaLast">🚨 Last Slots</button>
+              <button class="btn btn--wa btn--sm" id="shareWaFull">🔴 Full</button>
+            </div>
+          </details>
         </div>
         <!-- Add player form -->
         <div class="add-player-box" id="addPlayerBox" style="display:none">
@@ -1237,6 +1241,16 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     { label: 'Team B', color: '#00c4ff' },
     { label: 'Team C', color: '#ff9500' },
   ];
+  // True when a hex colour will be hard to read as text/badge on the
+  // dark admin UI. Threshold tuned by eye against the dark surface.
+  function isColorTooDark(hex: string): boolean {
+    const m = String(hex || '').match(/^#?([0-9a-fA-F]{6})$/);
+    if (!m) return false;
+    const n = parseInt(m[1], 16);
+    const lin = (c: number) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const lum = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+    return lum < 0.12;
+  }
   function parseTeams(raw: any) {
     if (raw) {
       try {
@@ -1333,6 +1347,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
             ${parseTeams(s.Teams).map((t: any, ti: number) => `<div class="ac-team-row">
               <input type="color" class="s-teamcfg" data-idx="${i}" data-team="${ti}" data-tf="color" value="${esc(t.color)}" title="Team ${ti + 1} jersey colour" />
               <input type="text" class="form-input s-teamcfg" data-idx="${i}" data-team="${ti}" data-tf="label" value="${esc(t.label)}" placeholder="e.g. Reds" maxlength="24" />
+              <span class="ac-team-warn" data-idx="${i}" data-team="${ti}" title="This colour may be hard to read on the dark UI — pick a brighter one" style="display:${isColorTooDark(t.color) ? '' : 'none'}">⚠</span>
             </div>`).join('')}
           </div>` : ''}
         </div>
@@ -1355,13 +1370,16 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       });
     });
     // Team config inputs — any change re-serialises all 3 rows for that
-    // session into the Teams JSON column.
+    // session into the Teams JSON column, and refreshes the per-row
+    // low-contrast warning.
     wrap.querySelectorAll('.s-teamcfg').forEach(el => {
       el.addEventListener('change', (e) => {
         const idx = parseInt((e.target as HTMLElement).dataset.idx!);
         const cfg = [0, 1, 2].map((ti) => {
           const colorEl = wrap.querySelector(`.s-teamcfg[data-idx="${idx}"][data-team="${ti}"][data-tf="color"]`) as HTMLInputElement | null;
           const labelEl = wrap.querySelector(`.s-teamcfg[data-idx="${idx}"][data-team="${ti}"][data-tf="label"]`) as HTMLInputElement | null;
+          const warnEl = wrap.querySelector(`.ac-team-warn[data-idx="${idx}"][data-team="${ti}"]`) as HTMLElement | null;
+          if (warnEl) warnEl.style.display = isColorTooDark(colorEl?.value || '') ? '' : 'none';
           return {
             label: (labelEl?.value || '').trim() || `Team ${String.fromCharCode(65 + ti)}`,
             color: colorEl?.value || KB_DEFAULT_TEAMS[ti].color,
@@ -1782,29 +1800,33 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
         </div>` : ''}
         ${shuffleRow}
         <div class="pca-controls">
-          <div class="pca-field">
-            <label>Status</label>
-            <select class="form-select p-status" data-name="${playerName}">
-              <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
-              <option value="Overdue" ${status === 'Overdue' ? 'selected' : ''}>Overdue</option>
-              <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
-              <option value="Waitlist" ${status === 'Waitlist' ? 'selected' : ''}>Waitlist</option>
-              <option value="Rejected" ${status === 'Rejected' ? 'selected' : ''}>Rejected</option>
-            </select>
+          <div class="pca-fields">
+            <div class="pca-field">
+              <label>Status</label>
+              <select class="form-select p-status" data-name="${playerName}">
+                <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
+                <option value="Overdue" ${status === 'Overdue' ? 'selected' : ''}>Overdue</option>
+                <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
+                <option value="Waitlist" ${status === 'Waitlist' ? 'selected' : ''}>Waitlist</option>
+                <option value="Rejected" ${status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+              </select>
+            </div>
+            <div class="pca-field">
+              <label>Refund</label>
+              <select class="form-select p-refund" data-name="${playerName}">
+                <option value="" ${!refund ? 'selected' : ''}>—</option>
+                <option value="Pending Refund" ${refund === 'Pending Refund' ? 'selected' : ''}>Pending</option>
+                <option value="Refunded" ${refund === 'Refunded' ? 'selected' : ''}>Done</option>
+              </select>
+            </div>
           </div>
-          <div class="pca-field">
-            <label>Refund</label>
-            <select class="form-select p-refund" data-name="${playerName}">
-              <option value="" ${!refund ? 'selected' : ''}>—</option>
-              <option value="Pending Refund" ${refund === 'Pending Refund' ? 'selected' : ''}>Pending</option>
-              <option value="Refunded" ${refund === 'Refunded' ? 'selected' : ''}>Done</option>
-            </select>
+          <div class="pca-actions">
+            <button type="button" class="pca-save" data-name="${playerName}" title="Save this player">SAVE</button>
+            <button type="button" class="pca-save pca-save--danger pca-delete" data-name="${playerName}" title="Delete this player">DELETE</button>
+            <a href="${waLink}" target="_blank" class="pca-wa" title="WhatsApp">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+            </a>
           </div>
-          <button type="button" class="pca-save" data-name="${playerName}" title="Save this player">SAVE</button>
-          <button type="button" class="pca-save pca-save--danger pca-delete" data-name="${playerName}" title="Delete this player">DELETE</button>
-          <a href="${waLink}" target="_blank" class="pca-wa" title="WhatsApp">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
-          </a>
         </div>
       </div>`;
     }).join('');
@@ -4014,6 +4036,11 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.04); cursor: pointer;
   }
   .ac-team-row .s-teamcfg[type="text"] { flex: 1; min-width: 0; }
+  .ac-team-warn {
+    flex-shrink: 0; color: var(--orange);
+    font-size: 0.95rem; line-height: 1; cursor: help;
+    padding: 0 0.15rem;
+  }
 
   .s-input { padding: 0.6rem 0.8rem; font-size: 0.82rem; border-radius: 10px; width: 100%; min-width: 0; box-sizing: border-box; }
   select.s-input { appearance: none; padding-right: 2rem; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.8rem center; }
@@ -4042,20 +4069,35 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     font-size: 0.8rem; font-weight: 800; border: 2px solid; font-family: 'Space Grotesk', sans-serif; flex-shrink: 0;
   }
   .pca-info { flex: 1; min-width: 0; }
-  .pca-name { display: block; font-weight: 700; font-size: 0.88rem; line-height: 1.2; }
-  .pca-phone { display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+  /* Truncate so long phones / international names don't push the card
+     wider than its container (the parent is min-width:0, but the spans
+     also need their own ellipsis rules to actually shrink). */
+  .pca-name {
+    display: block; font-weight: 700; font-size: 0.88rem; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pca-phone {
+    display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .pca-ref { display: inline-block; font-size: 0.6rem; font-family: 'Space Grotesk', monospace; color: var(--neon); background: rgba(0,255,65,0.08); padding: 0.08rem 0.35rem; border-radius: 4px; margin-top: 0.15rem; }
 
-  .pca-controls { display: flex; gap: 0.45rem; align-items: flex-end; flex-wrap: wrap; }
-  @media (max-width: 480px) { .pca-controls { flex-direction: column; align-items: stretch; } .pca-wa { align-self: flex-start; } }
-  .pca-field { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; }
-  /* Team/Position shuffle row — 3-team sessions only. Solid hairline
-     instead of dashed reads cleaner alongside the trace expander. */
+  /* Two-tier controls: a 1fr 1fr grid of Status/Refund (matching the
+     Team/Position grid above for visual alignment) + a right-aligned
+     action row beneath. Stops the SAVE/DELETE buttons from colliding
+     with the wide POSITION dropdown column. */
+  .pca-controls { display: flex; flex-direction: column; gap: 0.5rem; }
+  .pca-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
+  .pca-actions { display: flex; gap: 0.4rem; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+  .pca-field { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+  /* Team/Position shuffle row — same grid shape as .pca-fields so the
+     two rows visually stack as a clean 2-column block. */
   .pca-shuffle {
-    display: flex; gap: 0.45rem; margin-top: 0.5rem; padding-top: 0.5rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem;
+    margin-top: 0.5rem; padding-top: 0.5rem;
     border-top: 1px solid var(--border);
   }
-  .pca-shuffle .pca-field { flex: 1; min-width: 0; }
+  .pca-shuffle .pca-field { min-width: 0; }
   .pca-shuffle .form-select { font-size: 0.8rem; }
   .pca-field label { font-size: 0.58rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
   .pca-field .form-select { padding: 0.5rem 0.6rem; font-size: 0.78rem; border-radius: 10px; }
@@ -4152,6 +4194,27 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   .notif-resend:hover { text-decoration: underline; }
 
   /* Car Plate Section */
+  /* WhatsApp share — collapsed disclosure. Subtle button by default,
+     reveals 4 templates on click. Keeps the page tidy when the admin
+     isn't sharing. */
+  .share-wa { width: 100%; }
+  .share-wa-toggle {
+    cursor: pointer; user-select: none; list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.55rem 0.85rem; border-radius: 12px;
+    background: rgba(37,211,102,0.08); border: 1px solid rgba(37,211,102,0.25);
+    color: #25D366; font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 0.78rem; letter-spacing: 0.04em;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .share-wa-toggle::-webkit-details-marker { display: none; }
+  .share-wa-toggle::after {
+    content: '▾'; font-size: 0.7rem; opacity: 0.7; transition: transform 0.2s;
+    margin-left: 0.5rem;
+  }
+  .share-wa-toggle:hover { background: rgba(37,211,102,0.14); }
+  .share-wa[open] > .share-wa-toggle { background: rgba(37,211,102,0.14); }
+  .share-wa[open] > .share-wa-toggle::after { transform: rotate(180deg); }
   .share-wa-btns {
     display: grid;
     grid-template-columns: 1fr 1fr;
