@@ -20,6 +20,7 @@
     --border: #1e1e1e;
     --border-light: #2a2a2a;
     --orange: #ff9500;
+    --amber: #ffb340;
     --blue: #00c4ff;
     --pitch-1: #0c2912;
     --pitch-2: #0a1f0e;
@@ -87,6 +88,7 @@
   .legend-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
   .legend-dot--paid { background: var(--neon); }
   .legend-dot--pending { background: var(--orange); }
+  .legend-dot--held { background: var(--amber); }
   .legend-dot--empty { border: 1.5px dashed var(--text-muted); }
 
   /* Pitches grid */
@@ -166,18 +168,26 @@
     color: var(--slot-color);
   }
   .slot--paid .slot-name { color: #fff; }
-  /* Pending slot */
+  /* Verifying slot — receipt uploaded, awaiting admin check. Slot is SAFE. */
   .slot--pending .slot-dot {
     background: rgba(255,149,0,0.18); border: 2px solid var(--orange);
     color: var(--orange);
   }
   .slot--pending .slot-name { color: var(--orange); }
+  /* Held slot — booked, still paying. The ONLY state with a countdown.
+     Dashed border signals "not locked in yet" vs the solid border above. */
+  .slot--held .slot-dot {
+    background: rgba(255,179,64,0.14); border: 2px dashed var(--amber);
+    color: var(--amber);
+  }
+  .slot--held .slot-name { color: var(--amber); }
   .slot-badge {
-    position: absolute; top: -3px; right: 8px; width: 13px; height: 13px;
-    border-radius: 50%; border: 2px solid var(--bg); font-size: 7px;
+    position: absolute; top: -3px; right: 6px; width: 15px; height: 15px;
+    border-radius: 50%; border: 2px solid var(--bg); font-size: 9px;
     display: flex; align-items: center; justify-content: center;
   }
   .slot-badge--pending { background: var(--orange); color: #000; }
+  .slot-badge--held { background: var(--amber); color: #000; }
 
   /* Booking modal */
   .modal-backdrop {
@@ -289,15 +299,16 @@
     </div>
 
     <div class="legend">
-      <div class="legend-item"><span class="legend-dot legend-dot--paid"></span> Paid &amp; confirmed</div>
-      <div class="legend-item"><span class="legend-dot legend-dot--pending"></span> Pending payment</div>
+      <div class="legend-item"><span class="legend-dot legend-dot--paid"></span> Confirmed</div>
+      <div class="legend-item"><span class="legend-dot legend-dot--pending"></span> Receipt in — verifying</div>
+      <div class="legend-item"><span class="legend-dot legend-dot--held"></span> Held — paying</div>
       <div class="legend-item"><span class="legend-dot legend-dot--empty"></span> Open — tap to book</div>
     </div>
 
     <div class="pitches" id="pitches"></div>
 
     <div class="footer-note">
-      <strong>How it works:</strong> Each team is a full 4-3-3. Players tap any open position on any team to book it — first come, first served. Filled spots show who's in and whether they've paid. Booking opens the registration form pre-filled with the team + position. Admins can shuffle players between teams from the panel if things get lopsided.
+      <strong>How it works:</strong> Each team is a full 4-3-3. Players tap any open position to book it — first come, first served. They pay, upload a receipt, and the spot is <strong>locked in</strong> — admin verification happens afterwards and never costs anyone their slot. Only un-paid holds get released back to the pool after the hold window. Admins can shuffle players between teams from the panel if things get lopsided.
     </div>
   </main>
 
@@ -324,7 +335,7 @@
         <input class="field-input" placeholder="🇲🇾 +60  ·  123456789" />
       </div>
       <button class="modal-btn" id="modalConfirm">Hold My Slot →</button>
-      <p class="modal-note">Slot is held for 30 min. Pay &amp; upload receipt to confirm, or it's released back to the pool.</p>
+      <p class="modal-note">Your spot is held while you pay. Upload your receipt and it's <strong>locked in</strong> — no rush after that, even if an admin takes a while to verify. Only un-paid spots get released back to the pool.</p>
     </div>
   </div>
 
@@ -347,19 +358,21 @@
   ];
 
   // Sample data — A is popular, C is sparse (shows the "join the empty team" case).
+  // States: paid = confirmed, pending = receipt in / verifying, held = booked but
+  // still paying (the only state with a countdown).
   const TEAMS = [
     { key: 'A', name: 'TEAM A', color: '#00FF41', players: {
       GK:{n:'Haziq',s:'paid'}, LB:{n:'Faiz',s:'paid'}, LCB:{n:'Aiman',s:'paid'},
       RCB:{n:'Danial',s:'pending'}, RB:{n:'Iqbal',s:'paid'}, LCM:{n:'Syafiq',s:'paid'},
-      CM:{n:'Hakim',s:'paid'}, LW:{n:'Amir',s:'paid'}, ST:{n:'Zain',s:'pending'},
+      CM:{n:'Hakim',s:'paid'}, LW:{n:'Amir',s:'paid'}, ST:{n:'Zain',s:'held'},
     }},
     { key: 'B', name: 'TEAM B', color: '#00c4ff', players: {
-      GK:{n:'Adib',s:'paid'}, LCB:{n:'Rizal',s:'paid'}, RCB:{n:'Naufal',s:'pending'},
+      GK:{n:'Adib',s:'paid'}, LCB:{n:'Rizal',s:'paid'}, RCB:{n:'Naufal',s:'held'},
       LCM:{n:'Harith',s:'paid'}, CM:{n:'Imran',s:'paid'}, ST:{n:'Fahmi',s:'paid'},
       RW:{n:'Zikri',s:'pending'},
     }},
     { key: 'C', name: 'TEAM C', color: '#ff9500', players: {
-      LB:{n:'Azim',s:'paid'}, RB:{n:'Hafiz',s:'pending'}, CM:{n:'Luqman',s:'paid'},
+      LB:{n:'Azim',s:'paid'}, RB:{n:'Hafiz',s:'held'}, CM:{n:'Luqman',s:'paid'},
       ST:{n:'Yusof',s:'paid'},
     }},
   ];
@@ -380,7 +393,9 @@
         ? `<span class="slot-name">${player.n}</span>`
         : `<span class="slot-name">${pos.full}</span>`;
       const badge = state === 'pending'
-        ? `<span class="slot-badge slot-badge--pending">!</span>` : '';
+        ? `<span class="slot-badge slot-badge--pending">✓</span>`
+        : state === 'held'
+        ? `<span class="slot-badge slot-badge--held">⏳</span>` : '';
       return `<div class="slot slot--${state}" style="left:${pos.x}%;top:${pos.y}%;--slot-color:${team.color}"
                    data-team="${team.key}" data-team-name="${team.name}" data-team-color="${team.color}"
                    data-pos="${pos.id}" data-pos-full="${pos.full}" data-pos-label="${pos.label}"
@@ -433,7 +448,10 @@
       backdrop.classList.add('open');
     } else {
       // Filled — quick "who's here" toast
-      toast.textContent = slot.dataset.player + ' · ' + (state === 'paid' ? 'Paid ✓' : 'Pending payment');
+      const label = state === 'paid' ? 'Confirmed ✓'
+        : state === 'pending' ? 'Receipt in — verifying'
+        : 'Held — paying';
+      toast.textContent = slot.dataset.player + ' · ' + label;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2200);
     }
