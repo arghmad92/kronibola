@@ -1562,6 +1562,8 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     const totalSlots = 3 * formationSlots.length;
     const filled = Object.keys(occupied).length;
 
+    // Track filled count per team so the mobile tabs can show "8/11" etc.
+    const teamCounts: number[] = [];
     const pitches = ['A', 'B', 'C'].map((teamKey, ti) => {
       const tc = teamsCfg[ti] || { label: `Team ${teamKey}`, color: '#888' };
       const color = tc.color;
@@ -1589,7 +1591,10 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
           ${nameLine}
         </div>`;
       }).join('');
-      return `<div class="atv-pitch-card">
+      teamCounts.push(teamFilled);
+      // First card starts active so the mobile tabbed view has a visible
+      // pitch on initial render. Desktop (≥900px) shows all 3 regardless.
+      return `<div class="atv-pitch-card ${ti === 0 ? 'active' : ''}" data-team="${teamKey}">
         <div class="atv-pitch-head">
           <span class="atv-team-dot" style="background:${color}"></span>
           <span class="atv-team-name" style="color:${color}">${esc(label)}</span>
@@ -1608,11 +1613,22 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       </div>`;
     }).join('');
 
+    // Mobile tabs — one per team. Hidden on desktop (CSS).
+    const tabs = ['A', 'B', 'C'].map((teamKey, ti) => {
+      const tc = teamsCfg[ti] || { label: `Team ${teamKey}`, color: '#888' };
+      return `<button type="button" class="atv-tab ${ti === 0 ? 'active' : ''}" data-team="${teamKey}" style="--atv-color:${tc.color}">
+        <span class="atv-tab-dot"></span>
+        <span class="atv-tab-label">${esc(tc.label)}</span>
+        <span class="atv-tab-count">${teamCounts[ti]}/${formationSlots.length}</span>
+      </button>`;
+    }).join('');
+
     view.innerHTML = `
       <div class="atv-head">
         <span class="atv-title">Pitch view</span>
         <span class="atv-sub">${filled}/${totalSlots} filled · tap a player to jump · tap an empty slot to add</span>
       </div>
+      <div class="atv-tabs">${tabs}</div>
       <div class="atv-pitches">${pitches}</div>
     `;
     view.style.display = '';
@@ -1622,6 +1638,15 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   // view + brief flash. Empty slot → open the Add Player Manually form
   // pre-filled with that team + position.
   document.getElementById('adminTeamView')!.addEventListener('click', (e) => {
+    // Mobile tab — switch which pitch is active.
+    const tab = (e.target as HTMLElement).closest('.atv-tab') as HTMLElement | null;
+    if (tab) {
+      const teamKey = tab.dataset.team || '';
+      const view = document.getElementById('adminTeamView')!;
+      view.querySelectorAll('.atv-tab').forEach((el) => el.classList.toggle('active', (el as HTMLElement).dataset.team === teamKey));
+      view.querySelectorAll('.atv-pitch-card').forEach((el) => el.classList.toggle('active', (el as HTMLElement).dataset.team === teamKey));
+      return;
+    }
     const slot = (e.target as HTMLElement).closest('.atv-slot') as HTMLElement | null;
     if (!slot) return;
     const state = slot.dataset.state || '';
@@ -4505,8 +4530,42 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     letter-spacing: 0.08em; color: var(--text); text-transform: uppercase;
   }
   #adminTeamView .atv-sub { font-size: 0.66rem; color: var(--text-muted); }
-  #adminTeamView .atv-pitches { display: grid; grid-template-columns: 1fr; gap: 0.7rem; }
-  @media (min-width: 720px) { #adminTeamView .atv-pitches { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Mobile: tabs visible, only the active pitch shows. Avoids a long
+     scroll through three full-width pitches. Desktop (≥900px): tabs
+     hide and all 3 pitches sit side-by-side. */
+  #adminTeamView .atv-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.7rem; }
+  #adminTeamView .atv-tab {
+    flex: 1; min-width: 0;
+    background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.45rem 0.4rem;
+    display: flex; flex-direction: column; gap: 2px; align-items: center;
+    cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  #adminTeamView .atv-tab:hover { background: rgba(0,0,0,0.3); }
+  #adminTeamView .atv-tab.active {
+    background: color-mix(in srgb, var(--atv-color) 14%, #000);
+    border-color: var(--atv-color);
+  }
+  #adminTeamView .atv-tab-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--atv-color); }
+  #adminTeamView .atv-tab-label {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.7rem; font-weight: 700;
+    color: var(--atv-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%; letter-spacing: 0.03em;
+  }
+  #adminTeamView .atv-tab-count { font-size: 0.6rem; color: var(--text-secondary); font-weight: 600; }
+
+  #adminTeamView .atv-pitches { display: block; }
+  #adminTeamView .atv-pitch-card { display: none; }
+  #adminTeamView .atv-pitch-card.active { display: block; }
+
+  @media (min-width: 900px) {
+    #adminTeamView .atv-tabs { display: none; }
+    #adminTeamView .atv-pitches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+    #adminTeamView .atv-pitch-card,
+    #adminTeamView .atv-pitch-card.active { display: block; }
+  }
 
   #adminTeamView .atv-pitch-card { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; padding: 0.6rem; }
   #adminTeamView .atv-pitch-head { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.45rem; }
