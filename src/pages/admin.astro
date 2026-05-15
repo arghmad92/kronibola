@@ -1272,6 +1272,13 @@ import Layout from '../layouts/Layout.astro';
               <option value="Yes" ${s['Require Car Plate'] === 'Yes' ? 'selected' : ''}>Required</option>
             </select>
           </div>
+          <div class="ac-field">
+            <label>Format</label>
+            <select class="form-select s-input" data-field="Format" data-idx="${i}">
+              <option value="" ${s.Format === '3-team-11' ? '' : 'selected'}>Normal session</option>
+              <option value="3-team-11" ${s.Format === '3-team-11' ? 'selected' : ''}>11-a-side · 3 teams (position builder)</option>
+            </select>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -1315,7 +1322,7 @@ import Layout from '../layouts/Layout.astro';
   });
 
   document.getElementById('addSessionBtn')!.addEventListener('click', () => {
-    sessionsData.push({ 'Session Name': '', Date: '', Time: '', Location: '', Fee: 10, Status: 'Open', 'Max Players': 15, 'Require Car Plate': 'No' });
+    sessionsData.push({ 'Session Name': '', Date: '', Time: '', Location: '', Fee: 10, Status: 'Open', 'Max Players': 15, 'Require Car Plate': 'No', Format: '' });
     renderSchedule();
   });
 
@@ -1487,11 +1494,19 @@ import Layout from '../layouts/Layout.astro';
       const ua = String(p['User Agent'] || '').trim();
       const hasTraceData = !!(ip || country || ua);
 
+      // 3-team game: show which team + position this player booked.
+      const pTeam = String(p.Team || '').trim().toUpperCase();
+      const pPosition = String(p.Position || '').trim().toUpperCase();
+      const teamColors: Record<string, string> = { A: '#00FF41', B: '#00c4ff', C: '#ff9500' };
+      const teamPosBadge = (pTeam && pPosition)
+        ? `<span class="pca-teampos" style="color:${teamColors[pTeam] || '#888'};border-color:${teamColors[pTeam] || '#888'}55;background:${teamColors[pTeam] || '#888'}14">Team ${esc(pTeam)} · ${esc(pPosition)}</span>`
+        : '';
+
       return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
         <div class="pca-top">
           <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">${esc(initial)}</div>
           <div class="pca-info">
-            <span class="pca-name">${playerName}</span>
+            <span class="pca-name">${playerName} ${teamPosBadge}</span>
             <span class="pca-phone">${esc(phone)} ${country ? `<span class="pca-country">${esc(country)}</span>` : ''}</span>
             ${ref ? `<span class="pca-ref">${esc(ref)}</span>` : ''}
           </div>
@@ -3134,6 +3149,12 @@ import Layout from '../layouts/Layout.astro';
     background: rgba(0,255,65,0.08); color: var(--neon); border: 1px solid rgba(0,255,65,0.25);
     font-size: 0.6rem; font-family: 'Space Grotesk', sans-serif; font-weight: 700;
     letter-spacing: 0.5px; vertical-align: middle;
+  }
+  /* 3-team game: team + position badge next to the player's name */
+  .pca-teampos {
+    margin-left: 0.4rem; padding: 1px 7px; border-radius: 100px;
+    border: 1px solid; font-size: 0.6rem; font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; letter-spacing: 0.4px; vertical-align: middle; white-space: nowrap;
   }
 
   /* Block-list rows in the Blocked tab */

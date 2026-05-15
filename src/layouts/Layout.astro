@@ -207,6 +207,15 @@ const canonicalUrl = Astro.url.href;
 
         <div class="modal-page active" id="step1">
           <h3 class="modal-title">YOUR <span class="neon-text">DETAILS</span></h3>
+          <!-- Position-context banner — only shown when the modal was opened
+               by tapping a slot in the 3-team builder. -->
+          <div class="booking-ctx" id="bookingCtx" style="display:none">
+            <div class="booking-ctx-dot" id="bookingCtxDot">ST</div>
+            <div>
+              <div class="booking-ctx-pos" id="bookingCtxPos">Striker</div>
+              <div class="booking-ctx-team" id="bookingCtxTeam">Team A</div>
+            </div>
+          </div>
           <div class="form-group">
             <label class="form-label">Nickname</label>
             <input type="text" class="form-input" id="regName" placeholder="e.g. Haziq" style="text-transform:capitalize" autocapitalize="words" />

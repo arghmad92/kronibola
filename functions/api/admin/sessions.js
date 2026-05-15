@@ -1,7 +1,10 @@
 import { readSheet, writeSheet, mergeRowsByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
 
-const HEADERS = ['Session Name', 'Date', 'Time', 'Location', 'Fee', 'Status', 'Max Players', 'Require Car Plate'];
+// `Format` is blank for normal sessions, '3-team-11' for the 3-team
+// 11-a-side position builder. Keep it last so existing rows just need
+// one column appended.
+const HEADERS = ['Session Name', 'Date', 'Time', 'Location', 'Fee', 'Status', 'Max Players', 'Require Car Plate', 'Format'];
 
 export async function onRequest(context) {
   // Auth check — verifyToken now returns the parsed session payload

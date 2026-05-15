@@ -1,5 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { FORMATIONS } from '../../functions/api/_formations.js';
+// 3-team builder uses one formation for now. Imported from the same module
+// the Worker validates against, so the pitch layout and the server's slot
+// list can never drift apart.
+const FORMATION_433 = FORMATIONS['4-3-3'];
 ---
 
 <Layout title="KroniBola — Match Day" description="Join weekly football pickup games in KL & Selangor. Register online, check match schedules, and secure your spot." activeTab="home">
@@ -74,6 +79,22 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
+    <!-- 3-team 11-a-side builder — shown only when the selected session
+         has Format = 3-team-11. Sits below the match cards, full width. -->
+    <div id="teamBuilder" style="display:none">
+      <div class="tb-head">
+        <h2 class="section-title">PICK YOUR <span class="neon-text">POSITION</span></h2>
+        <span class="tb-sub" id="tbSub">Tap an open spot on any team</span>
+      </div>
+      <div class="tb-summary" id="tbSummary"></div>
+      <div class="tb-legend">
+        <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--paid"></span> Confirmed</span>
+        <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--pending"></span> Pending payment</span>
+        <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--empty"></span> Open — tap to book</span>
+      </div>
+      <div class="tb-pitches" id="tbPitches"></div>
+    </div>
+
     <!-- Check Status -->
     <div id="checkStatusSection" style="display:none" class="share-section">
       <button class="btn btn--outline" id="checkStatusBtn" style="width:100%">
@@ -98,6 +119,12 @@ import Layout from '../layouts/Layout.astro';
   </main>
 </Layout>
 
+<!-- Formation data injected from the shared _formations.js module so the
+     pitch layout matches exactly what the Worker validates against. -->
+<script is:inline define:vars={{ kbFormation: FORMATION_433 }}>
+  window.KB_FORMATION = kbFormation;
+</script>
+
 <script>
   const API = '/api';
   const ADMIN_WA = '60126183827';
@@ -117,6 +144,13 @@ import Layout from '../layouts/Layout.astro';
   let currentSession: any = null;
   let players: any[] = [];
   let currentMax = 20;
+  // When a player taps an open slot in the 3-team builder, the chosen
+  // team + position are stashed here so submitRegistration can include
+  // them. Cleared whenever the registration modal opens via any other path.
+  let bookingContext: { team: string; position: string; posFull: string } | null = null;
+
+  const TEAM_GAME_FORMAT = '3-team-11';
+  const TEAM_KEYS = ['A', 'B', 'C'];
 
   // --- DOM refs ---
   const loadingEl = document.getElementById('loadingState')!;
@@ -124,6 +158,8 @@ import Layout from '../layouts/Layout.astro';
   const cardsEl = document.getElementById('matchCards')!;
   const lineupEl = document.getElementById('lineupSection')!;
   const shareEl = document.getElementById('shareSection')!;
+  const teamBuilderEl = document.getElementById('teamBuilder')!;
+  const isTeamGame = (s: any) => !!s && String(s.Format || '').trim() === TEAM_GAME_FORMAT;
 
   // --- Load sessions ---
   async function init() {
@@ -193,7 +229,7 @@ import Layout from '../layouts/Layout.astro';
             <span class="mc-recent-text"></span>
           </div>
         </div>
-        <button class="btn btn--primary mc-register" data-idx="${i}" style="width:100%">REGISTER NOW</button>
+        <button class="btn btn--primary mc-register" data-idx="${i}" data-format="${s.Format || ''}" style="width:100%">${s.Format === TEAM_GAME_FORMAT ? 'PICK YOUR POSITION' : 'REGISTER NOW'}</button>
         <div class="mc-actions">
           <button type="button" class="mc-action-btn mc-share" data-idx="${i}" aria-label="Share this match">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -225,7 +261,13 @@ import Layout from '../layouts/Layout.astro';
       btn.addEventListener('click', () => {
         const idx = parseInt((btn as HTMLElement).dataset.idx!);
         selectSession(idx);
-        openRegistration();
+        // Team games have no single "register" action — the player picks a
+        // position on the pitch. Scroll them to the builder instead.
+        if ((btn as HTMLElement).dataset.format === TEAM_GAME_FORMAT) {
+          teamBuilderEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          openRegistration();
+        }
       });
     });
 
@@ -244,6 +286,9 @@ import Layout from '../layouts/Layout.astro';
   function selectSession(idx: number) {
     currentSession = sessions[idx];
     currentMax = parseInt(currentSession['Max Players']) || 20;
+    // Fresh session selection — drop any stale team-builder booking context
+    // so a normal "Register" click can't carry over an old team/position.
+    bookingContext = null;
 
     // Update active card
     cardsEl.querySelectorAll('.match-card').forEach((c, i) => {
@@ -261,7 +306,14 @@ import Layout from '../layouts/Layout.astro';
       carPlateGroup.style.display = 'none';
     }
 
-    lineupEl.style.display = '';
+    // Toggle between the standard lineup and the 3-team position builder.
+    if (isTeamGame(currentSession)) {
+      lineupEl.style.display = 'none';
+      teamBuilderEl.style.display = '';
+    } else {
+      lineupEl.style.display = '';
+      teamBuilderEl.style.display = 'none';
+    }
     shareEl.style.display = '';
     loadPlayers(currentSession.Date);
   }
@@ -307,8 +359,19 @@ import Layout from '../layouts/Layout.astro';
       // Update register button text
       const isFull = activeCount >= currentMax;
       cardsEl.querySelectorAll('.mc-register').forEach((btn) => {
+        // Team-game buttons keep their "PICK YOUR POSITION" label — the
+        // waitlist/full concept doesn't apply per-button there.
+        if ((btn as HTMLElement).dataset.format === TEAM_GAME_FORMAT) return;
         btn.textContent = isFull ? 'JOIN WAITLIST' : 'REGISTER NOW';
       });
+
+      // 3-team games render the position builder instead of the lineup.
+      // The builder always shows (no "revealed the day before" lock — the
+      // whole point is letting players claim a spot ahead of time).
+      if (isTeamGame(currentSession)) {
+        renderTeamBuilder(players, date);
+        return;
+      }
 
       // Lineup is hidden until the day before the match to encourage early
       // registration. The count in the section header and the player cards
@@ -324,6 +387,99 @@ import Layout from '../layouts/Layout.astro';
 
       renderLineup(players, date);
     } catch {}
+  }
+
+  // --- 3-TEAM POSITION BUILDER ---
+  // Renders 3 pitches for a Format=3-team-11 session. Each slot is keyed by
+  // (Team, Position); a player occupying it shows their initial + name, an
+  // empty slot is tappable to open the booking modal pre-filled with that
+  // team + position.
+  function renderTeamBuilder(list: any[], sessionDate: string) {
+    const formation = (window as any).KB_FORMATION || [];
+    const pitchesEl = document.getElementById('tbPitches')!;
+    const summaryEl = document.getElementById('tbSummary')!;
+    const teamColors: Record<string, string> = { A: '#00FF41', B: '#00c4ff', C: '#ff9500' };
+
+    // Index occupied slots: "TEAM|POSITION" → player row. Paid/Pending/
+    // Overdue occupy a slot; Rejected frees it.
+    const occupied: Record<string, any> = {};
+    let filled = 0;
+    list.forEach((p: any) => {
+      if (String(p['Session Date']) !== sessionDate) return;
+      if (!['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])) return;
+      const t = String(p.Team || '').trim().toUpperCase();
+      const pos = String(p.Position || '').trim().toUpperCase();
+      if (!t || !pos) return;
+      occupied[`${t}|${pos}`] = p;
+      filled++;
+    });
+
+    const totalSlots = TEAM_KEYS.length * formation.length;
+    summaryEl.innerHTML = `
+      <div class="tb-stat"><div class="tb-stat-num">${totalSlots}</div><div class="tb-stat-label">Slots</div></div>
+      <div class="tb-stat"><div class="tb-stat-num" style="color:var(--neon)">${filled}</div><div class="tb-stat-label">Filled</div></div>
+      <div class="tb-stat"><div class="tb-stat-num" style="color:var(--text-secondary)">${totalSlots - filled}</div><div class="tb-stat-label">Open</div></div>`;
+
+    pitchesEl.innerHTML = TEAM_KEYS.map((teamKey) => {
+      const color = teamColors[teamKey] || '#00FF41';
+      let teamFilled = 0;
+      const slots = formation.map((pos: any) => {
+        const player = occupied[`${teamKey}|${pos.id}`];
+        let state = 'empty';
+        let inner = pos.label;
+        let nameLine = `<span class="tb-slot-name">${esc(pos.full)}</span>`;
+        if (player) {
+          teamFilled++;
+          state = player['Payment Status'] === 'Paid' ? 'paid' : 'pending';
+          inner = (String(player['Player Name'] || '?')[0] || '?').toUpperCase();
+          nameLine = `<span class="tb-slot-name">${esc(player['Player Name'] || '')}</span>`;
+        }
+        return `<div class="tb-slot tb-slot--${state}" style="left:${pos.x}%;top:${pos.y}%;--tb-color:${color}"
+                     data-team="${teamKey}" data-pos="${esc(pos.id)}" data-pos-full="${esc(pos.full)}"
+                     data-state="${state}" ${player ? `data-player="${esc(player['Player Name'] || '')}"` : ''}>
+          <div class="tb-slot-dot">${esc(inner)}</div>
+          ${nameLine}
+        </div>`;
+      }).join('');
+      const pct = Math.round((teamFilled / formation.length) * 100);
+      return `<div class="tb-pitch-card">
+        <div class="tb-pitch-head">
+          <span class="tb-team-dot" style="background:${color}"></span>
+          <span class="tb-team-name" style="color:${color}">TEAM ${teamKey}</span>
+          <span class="tb-pitch-count">${teamFilled}/${formation.length}</span>
+        </div>
+        <div class="tb-progress"><div class="tb-progress-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="tb-pitch">
+          <div class="tb-lines">
+            <div class="tb-pl tb-pl-outline"></div>
+            <div class="tb-pl tb-pl-halfway"></div>
+            <div class="tb-pl tb-pl-circle"></div>
+            <div class="tb-pl tb-pl-box-top"></div>
+            <div class="tb-pl tb-pl-box-bot"></div>
+          </div>
+          ${slots}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Tap handler for the builder — delegated on the pitches container.
+  document.getElementById('tbPitches')!.addEventListener('click', (e) => {
+    const slot = (e.target as HTMLElement).closest('.tb-slot') as HTMLElement | null;
+    if (!slot) return;
+    if (slot.dataset.state !== 'empty') return; // taken — not bookable
+    bookingContext = {
+      team: slot.dataset.team || '',
+      position: slot.dataset.pos || '',
+      posFull: slot.dataset.posFull || '',
+    };
+    openRegistration();
+  });
+
+  function esc(s: any): string {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c
+    ));
   }
 
   // Lineup reveals when the match is within 2 days (today, tomorrow,
@@ -508,6 +664,18 @@ import Layout from '../layouts/Layout.astro';
 
   function openRegistration() {
     modal.style.display = '';
+    // Show the position-context banner when this open came from a
+    // team-builder slot tap; hide it for normal registrations.
+    const ctxEl = document.getElementById('bookingCtx')!;
+    if (bookingContext) {
+      document.getElementById('bookingCtxDot')!.textContent = bookingContext.position;
+      document.getElementById('bookingCtxPos')!.textContent = bookingContext.posFull;
+      document.getElementById('bookingCtxTeam')!.textContent =
+        `Team ${bookingContext.team} · ${currentSession?.['Session Name'] || ''}`;
+      ctxEl.style.display = '';
+    } else {
+      ctxEl.style.display = 'none';
+    }
     showStep(1);
   }
 
@@ -521,8 +689,10 @@ import Layout from '../layouts/Layout.astro';
 
     if (n === 1) steps[0].classList.add('active');
     else if (n === 2) {
+      // Team-builder bookings always go to payment — the slot was a discrete
+      // open spot, there's no waitlist concept per position.
       const active = players.filter((p: any) => ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status']));
-      if (active.length >= currentMax) {
+      if (!bookingContext && active.length >= currentMax) {
         steps[2].classList.add('active'); // waitlist
       } else {
         steps[1].classList.add('active'); // payment
@@ -558,6 +728,23 @@ import Layout from '../layouts/Layout.astro';
     if (players.some((p: any) => p['Player Name'].toLowerCase().trim() === name.toLowerCase())) {
       showErr(errEl, `"${name}" is already taken!`); return;
     }
+
+    // Team-builder bookings: cheap pre-check against the players list we
+    // already loaded. Catches the common "tapped a while ago, slot filled
+    // since" case before the user pays. Sub-second races still hit the
+    // server-side guard in register.js.
+    if (bookingContext) {
+      const taken = players.some((p: any) =>
+        String(p.Team || '').trim().toUpperCase() === bookingContext!.team &&
+        String(p.Position || '').trim().toUpperCase() === bookingContext!.position &&
+        ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])
+      );
+      if (taken) {
+        showErr(errEl, `${bookingContext.posFull} on Team ${bookingContext.team} was just taken — close this and pick another open spot.`);
+        return;
+      }
+    }
+
     errEl.style.display = 'none';
     showStep(2);
   });
@@ -583,6 +770,9 @@ import Layout from '../layouts/Layout.astro';
     try {
       const regBody: any = { date: currentSession.Date, name, phone, fee: currentSession.Fee, sessionName: currentSession['Session Name'] };
       if (carPlate) regBody.carPlate = carPlate;
+      // Team-builder booking — send the chosen slot so the server can
+      // validate it and guard against a concurrent claim.
+      if (bookingContext) { regBody.team = bookingContext.team; regBody.position = bookingContext.position; }
       const res = await fetch(`${API}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -644,6 +834,16 @@ import Layout from '../layouts/Layout.astro';
         }
 
         showStep(3);
+      } else if (data.error === 'position_taken') {
+        // Lost the race for this slot. Send them back to step 1 with a
+        // clear message and refresh the pitch so the taken slot shows
+        // filled. The receipt (if uploaded) wasn't tied to a saved row.
+        showStep(1);
+        showErr(errEl, data.message || 'That position was just taken — please pick another open spot.');
+        if (currentSession) loadPlayers(currentSession.Date);
+        isSubmitting = false;
+        if (step3Btn) { step3Btn.disabled = false; step3Btn.textContent = 'CONFIRM'; }
+        if (wlBtn) { wlBtn.disabled = false; wlBtn.textContent = 'JOIN WAITLIST'; }
       } else {
         showErr(errEl, data.error || 'Registration failed.');
         isSubmitting = false;
@@ -1557,6 +1757,90 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .lineup-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic; font-size: 0.88rem; }
+
+  /* ===== 3-TEAM POSITION BUILDER ===== */
+  #teamBuilder { margin: 1.4rem 0 0.5rem; }
+  .tb-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+  .tb-sub { font-size: 0.74rem; color: var(--text-muted); }
+  .tb-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.5rem; margin-bottom: 0.7rem; }
+  .tb-stat { background: rgba(0,255,65,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 0.6rem; text-align: center; }
+  .tb-stat-num { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700; line-height: 1; }
+  .tb-stat-label { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+  .tb-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; padding: 0.55rem 0.8rem; margin-bottom: 0.9rem;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; font-size: 0.68rem; color: var(--text-secondary); }
+  .tb-leg { display: flex; align-items: center; gap: 0.35rem; }
+  .tb-leg-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+  .tb-leg-dot--paid { background: var(--neon); }
+  .tb-leg-dot--pending { background: var(--orange); }
+  .tb-leg-dot--empty { border: 1.5px dashed var(--text-muted); }
+
+  .tb-pitches { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 720px) { .tb-pitches { grid-template-columns: repeat(3,1fr); } }
+
+  .tb-pitch-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 0.8rem; overflow: hidden; }
+  .tb-pitch-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .tb-team-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .tb-team-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.04em; }
+  .tb-pitch-count { margin-left: auto; font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; }
+  .tb-progress { height: 4px; background: rgba(255,255,255,0.06); border-radius: 100px; overflow: hidden; margin-bottom: 0.6rem; }
+  .tb-progress-fill { height: 100%; border-radius: 100px; transition: width 0.4s; }
+
+  .tb-pitch {
+    position: relative; width: 100%; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden;
+    background: repeating-linear-gradient(0deg, #0c2912 0, #0c2912 11.11%, #0a1f0e 11.11%, #0a1f0e 22.22%);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .tb-lines { position: absolute; inset: 0; }
+  .tb-pl { position: absolute; }
+  .tb-pl-outline { inset: 4%; border: 1.5px solid rgba(255,255,255,0.12); border-radius: 3px; }
+  .tb-pl-halfway { left: 4%; right: 4%; top: 50%; border-top: 1.5px solid rgba(255,255,255,0.12); }
+  .tb-pl-circle { left: 50%; top: 50%; width: 26%; aspect-ratio: 1; transform: translate(-50%,-50%);
+    border: 1.5px solid rgba(255,255,255,0.12); border-radius: 50%; }
+  .tb-pl-box-top { left: 26%; right: 26%; top: 4%; height: 15%; border: 1.5px solid rgba(255,255,255,0.12); border-top: none; }
+  .tb-pl-box-bot { left: 26%; right: 26%; bottom: 4%; height: 15%; border: 1.5px solid rgba(255,255,255,0.12); border-bottom: none; }
+
+  .tb-slot {
+    position: absolute; transform: translate(-50%,-50%); width: 60px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: default;
+  }
+  .tb-slot--empty { cursor: pointer; }
+  .tb-slot-dot {
+    width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.8rem; transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .tb-slot--empty:active .tb-slot-dot { transform: scale(0.92); }
+  .tb-slot-name {
+    font-size: 0.58rem; font-weight: 600; max-width: 60px; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tb-slot--empty .tb-slot-dot {
+    background: rgba(0,0,0,0.25); border: 1.5px dashed rgba(255,255,255,0.3); color: rgba(255,255,255,0.45);
+  }
+  .tb-slot--empty:hover .tb-slot-dot { border-color: var(--tb-color); color: var(--tb-color); box-shadow: 0 0 0 4px rgba(255,255,255,0.04); }
+  .tb-slot--empty .tb-slot-name { color: rgba(255,255,255,0.35); }
+  .tb-slot--paid .tb-slot-dot {
+    background: color-mix(in srgb, var(--tb-color) 22%, #000); border: 2px solid var(--tb-color); color: var(--tb-color);
+  }
+  .tb-slot--paid .tb-slot-name { color: #fff; }
+  .tb-slot--pending .tb-slot-dot {
+    background: rgba(255,149,0,0.18); border: 2px solid var(--orange); color: var(--orange);
+  }
+  .tb-slot--pending .tb-slot-name { color: var(--orange); }
+
+  /* Booking context banner inside the registration modal */
+  .booking-ctx {
+    display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.8rem;
+    border-radius: 12px; margin-bottom: 1rem;
+    background: rgba(0,255,65,0.05); border: 1px solid rgba(0,255,65,0.2);
+  }
+  .booking-ctx-dot {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.78rem;
+    background: rgba(0,255,65,0.15); color: var(--neon); border: 2px solid var(--neon);
+  }
+  .booking-ctx-pos { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--text); }
+  .booking-ctx-team { font-size: 0.72rem; color: var(--text-secondary); }
 
   /* Locked lineup placeholder — shown until 2 days before the match to
      nudge players to register early without being able to scout the list. */

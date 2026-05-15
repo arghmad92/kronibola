@@ -2,6 +2,7 @@ import { readSheet, appendRow, json } from './_sheets.js';
 import { escapeHtml, sanitize, sheetSafe, sendTelegramNotification } from './_utils.js';
 import { validateE164Mobile } from './_phone.js';
 import { checkBlocked } from './_blocklist.js';
+import { isTeamGame, isValidSlot, SLOT_OCCUPYING_STATUSES } from './_formations.js';
 
 function generateRefCode(date, name) {
   const dd = date.slice(8, 10);
@@ -16,7 +17,7 @@ export async function onRequest(context) {
 
   try {
     const body = await context.request.json();
-    let { date, name, phone, fee, sessionName, carPlate } = body;
+    let { date, name, phone, fee, sessionName, carPlate, team, position } = body;
 
     // Validate name
     if (!name || typeof name !== 'string') return json({ error: 'Name is required' }, 400);
@@ -75,6 +76,31 @@ export async function onRequest(context) {
       (r) => String(r['Session Date']) === date && ['Paid', 'Pending', 'Overdue'].includes(r['Payment Status'])
     ).length;
 
+    // --- 3-team 11-a-side games: validate the chosen team + position ---
+    // For team games the player books a specific slot. Validate it's a real
+    // slot for the formation and not already occupied. The slot-taken check
+    // is also the concurrency guard: two people tapping the same position
+    // race here, and the second one gets a clean 409 instead of a dup row.
+    const teamGame = isTeamGame(session);
+    let cleanTeam = '';
+    let cleanPosition = '';
+    if (teamGame) {
+      cleanTeam = String(team || '').trim().toUpperCase();
+      cleanPosition = String(position || '').trim().toUpperCase();
+      if (!isValidSlot(session && session.Formation, cleanTeam, cleanPosition)) {
+        return json({ error: 'Please pick a valid team and position.' }, 400);
+      }
+      const slotTaken = regs.some(
+        (r) => String(r['Session Date']) === date
+          && String(r.Team || '').trim().toUpperCase() === cleanTeam
+          && String(r.Position || '').trim().toUpperCase() === cleanPosition
+          && SLOT_OCCUPYING_STATUSES.includes(r['Payment Status'])
+      );
+      if (slotTaken) {
+        return json({ error: 'position_taken', message: 'That position was just taken — pick another open spot.' }, 409);
+      }
+    }
+
     // Validate car plate if session requires it
     const requiresCarPlate = session && session['Require Car Plate'] === 'Yes';
     let cleanedCarPlate = '';
@@ -88,7 +114,11 @@ export async function onRequest(context) {
       cleanedCarPlate = carPlate.replace(/\s/g, '').toUpperCase();
     }
 
-    const status = activeCount >= maxPlayers ? 'Waitlist' : 'Pending';
+    // Team games never waitlist — every slot is a discrete 1-of-1, and the
+    // slot-taken check above already guaranteed this one is free.
+    const status = teamGame
+      ? 'Pending'
+      : (activeCount >= maxPlayers ? 'Waitlist' : 'Pending');
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     // Stored as `'+60123456789` — leading apostrophe stops Sheets from
     // parsing the `+` and interpreting it as a formula or scientific number.
@@ -96,11 +126,10 @@ export async function onRequest(context) {
     const refCode = generateRefCode(date, name);
 
     // Columns: Session Date, Player Name, Phone, Payment Status, Amount,
-    // Timestamp, Ref Code, Refund, Car Plate, IP, Country, User Agent.
-    // The last three are for tracing fake-receipt abuse — IP from
-    // Cloudflare's CF-Connecting-IP header, Country from CF-IPCountry,
-    // UA truncated to 300 chars to stay sane on long mobile UAs.
-    await appendRow(context.env, 'Registrations', [date, sheetSafe(name), cleanPhone, status, fee, timestamp, refCode, '', cleanedCarPlate, reqIp, reqCountry, sheetSafe(reqUA)]);
+    // Timestamp, Ref Code, Refund, Car Plate, IP, Country, User Agent,
+    // Team, Position. IP/Country/UA trace fake-receipt abuse. Team/Position
+    // are only set for 3-team games — empty strings for normal sessions.
+    await appendRow(context.env, 'Registrations', [date, sheetSafe(name), cleanPhone, status, fee, timestamp, refCode, '', cleanedCarPlate, reqIp, reqCountry, sheetSafe(reqUA), cleanTeam, cleanPosition]);
 
     // Send Telegram notification
     const spotsLeft = maxPlayers - activeCount - (status === 'Waitlist' ? 0 : 1);
@@ -115,6 +144,7 @@ export async function onRequest(context) {
       `📱 Phone: ${escapeHtml(phone)}`,
       `🏟 Session: <b>${escapeHtml(sessionLabel)}</b>`,
       `📅 Date: ${escapeHtml(date)}`,
+      teamGame ? `🎽 Team <b>${escapeHtml(cleanTeam)}</b> · ${escapeHtml(cleanPosition)}` : '',
       sessionTime ? `⏰ Time: ${escapeHtml(sessionTime)}` : '',
       sessionLoc ? `📍 Location: ${escapeHtml(sessionLoc)}` : '',
       `💳 Status: <b>${status}</b>`,
