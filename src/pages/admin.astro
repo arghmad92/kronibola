@@ -147,6 +147,18 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
               <input type="text" class="form-input" id="apPlate" placeholder="e.g. VAB1234" style="text-transform:uppercase" autocomplete="off" maxlength="10" />
             </div>
           </div>
+          <!-- Team + Position: only shown for 3-team (Format=3-team-11)
+               sessions. Options populated by syncApTeamRow(). -->
+          <div class="ap-row" id="apTeamRow" style="display:none">
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Team</label>
+              <select class="form-select" id="apTeam"></select>
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Position</label>
+              <select class="form-select" id="apPosition"></select>
+            </div>
+          </div>
           <button class="btn btn--primary btn--sm" id="apConfirm" style="width:100%">ADD PLAYER</button>
         </div>
         <button class="btn btn--outline btn--sm" id="addPlayerBtn" style="width:100%;margin-bottom:0.8rem">+ ADD PLAYER MANUALLY</button>
@@ -1469,9 +1481,9 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
 
   document.getElementById('filterDate')!.addEventListener('change', () => {
     renderPlayers((document.getElementById('filterDate') as HTMLSelectElement).value);
-    // If the Add Player form is open, re-evaluate whether to show the optional
-    // plate field for the newly selected session.
-    if (addPlayerBox.style.display !== 'none') syncApPlateRow();
+    // If the Add Player form is open, re-evaluate the conditional rows
+    // (car plate, and team/position) for the newly selected session.
+    if (addPlayerBox.style.display !== 'none') { syncApPlateRow(); syncApTeamRow(); }
   });
 
   function renderPlayersSummary(date: string, players: any[]) {
@@ -1751,10 +1763,30 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     }
   }
 
+  // Toggle + populate the Team/Position row for 3-team sessions. Options
+  // are rebuilt each call since team labels are per-session.
+  function syncApTeamRow() {
+    const date = (document.getElementById('filterDate') as HTMLSelectElement).value;
+    const session = sessionsData.find((s: any) => s.Date === date);
+    const isTeam = !!(session && String(session.Format || '').trim() === '3-team-11');
+    const row = document.getElementById('apTeamRow') as HTMLElement | null;
+    if (!row) return;
+    row.style.display = isTeam ? '' : 'none';
+    if (!isTeam) return;
+    const teams = parseTeams(session.Teams);
+    const teamSel = document.getElementById('apTeam') as HTMLSelectElement;
+    teamSel.innerHTML = ['A', 'B', 'C']
+      .map((t, ti) => `<option value="${t}">${esc(teams[ti].label)}</option>`).join('');
+    const formationSlots = (window as any).KB_FORMATION || [];
+    const posSel = document.getElementById('apPosition') as HTMLSelectElement;
+    posSel.innerHTML = formationSlots
+      .map((s: any) => `<option value="${esc(s.id)}">${esc(s.id)} — ${esc(s.full)}</option>`).join('');
+  }
+
   document.getElementById('addPlayerBtn')!.addEventListener('click', () => {
     const willShow = addPlayerBox.style.display === 'none';
     addPlayerBox.style.display = willShow ? '' : 'none';
-    if (willShow) syncApPlateRow();
+    if (willShow) { syncApPlateRow(); syncApTeamRow(); }
   });
 
   document.getElementById('apConfirm')!.addEventListener('click', async () => {
@@ -1784,6 +1816,22 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       }
     }
 
+    // Team + position for 3-team sessions. Warn (don't hard-block) if the
+    // slot is already occupied — the admin is trusted to override.
+    const isTeamGame = !!(session && String(session.Format || '').trim() === '3-team-11');
+    let team = '', position = '';
+    if (isTeamGame) {
+      team = (document.getElementById('apTeam') as HTMLSelectElement).value;
+      position = (document.getElementById('apPosition') as HTMLSelectElement).value;
+      const slotTaken = allPlayers.some((p: any) =>
+        p['Session Date'] === date &&
+        String(p.Team || '').trim().toUpperCase() === team &&
+        String(p.Position || '').trim().toUpperCase() === position &&
+        ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])
+      );
+      if (slotTaken && !confirm(`${position} on that team already looks taken. Add ${name} there anyway?`)) return;
+    }
+
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     const refCode = `KB-${date.slice(5, 7)}${date.slice(8, 10)}-${name[0].toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
@@ -1797,6 +1845,8 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       'Ref Code': refCode,
       Refund: '',
       'Car Plate': plate,
+      Team: team,
+      Position: position,
     };
 
     allPlayers.push(newPlayer);

@@ -58,24 +58,29 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
         <div id="matchCards" class="match-cards" style="display:none"></div>
       </div>
 
-      <!-- Right: Lineup -->
+      <!-- Right: Lineup (normal sessions) OR Team Standings (3-team games) -->
       <div class="match-layout-right" id="lineupSection" style="display:none">
-        <div class="section-header">
-          <h2 class="section-title">THE <span class="neon-text">LINEUP</span></h2>
-          <span class="lineup-count" id="lineupCount">0 players</span>
-        </div>
-        <div class="lineup-grid" id="lineupGrid"></div>
-        <p class="lineup-empty" id="lineupEmpty" style="display:none">No players yet. Be the first!</p>
-        <div class="lineup-locked" id="lineupLocked" style="display:none">
-          <div class="lineup-locked-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
+        <div id="normalLineup">
+          <div class="section-header">
+            <h2 class="section-title">THE <span class="neon-text">LINEUP</span></h2>
+            <span class="lineup-count" id="lineupCount">0 players</span>
           </div>
-          <p class="lineup-locked-title">Lineup locked</p>
-          <p class="lineup-locked-sub" id="lineupLockedSub">Revealed the day before the match. Register now to secure your spot.</p>
+          <div class="lineup-grid" id="lineupGrid"></div>
+          <p class="lineup-empty" id="lineupEmpty" style="display:none">No players yet. Be the first!</p>
+          <div class="lineup-locked" id="lineupLocked" style="display:none">
+            <div class="lineup-locked-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <p class="lineup-locked-title">Lineup locked</p>
+            <p class="lineup-locked-sub" id="lineupLockedSub">Revealed the day before the match. Register now to secure your spot.</p>
+          </div>
         </div>
+        <!-- Desktop-only standings for 3-team games — fills the column the
+             lineup would normally occupy. Populated by renderTeamBuilder. -->
+        <div id="teamStandings"></div>
       </div>
     </div>
 
@@ -183,6 +188,8 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   const lineupEl = document.getElementById('lineupSection')!;
   const shareEl = document.getElementById('shareSection')!;
   const teamBuilderEl = document.getElementById('teamBuilder')!;
+  const normalLineupEl = document.getElementById('normalLineup')!;
+  const teamStandingsEl = document.getElementById('teamStandings')!;
   const isTeamGame = (s: any) => !!s && String(s.Format || '').trim() === TEAM_GAME_FORMAT;
 
   // --- Load sessions ---
@@ -331,11 +338,18 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     }
 
     // Toggle between the standard lineup and the 3-team position builder.
+    // The right column stays visible either way: normal games show the
+    // lineup, team games show the standings panel (desktop) so the column
+    // is never empty. The full-width pitch builder sits below regardless.
     if (isTeamGame(currentSession)) {
-      lineupEl.style.display = 'none';
+      lineupEl.style.display = '';
+      normalLineupEl.style.display = 'none';
+      teamStandingsEl.classList.add('show');
       teamBuilderEl.style.display = '';
     } else {
       lineupEl.style.display = '';
+      normalLineupEl.style.display = '';
+      teamStandingsEl.classList.remove('show');
       teamBuilderEl.style.display = 'none';
     }
     shareEl.style.display = '';
@@ -496,6 +510,29 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
         </div>
       </div>`;
     }).join('');
+
+    // Desktop standings panel — fills the right column (where the lineup
+    // would sit for a normal game) with an at-a-glance teams overview.
+    const standingsEl = document.getElementById('teamStandings')!;
+    standingsEl.innerHTML = `
+      <div class="ts-head"><h2 class="section-title">TEAM <span class="neon-text">STANDINGS</span></h2></div>
+      <div class="ts-list">
+        ${TEAM_KEYS.map((teamKey, ti) => {
+          const tc = teams[ti] || KB_DEFAULT_TEAMS[ti];
+          const cnt = Object.keys(occupied).filter((k) => k.indexOf(`${teamKey}|`) === 0).length;
+          const pct = Math.round((cnt / formation.length) * 100);
+          return `<div class="ts-row">
+            <div class="ts-row-top">
+              <span class="ts-dot" style="background:${tc.color}"></span>
+              <span class="ts-name" style="color:${tc.color}">${esc(tc.label)}</span>
+              <span class="ts-count">${cnt}/${formation.length}</span>
+            </div>
+            <div class="ts-bar"><div class="ts-bar-fill" style="width:${pct}%;background:${tc.color}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="ts-open">${totalSlots - filled} of ${totalSlots} spots open</div>
+      <div class="ts-nudge">↓ Pick your position below</div>`;
   }
 
   // Tap handler for the builder — delegated on the pitches container.
@@ -1872,6 +1909,25 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     background: rgba(255,179,64,0.14); border: 2px dashed #ffb340; color: #ffb340;
   }
   :global(.tb-slot--held .tb-slot-name) { color: #ffb340; }
+
+  /* Team Standings — desktop-only panel that fills the right column for
+     3-team games (where the lineup sits for normal games). Hidden on
+     mobile; the full pitches are right below there anyway. */
+  :global(#teamStandings) { display: none; }
+  @media (min-width: 900px) {
+    :global(#teamStandings.show) { display: block; }
+  }
+  :global(.ts-head) { margin-bottom: 0.8rem; }
+  :global(.ts-list) { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.9rem; }
+  :global(.ts-row) { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 0.7rem 0.8rem; }
+  :global(.ts-row-top) { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+  :global(.ts-dot) { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+  :global(.ts-name) { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.86rem; letter-spacing: 0.03em; }
+  :global(.ts-count) { margin-left: auto; font-size: 0.76rem; color: var(--text-secondary); font-weight: 600; }
+  :global(.ts-bar) { height: 5px; background: rgba(255,255,255,0.06); border-radius: 100px; overflow: hidden; }
+  :global(.ts-bar-fill) { height: 100%; border-radius: 100px; transition: width 0.4s; }
+  :global(.ts-open) { font-size: 0.8rem; color: var(--text); font-weight: 600; text-align: center; margin-bottom: 0.35rem; }
+  :global(.ts-nudge) { font-size: 0.74rem; color: var(--neon); text-align: center; font-weight: 600; }
 
   /* Booking context banner inside the registration modal — also created
      dynamically (lives in the Layout modal, toggled by JS), so :global. */
