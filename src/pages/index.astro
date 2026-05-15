@@ -89,7 +89,8 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       <div class="tb-summary" id="tbSummary"></div>
       <div class="tb-legend">
         <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--paid"></span> Confirmed</span>
-        <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--pending"></span> Pending payment</span>
+        <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--pending"></span> Receipt in — verifying</span>
+        <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--held"></span> Held — paying</span>
         <span class="tb-leg"><span class="tb-leg-dot tb-leg-dot--empty"></span> Open — tap to book</span>
       </div>
       <div class="tb-pitches" id="tbPitches"></div>
@@ -147,10 +148,33 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   // When a player taps an open slot in the 3-team builder, the chosen
   // team + position are stashed here so submitRegistration can include
   // them. Cleared whenever the registration modal opens via any other path.
-  let bookingContext: { team: string; position: string; posFull: string } | null = null;
+  let bookingContext: { team: string; teamLabel: string; position: string; posFull: string } | null = null;
 
   const TEAM_GAME_FORMAT = '3-team-11';
   const TEAM_KEYS = ['A', 'B', 'C'];
+
+  // Default team labels/colours + parser for the session's `Teams` JSON
+  // column. Team key A/B/C maps to index 0/1/2. Falls back to defaults
+  // for missing/invalid data.
+  const KB_DEFAULT_TEAMS = [
+    { label: 'Team A', color: '#00FF41' },
+    { label: 'Team B', color: '#00c4ff' },
+    { label: 'Team C', color: '#ff9500' },
+  ];
+  function parseTeams(raw: any) {
+    if (raw) {
+      try {
+        const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (Array.isArray(p) && p.length === 3) {
+          return p.map((t: any, i: number) => ({
+            label: (t && String(t.label || '').trim()) || KB_DEFAULT_TEAMS[i].label,
+            color: (t && String(t.color || '').trim()) || KB_DEFAULT_TEAMS[i].color,
+          }));
+        }
+      } catch {}
+    }
+    return KB_DEFAULT_TEAMS.map((t) => ({ ...t }));
+  }
 
   // --- DOM refs ---
   const loadingEl = document.getElementById('loadingState')!;
@@ -398,7 +422,8 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     const formation = (window as any).KB_FORMATION || [];
     const pitchesEl = document.getElementById('tbPitches')!;
     const summaryEl = document.getElementById('tbSummary')!;
-    const teamColors: Record<string, string> = { A: '#00FF41', B: '#00c4ff', C: '#ff9500' };
+    // Admin-configured team labels + colours for this session.
+    const teams = parseTeams(currentSession && currentSession.Teams);
 
     // Index occupied slots: "TEAM|POSITION" → player row. Paid/Pending/
     // Overdue occupy a slot; Rejected frees it.
@@ -420,8 +445,10 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       <div class="tb-stat"><div class="tb-stat-num" style="color:var(--neon)">${filled}</div><div class="tb-stat-label">Filled</div></div>
       <div class="tb-stat"><div class="tb-stat-num" style="color:var(--text-secondary)">${totalSlots - filled}</div><div class="tb-stat-label">Open</div></div>`;
 
-    pitchesEl.innerHTML = TEAM_KEYS.map((teamKey) => {
-      const color = teamColors[teamKey] || '#00FF41';
+    pitchesEl.innerHTML = TEAM_KEYS.map((teamKey, teamIdx) => {
+      const teamCfg = teams[teamIdx] || KB_DEFAULT_TEAMS[teamIdx];
+      const color = teamCfg.color;
+      const teamLabel = teamCfg.label;
       let teamFilled = 0;
       const slots = formation.map((pos: any) => {
         const player = occupied[`${teamKey}|${pos.id}`];
@@ -430,12 +457,20 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
         let nameLine = `<span class="tb-slot-name">${esc(pos.full)}</span>`;
         if (player) {
           teamFilled++;
-          state = player['Payment Status'] === 'Paid' ? 'paid' : 'pending';
+          // 4-state model:
+          //   confirmed (paid)    — admin verified payment
+          //   verifying (pending) — receipt uploaded, awaiting admin check
+          //   held                — booked, no receipt yet (the only state
+          //                          with a release timer in practice)
+          const hasReceipt = !!String(player.Receipt || '').trim();
+          if (player['Payment Status'] === 'Paid') state = 'paid';
+          else if (hasReceipt) state = 'pending';
+          else state = 'held';
           inner = (String(player['Player Name'] || '?')[0] || '?').toUpperCase();
           nameLine = `<span class="tb-slot-name">${esc(player['Player Name'] || '')}</span>`;
         }
         return `<div class="tb-slot tb-slot--${state}" style="left:${pos.x}%;top:${pos.y}%;--tb-color:${color}"
-                     data-team="${teamKey}" data-pos="${esc(pos.id)}" data-pos-full="${esc(pos.full)}"
+                     data-team="${teamKey}" data-team-label="${esc(teamLabel)}" data-pos="${esc(pos.id)}" data-pos-full="${esc(pos.full)}"
                      data-state="${state}" ${player ? `data-player="${esc(player['Player Name'] || '')}"` : ''}>
           <div class="tb-slot-dot">${esc(inner)}</div>
           ${nameLine}
@@ -445,7 +480,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       return `<div class="tb-pitch-card">
         <div class="tb-pitch-head">
           <span class="tb-team-dot" style="background:${color}"></span>
-          <span class="tb-team-name" style="color:${color}">TEAM ${teamKey}</span>
+          <span class="tb-team-name" style="color:${color}">${esc(teamLabel)}</span>
           <span class="tb-pitch-count">${teamFilled}/${formation.length}</span>
         </div>
         <div class="tb-progress"><div class="tb-progress-fill" style="width:${pct}%;background:${color}"></div></div>
@@ -470,6 +505,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     if (slot.dataset.state !== 'empty') return; // taken — not bookable
     bookingContext = {
       team: slot.dataset.team || '',
+      teamLabel: slot.dataset.teamLabel || `Team ${slot.dataset.team || ''}`,
       position: slot.dataset.pos || '',
       posFull: slot.dataset.posFull || '',
     };
@@ -671,7 +707,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       document.getElementById('bookingCtxDot')!.textContent = bookingContext.position;
       document.getElementById('bookingCtxPos')!.textContent = bookingContext.posFull;
       document.getElementById('bookingCtxTeam')!.textContent =
-        `Team ${bookingContext.team} · ${currentSession?.['Session Name'] || ''}`;
+        `${bookingContext.teamLabel} · ${currentSession?.['Session Name'] || ''}`;
       ctxEl.style.display = '';
     } else {
       ctxEl.style.display = 'none';
@@ -740,7 +776,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
         ['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])
       );
       if (taken) {
-        showErr(errEl, `${bookingContext.posFull} on Team ${bookingContext.team} was just taken — close this and pick another open spot.`);
+        showErr(errEl, `${bookingContext.posFull} on ${bookingContext.teamLabel} was just taken — close this and pick another open spot.`);
         return;
       }
     }
@@ -1776,6 +1812,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   :global(.tb-leg-dot) { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
   :global(.tb-leg-dot--paid) { background: var(--neon); }
   :global(.tb-leg-dot--pending) { background: var(--orange); }
+  :global(.tb-leg-dot--held) { background: #ffb340; }
   :global(.tb-leg-dot--empty) { border: 1.5px dashed var(--text-muted); }
 
   :global(.tb-pitches) { display: grid; grid-template-columns: 1fr; gap: 1rem; }
@@ -1830,6 +1867,11 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     background: rgba(255,149,0,0.18); border: 2px solid var(--orange); color: var(--orange);
   }
   :global(.tb-slot--pending .tb-slot-name) { color: var(--orange); }
+  /* Held — booked, no receipt yet. Dashed ring signals "not locked in". */
+  :global(.tb-slot--held .tb-slot-dot) {
+    background: rgba(255,179,64,0.14); border: 2px dashed #ffb340; color: #ffb340;
+  }
+  :global(.tb-slot--held .tb-slot-name) { color: #ffb340; }
 
   /* Booking context banner inside the registration modal — also created
      dynamically (lives in the Layout modal, toggled by JS), so :global. */

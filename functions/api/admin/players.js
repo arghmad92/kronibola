@@ -1,7 +1,7 @@
 import { readSheet, writeSheet, reconcileByKey, json } from '../_sheets.js';
 import { verifyToken } from './auth.js';
 
-const HEADERS = ['Session Date', 'Player Name', 'Phone', 'Payment Status', 'Amount', 'Timestamp', 'Ref Code', 'Refund', 'Car Plate', 'IP', 'Country', 'User Agent', 'Team', 'Position'];
+const HEADERS = ['Session Date', 'Player Name', 'Phone', 'Payment Status', 'Amount', 'Timestamp', 'Ref Code', 'Refund', 'Car Plate', 'IP', 'Country', 'User Agent', 'Team', 'Position', 'Receipt'];
 // Fields the admin UI never edits on existing players. If a stale client
 // posts an empty string for one of these, treat it as "no change" — this
 // is what stopped the car-plate wipe after update-plate.js writes.
@@ -9,7 +9,9 @@ const HEADERS = ['Session Date', 'Player Name', 'Phone', 'Payment Status', 'Amou
 // for abuse tracing and must never be wiped by an admin save.
 // Team/Position are protected too: a non-empty value still wins (so admin
 // shuffle works), but an empty one from a stale client can't blank a slot.
-const PROTECTED = ['Session Date', 'Player Name', 'Phone', 'Amount', 'Timestamp', 'Car Plate', 'IP', 'Country', 'User Agent', 'Team', 'Position'];
+// Receipt is written by upload-receipt.js — protect it so an admin save
+// can't clear the receipt-uploaded timestamp.
+const PROTECTED = ['Session Date', 'Player Name', 'Phone', 'Amount', 'Timestamp', 'Car Plate', 'IP', 'Country', 'User Agent', 'Team', 'Position', 'Receipt'];
 
 export async function onRequest(context) {
   // Auth check

@@ -1213,6 +1213,29 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     } catch {}
   }
 
+  // Default 3-team labels/colours, and a parser for the Sessions `Teams`
+  // JSON column. Falls back to defaults for missing/invalid data so the
+  // builder always has 3 sensible teams.
+  const KB_DEFAULT_TEAMS = [
+    { label: 'Team A', color: '#00FF41' },
+    { label: 'Team B', color: '#00c4ff' },
+    { label: 'Team C', color: '#ff9500' },
+  ];
+  function parseTeams(raw: any) {
+    if (raw) {
+      try {
+        const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        if (Array.isArray(p) && p.length === 3) {
+          return p.map((t: any, i: number) => ({
+            label: (t && String(t.label || '').trim()) || KB_DEFAULT_TEAMS[i].label,
+            color: (t && String(t.color || '').trim()) || KB_DEFAULT_TEAMS[i].color,
+          }));
+        }
+      } catch {}
+    }
+    return KB_DEFAULT_TEAMS.map((t) => ({ ...t }));
+  }
+
   function renderSchedule() {
     const wrap = document.getElementById('scheduleList')!;
     if (!sessionsData.length) { wrap.innerHTML = '<p class="empty-msg">No games yet. Tap "+ ADD" to create one.</p>'; return; }
@@ -1289,6 +1312,13 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
               <option value="3-team-11" ${s.Format === '3-team-11' ? 'selected' : ''}>11-a-side · 3 teams (position builder)</option>
             </select>
           </div>
+          ${s.Format === '3-team-11' ? `<div class="ac-teams" data-idx="${i}">
+            <label>Teams — jersey colour &amp; name</label>
+            ${parseTeams(s.Teams).map((t: any, ti: number) => `<div class="ac-team-row">
+              <input type="color" class="s-teamcfg" data-idx="${i}" data-team="${ti}" data-tf="color" value="${esc(t.color)}" title="Team ${ti + 1} jersey colour" />
+              <input type="text" class="form-input s-teamcfg" data-idx="${i}" data-team="${ti}" data-tf="label" value="${esc(t.label)}" placeholder="e.g. Reds" maxlength="24" />
+            </div>`).join('')}
+          </div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -1297,6 +1327,31 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       el.addEventListener('change', (e) => {
         const t = e.target as HTMLInputElement;
         sessionsData[parseInt(t.dataset.idx!)][t.dataset.field!] = t.value;
+      });
+    });
+    // Format change re-renders the card so the Teams config appears/hides
+    // immediately, and bumps Max Players to 33 for a fresh team game.
+    wrap.querySelectorAll('.s-input[data-field="Format"]').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const idx = parseInt((e.target as HTMLSelectElement).dataset.idx!);
+        if ((e.target as HTMLSelectElement).value === '3-team-11') sessionsData[idx]['Max Players'] = 33;
+        renderSchedule();
+      });
+    });
+    // Team config inputs — any change re-serialises all 3 rows for that
+    // session into the Teams JSON column.
+    wrap.querySelectorAll('.s-teamcfg').forEach(el => {
+      el.addEventListener('change', (e) => {
+        const idx = parseInt((e.target as HTMLElement).dataset.idx!);
+        const cfg = [0, 1, 2].map((ti) => {
+          const colorEl = wrap.querySelector(`.s-teamcfg[data-idx="${idx}"][data-team="${ti}"][data-tf="color"]`) as HTMLInputElement | null;
+          const labelEl = wrap.querySelector(`.s-teamcfg[data-idx="${idx}"][data-team="${ti}"][data-tf="label"]`) as HTMLInputElement | null;
+          return {
+            label: (labelEl?.value || '').trim() || `Team ${String.fromCharCode(65 + ti)}`,
+            color: colorEl?.value || KB_DEFAULT_TEAMS[ti].color,
+          };
+        });
+        sessionsData[idx].Teams = JSON.stringify(cfg);
       });
     });
     wrap.querySelectorAll('.ac-btn--dup').forEach(btn => {
@@ -1332,7 +1387,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   });
 
   document.getElementById('addSessionBtn')!.addEventListener('click', () => {
-    sessionsData.push({ 'Session Name': '', Date: '', Time: '', Location: '', Fee: 10, Status: 'Open', 'Max Players': 15, 'Require Car Plate': 'No', Format: '' });
+    sessionsData.push({ 'Session Name': '', Date: '', Time: '', Location: '', Fee: 10, Status: 'Open', 'Max Players': 15, 'Require Car Plate': 'No', Format: '', Teams: '' });
     renderSchedule();
   });
 
@@ -1487,6 +1542,9 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     const sessionForDate = sessionsData.find((s: any) => s.Date === date);
     const isTeamGameDate = !!sessionForDate && String(sessionForDate.Format || '').trim() === '3-team-11';
     const formationSlots = (window as any).KB_FORMATION || [];
+    // Admin-defined team labels/colours for this session (falls back to
+    // Team A/B/C green/blue/orange). Team key A/B/C maps to index 0/1/2.
+    const teamsCfg = parseTeams(sessionForDate && sessionForDate.Teams);
 
     wrap.innerHTML = filtered.map((p: any, i: number) => {
       const phone = String(p.Phone || '').replace("'", '').trim();
@@ -1509,12 +1567,16 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
       const ua = String(p['User Agent'] || '').trim();
       const hasTraceData = !!(ip || country || ua);
 
-      // 3-team game: show which team + position this player booked.
+      // 3-team game: show which team + position this player booked,
+      // using the session's configured team label + colour.
       const pTeam = String(p.Team || '').trim().toUpperCase();
       const pPosition = String(p.Position || '').trim().toUpperCase();
-      const teamColors: Record<string, string> = { A: '#00FF41', B: '#00c4ff', C: '#ff9500' };
+      const pTeamIdx = 'ABC'.indexOf(pTeam);
+      const pTeamCfg = pTeamIdx >= 0 ? teamsCfg[pTeamIdx] : null;
+      const pTeamColor = pTeamCfg ? pTeamCfg.color : '#888';
+      const pTeamLabel = pTeamCfg ? pTeamCfg.label : pTeam;
       const teamPosBadge = (pTeam && pPosition)
-        ? `<span class="pca-teampos" style="color:${teamColors[pTeam] || '#888'};border-color:${teamColors[pTeam] || '#888'}55;background:${teamColors[pTeam] || '#888'}14">Team ${esc(pTeam)} · ${esc(pPosition)}</span>`
+        ? `<span class="pca-teampos" style="color:${pTeamColor};border-color:${pTeamColor}55;background:${pTeamColor}14">${esc(pTeamLabel)} · ${esc(pPosition)}</span>`
         : '';
 
       // Shuffle controls — only for 3-team sessions. A blank "—" option
@@ -1526,7 +1588,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
           <label>Team</label>
           <select class="form-select p-team" data-name="${playerName}">
             <option value="" ${!pTeam ? 'selected' : ''}>—</option>
-            ${['A', 'B', 'C'].map((t) => `<option value="${t}" ${pTeam === t ? 'selected' : ''}>Team ${t}</option>`).join('')}
+            ${['A', 'B', 'C'].map((t, ti) => `<option value="${t}" ${pTeam === t ? 'selected' : ''}>${esc(teamsCfg[ti].label)}</option>`).join('')}
           </select>
         </div>
         <div class="pca-field">
@@ -3737,6 +3799,19 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   .ac-day { color: var(--neon); text-transform: none; letter-spacing: 0; font-weight: 600; }
   .ac-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .ac-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+  /* 3-team session: jersey colour + name config */
+  .ac-teams {
+    display: flex; flex-direction: column; gap: 0.35rem;
+    padding: 0.6rem 0.7rem; border-radius: 10px;
+    background: rgba(0,255,65,0.03); border: 1px solid var(--border);
+  }
+  .ac-teams > label { font-size: 0.62rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .ac-team-row { display: flex; gap: 0.4rem; align-items: center; }
+  .ac-team-row input[type="color"] {
+    width: 38px; height: 34px; flex-shrink: 0; padding: 2px;
+    border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,0.04); cursor: pointer;
+  }
+  .ac-team-row .s-teamcfg[type="text"] { flex: 1; min-width: 0; }
 
   .s-input { padding: 0.6rem 0.8rem; font-size: 0.82rem; border-radius: 10px; width: 100%; min-width: 0; box-sizing: border-box; }
   select.s-input { appearance: none; padding-right: 2rem; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.8rem center; }

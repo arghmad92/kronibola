@@ -1,4 +1,4 @@
-import { json } from './_sheets.js';
+import { json, readSheet, batchUpdateCells } from './_sheets.js';
 
 async function verifyUploadToken(token, secret) {
   if (!token || !secret) return false;
@@ -122,6 +122,25 @@ export async function onRequest(context) {
     if (!tgResult.ok) {
       console.error('Telegram error:', tgResult.description);
       return json({ error: 'Receipt upload failed. Please try again.' }, 500);
+    }
+
+    // Flag the registration row as having a receipt — this drives the
+    // "Verifying" slot state on the 3-team pitch (receipt in, awaiting
+    // admin confirmation). Non-fatal: the receipt already reached
+    // Telegram, so a Sheets hiccup here shouldn't fail the upload.
+    try {
+      const regs = await readSheet(context.env, 'Registrations');
+      const idx = regs.findIndex((r) => String(r['Ref Code'] || '').trim() === String(refCode).trim());
+      if (idx !== -1) {
+        const stamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+        // Receipt is column O — 15th in the Registrations HEADERS
+        // (… Team, Position, Receipt). Header is row 1, so data idx + 2.
+        await batchUpdateCells(context.env, [
+          { range: `Registrations!O${idx + 2}`, values: [[stamp]] },
+        ]);
+      }
+    } catch (e) {
+      console.warn('Receipt flag writeback failed (non-fatal):', e && e.message);
     }
 
     return json({ success: true });
