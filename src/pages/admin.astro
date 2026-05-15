@@ -103,6 +103,10 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
         </div>
         <!-- Per-game summary -->
         <div id="playersSummary" class="order-summary" style="display:none"></div>
+        <!-- 3-team visual — only shown for Format=3-team-11 sessions.
+             Click a filled slot to jump to that player's card; click an
+             empty slot to open the Add Player form pre-filled. -->
+        <div id="adminTeamView" style="display:none;margin-bottom:0.8rem"></div>
         <!-- Share to WhatsApp -->
         <div id="shareWaSection" style="display:none;margin-bottom:0.8rem">
           <div class="share-wa-btns">
@@ -1530,6 +1534,126 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     `;
   }
 
+  // 3-team pitch view shown above the player cards. Mirrors the public
+  // builder visually but with admin-friendly affordances: every slot is
+  // clickable. Filled slot → jump to that player's card; empty slot →
+  // open the Add Player Manually form pre-filled with that team+position.
+  function renderAdminTeamView(
+    date: string,
+    players: any[],
+    teamsCfg: any[],
+    isTeamGame: boolean,
+    formationSlots: any[]
+  ) {
+    const view = document.getElementById('adminTeamView')!;
+    if (!isTeamGame || !formationSlots.length) { view.style.display = 'none'; view.innerHTML = ''; return; }
+
+    // Index occupied slots by "TEAM|POSITION".
+    const occupied: Record<string, any> = {};
+    players.forEach((p: any) => {
+      if (String(p['Session Date']) !== date) return;
+      if (!['Paid', 'Pending', 'Overdue'].includes(p['Payment Status'])) return;
+      const t = String(p.Team || '').trim().toUpperCase();
+      const pos = String(p.Position || '').trim().toUpperCase();
+      if (!t || !pos) return;
+      occupied[`${t}|${pos}`] = p;
+    });
+
+    const totalSlots = 3 * formationSlots.length;
+    const filled = Object.keys(occupied).length;
+
+    const pitches = ['A', 'B', 'C'].map((teamKey, ti) => {
+      const tc = teamsCfg[ti] || { label: `Team ${teamKey}`, color: '#888' };
+      const color = tc.color;
+      const label = tc.label;
+      let teamFilled = 0;
+      const slots = formationSlots.map((pos: any) => {
+        const player = occupied[`${teamKey}|${pos.id}`];
+        let state = 'empty';
+        let inner = pos.label;
+        let nameLine = `<span class="atv-slot-name">${esc(pos.full)}</span>`;
+        if (player) {
+          teamFilled++;
+          const hasReceipt = !!String(player.Receipt || '').trim();
+          if (player['Payment Status'] === 'Paid') state = 'paid';
+          else if (hasReceipt) state = 'pending';
+          else state = 'held';
+          inner = (String(player['Player Name'] || '?')[0] || '?').toUpperCase();
+          nameLine = `<span class="atv-slot-name">${esc(player['Player Name'] || '')}</span>`;
+        }
+        const dataAttrs = player
+          ? `data-state="${state}" data-ref="${esc(player['Ref Code'] || '')}" data-name="${esc(player['Player Name'] || '')}"`
+          : `data-state="empty" data-team="${teamKey}" data-pos="${esc(pos.id)}"`;
+        return `<div class="atv-slot atv-slot--${state}" style="left:${pos.x}%;top:${pos.y}%;--atv-color:${color}" ${dataAttrs}>
+          <div class="atv-slot-dot">${esc(inner)}</div>
+          ${nameLine}
+        </div>`;
+      }).join('');
+      return `<div class="atv-pitch-card">
+        <div class="atv-pitch-head">
+          <span class="atv-team-dot" style="background:${color}"></span>
+          <span class="atv-team-name" style="color:${color}">${esc(label)}</span>
+          <span class="atv-pitch-count">${teamFilled}/${formationSlots.length}</span>
+        </div>
+        <div class="atv-pitch">
+          <div class="atv-lines">
+            <div class="atv-pl atv-pl-outline"></div>
+            <div class="atv-pl atv-pl-halfway"></div>
+            <div class="atv-pl atv-pl-circle"></div>
+            <div class="atv-pl atv-pl-box-top"></div>
+            <div class="atv-pl atv-pl-box-bot"></div>
+          </div>
+          ${slots}
+        </div>
+      </div>`;
+    }).join('');
+
+    view.innerHTML = `
+      <div class="atv-head">
+        <span class="atv-title">Pitch view</span>
+        <span class="atv-sub">${filled}/${totalSlots} filled · tap a player to jump · tap an empty slot to add</span>
+      </div>
+      <div class="atv-pitches">${pitches}</div>
+    `;
+    view.style.display = '';
+  }
+
+  // Pitch-view interaction. Filled slot → scroll the matching card into
+  // view + brief flash. Empty slot → open the Add Player Manually form
+  // pre-filled with that team + position.
+  document.getElementById('adminTeamView')!.addEventListener('click', (e) => {
+    const slot = (e.target as HTMLElement).closest('.atv-slot') as HTMLElement | null;
+    if (!slot) return;
+    const state = slot.dataset.state || '';
+    if (state === 'empty') {
+      const team = slot.dataset.team || '';
+      const pos = slot.dataset.pos || '';
+      // Open the add-player form, populate the conditional rows, then
+      // pre-set Team + Position to the slot the admin tapped.
+      addPlayerBox.style.display = '';
+      syncApPlateRow();
+      syncApTeamRow();
+      const teamSel = document.getElementById('apTeam') as HTMLSelectElement | null;
+      const posSel = document.getElementById('apPosition') as HTMLSelectElement | null;
+      if (teamSel) teamSel.value = team;
+      if (posSel) posSel.value = pos;
+      addPlayerBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const nameInput = document.getElementById('apName') as HTMLInputElement | null;
+      if (nameInput) setTimeout(() => nameInput.focus(), 350);
+    } else {
+      const ref = slot.dataset.ref || '';
+      if (!ref) return;
+      const card = document.querySelector(`#playersList .player-card-admin[data-ref="${ref.replace(/"/g, '\\"')}"]`) as HTMLElement | null;
+      if (!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Re-trigger the flash animation: removing then re-adding the class
+      // forces a reflow so the keyframes restart even on rapid taps.
+      card.classList.remove('pca-flash');
+      void card.offsetWidth;
+      card.classList.add('pca-flash');
+    }
+  });
+
   function renderPlayers(date: string) {
     const wrap = document.getElementById('playersList')!;
     const filtered = allPlayers
@@ -1557,6 +1681,9 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     // Admin-defined team labels/colours for this session (falls back to
     // Team A/B/C green/blue/orange). Team key A/B/C maps to index 0/1/2.
     const teamsCfg = parseTeams(sessionForDate && sessionForDate.Teams);
+
+    // 3-team visual at the top of the tab — at-a-glance pitch view.
+    renderAdminTeamView(date, filtered, teamsCfg, isTeamGameDate, formationSlots);
 
     wrap.innerHTML = filtered.map((p: any, i: number) => {
       const phone = String(p.Phone || '').replace("'", '').trim();
@@ -1612,7 +1739,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
         </div>
       </div>` : '';
 
-      return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
+      return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}" data-ref="${esc(ref)}">
         <div class="pca-top">
           <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">${esc(initial)}</div>
           <div class="pca-info">
@@ -4361,5 +4488,78 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
 
   [data-theme="light"] .brand-name {
     color: var(--text);
+  }
+
+  /* === Admin 3-team pitch view (mirrors the homepage builder, tighter
+     sizing for management. Lives under #adminTeamView so it can't bleed
+     into the rest of the admin UI.) === */
+  #adminTeamView {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 0.85rem;
+  }
+  #adminTeamView .atv-head {
+    display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.7rem;
+  }
+  #adminTeamView .atv-title {
+    font-family: 'Space Grotesk', sans-serif; font-size: 0.78rem; font-weight: 700;
+    letter-spacing: 0.08em; color: var(--text); text-transform: uppercase;
+  }
+  #adminTeamView .atv-sub { font-size: 0.66rem; color: var(--text-muted); }
+  #adminTeamView .atv-pitches { display: grid; grid-template-columns: 1fr; gap: 0.7rem; }
+  @media (min-width: 720px) { #adminTeamView .atv-pitches { grid-template-columns: repeat(3, 1fr); } }
+
+  #adminTeamView .atv-pitch-card { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; padding: 0.6rem; }
+  #adminTeamView .atv-pitch-head { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.45rem; }
+  #adminTeamView .atv-team-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  #adminTeamView .atv-team-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.04em; }
+  #adminTeamView .atv-pitch-count { margin-left: auto; font-size: 0.68rem; color: var(--text-secondary); font-weight: 600; }
+
+  #adminTeamView .atv-pitch {
+    position: relative; width: 100%; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden;
+    background: repeating-linear-gradient(0deg, #0c2912 0, #0c2912 11.11%, #0a1f0e 11.11%, #0a1f0e 22.22%);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  #adminTeamView .atv-lines { position: absolute; inset: 0; }
+  #adminTeamView .atv-pl { position: absolute; }
+  #adminTeamView .atv-pl-outline { inset: 4%; border: 1.5px solid rgba(255,255,255,0.12); border-radius: 3px; }
+  #adminTeamView .atv-pl-halfway { left: 4%; right: 4%; top: 50%; border-top: 1.5px solid rgba(255,255,255,0.12); }
+  #adminTeamView .atv-pl-circle { left: 50%; top: 50%; width: 26%; aspect-ratio: 1; transform: translate(-50%,-50%);
+    border: 1.5px solid rgba(255,255,255,0.12); border-radius: 50%; }
+  #adminTeamView .atv-pl-box-top { left: 26%; right: 26%; top: 4%; height: 15%; border: 1.5px solid rgba(255,255,255,0.12); border-top: none; }
+  #adminTeamView .atv-pl-box-bot { left: 26%; right: 26%; bottom: 4%; height: 15%; border: 1.5px solid rgba(255,255,255,0.12); border-bottom: none; }
+
+  #adminTeamView .atv-slot {
+    position: absolute; transform: translate(-50%,-50%); width: 50px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
+  }
+  #adminTeamView .atv-slot:active .atv-slot-dot { transform: scale(0.92); }
+  #adminTeamView .atv-slot-dot {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.72rem; transition: transform 0.15s, box-shadow 0.15s;
+  }
+  #adminTeamView .atv-slot-name {
+    font-size: 0.52rem; font-weight: 600; max-width: 50px; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #adminTeamView .atv-slot--empty .atv-slot-dot {
+    background: rgba(0,0,0,0.25); border: 1.5px dashed rgba(255,255,255,0.3); color: rgba(255,255,255,0.45);
+  }
+  #adminTeamView .atv-slot--empty:hover .atv-slot-dot { border-color: var(--atv-color); color: var(--atv-color); box-shadow: 0 0 0 3px rgba(255,255,255,0.04); }
+  #adminTeamView .atv-slot--empty .atv-slot-name { color: rgba(255,255,255,0.35); }
+  #adminTeamView .atv-slot--paid .atv-slot-dot { background: color-mix(in srgb, var(--atv-color) 22%, #000); border: 2px solid var(--atv-color); color: var(--atv-color); }
+  #adminTeamView .atv-slot--paid .atv-slot-name { color: #fff; }
+  #adminTeamView .atv-slot--pending .atv-slot-dot { background: rgba(255,149,0,0.18); border: 2px solid var(--orange); color: var(--orange); }
+  #adminTeamView .atv-slot--pending .atv-slot-name { color: var(--orange); }
+  #adminTeamView .atv-slot--held .atv-slot-dot { background: rgba(255,179,64,0.14); border: 2px dashed #ffb340; color: #ffb340; }
+  #adminTeamView .atv-slot--held .atv-slot-name { color: #ffb340; }
+
+  /* Brief highlight when a card is jumped-to from a pitch click */
+  .player-card-admin.pca-flash {
+    animation: pcaFlash 1.4s ease;
+  }
+  @keyframes pcaFlash {
+    0%   { box-shadow: 0 0 0 0 var(--neon), 0 0 0 0 rgba(0,255,65,0.5); }
+    30%  { box-shadow: 0 0 0 2px var(--neon), 0 0 18px 4px rgba(0,255,65,0.4); }
+    100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
   }
 </style>
