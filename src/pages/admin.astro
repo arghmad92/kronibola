@@ -3439,8 +3439,8 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   }
   .pca-trace-toggle:hover { color: var(--text); border-color: var(--border-light); background: rgba(255,255,255,0.03); }
   .pca-trace {
-    margin-top: 0.6rem; padding: 0.6rem 0.7rem; border-radius: 10px;
-    background: rgba(255,255,255,0.02); border: 1px dashed var(--border);
+    margin-top: 0.5rem; padding: 0.5rem 0.6rem; border-radius: 10px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
     font-size: 0.74rem; font-family: 'Space Grotesk', sans-serif;
     display: flex; flex-direction: column; gap: 0.3rem;
   }
@@ -3973,7 +3973,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   .panel-title { font-size: 1rem; font-family: 'Space Grotesk', sans-serif; }
   .btn--sm { padding: 0.5rem 1rem; font-size: 0.72rem; }
 
-  .card-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .card-list { display: flex; flex-direction: column; gap: 0.45rem; }
   .empty-msg { color: var(--text-muted); padding: 1.5rem; text-align: center; font-size: 0.85rem; }
 
   /* Schedule Cards */
@@ -4031,28 +4031,29 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
 
   /* Player Cards */
   .player-card-admin {
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 1rem; transition: all 0.2s;
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 0.75rem; transition: all 0.2s;
   }
   .player-card--overdue { border-color: rgba(255,87,34,0.3); background: rgba(255,87,34,0.04); }
 
-  .pca-top { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.8rem; }
+  .pca-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.55rem; }
   .pca-avatar {
-    width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 0.85rem; font-weight: 800; border: 2px solid; font-family: 'Space Grotesk', sans-serif; flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 800; border: 2px solid; font-family: 'Space Grotesk', sans-serif; flex-shrink: 0;
   }
   .pca-info { flex: 1; min-width: 0; }
-  .pca-name { display: block; font-weight: 700; font-size: 0.9rem; }
-  .pca-phone { display: block; font-size: 0.72rem; color: var(--text-muted); }
-  .pca-ref { display: inline-block; font-size: 0.62rem; font-family: 'Space Grotesk', monospace; color: var(--neon); background: rgba(0,255,65,0.08); padding: 0.1rem 0.4rem; border-radius: 4px; margin-top: 0.15rem; }
+  .pca-name { display: block; font-weight: 700; font-size: 0.88rem; line-height: 1.2; }
+  .pca-phone { display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+  .pca-ref { display: inline-block; font-size: 0.6rem; font-family: 'Space Grotesk', monospace; color: var(--neon); background: rgba(0,255,65,0.08); padding: 0.08rem 0.35rem; border-radius: 4px; margin-top: 0.15rem; }
 
-  .pca-controls { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
+  .pca-controls { display: flex; gap: 0.45rem; align-items: flex-end; flex-wrap: wrap; }
   @media (max-width: 480px) { .pca-controls { flex-direction: column; align-items: stretch; } .pca-wa { align-self: flex-start; } }
   .pca-field { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; }
-  /* Team/Position shuffle row — 3-team sessions only */
+  /* Team/Position shuffle row — 3-team sessions only. Solid hairline
+     instead of dashed reads cleaner alongside the trace expander. */
   .pca-shuffle {
-    display: flex; gap: 0.5rem; margin-top: 0.6rem; padding-top: 0.6rem;
-    border-top: 1px dashed var(--border);
+    display: flex; gap: 0.45rem; margin-top: 0.5rem; padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
   }
   .pca-shuffle .pca-field { flex: 1; min-width: 0; }
   .pca-shuffle .form-select { font-size: 0.8rem; }
@@ -4107,11 +4108,12 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   .rev-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden; }
   .rev-bar-fill { height: 100%; background: linear-gradient(90deg, var(--neon-dim), var(--neon)); border-radius: 100px; transition: width 0.6s ease; }
 
-  /* Add player */
+  /* Add player — dashed accent kept (signals "form to fill out") but
+     padding tightened to match the player cards for a denser look. */
   .add-player-box {
     background: rgba(0,255,65,0.03); border: 1px dashed rgba(0,255,65,0.2);
-    border-radius: 14px; padding: 1rem; margin-bottom: 0.8rem;
-    display: flex; flex-direction: column; gap: 0.6rem;
+    border-radius: 14px; padding: 0.75rem; margin-bottom: 0.7rem;
+    display: flex; flex-direction: column; gap: 0.55rem;
   }
   .ap-row { display: flex; gap: 0.5rem; }
   /* Without min-width:0, flex children can't shrink below their content's
