@@ -4077,7 +4077,10 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .pca-phone {
-    display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 1px;
+    /* Bumped from 1px → 5px so the team badge (inline in .pca-name) and
+       the country badge (inline here) have visible breathing room and
+       don't read as a stacked colour collision. */
+    display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .pca-ref { display: inline-block; font-size: 0.6rem; font-family: 'Space Grotesk', monospace; color: var(--neon); background: rgba(0,255,65,0.08); padding: 0.08rem 0.35rem; border-radius: 4px; margin-top: 0.15rem; }
@@ -4109,13 +4112,20 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   .pca-wa:hover { background: #25D366; color: #fff; }
 
   .pca-save {
-    height: 38px; padding: 0 0.8rem; flex-shrink: 0;
+    /* min-width keeps the button SAVE-sized even when its text changes
+       to the in-flight "…" (otherwise it visibly shrinks to fit one
+       character, which on top of the browser's default focus ring made
+       the post-click state look like a box inside a box). Inline-flex
+       so the in-flight character stays centred. */
+    min-width: 64px; height: 38px; padding: 0 0.8rem; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
     background: rgba(0,255,65,0.1); border: 1px solid rgba(0,255,65,0.25);
-    color: var(--neon); border-radius: 10px; cursor: pointer;
+    color: var(--neon); border-radius: 10px; cursor: pointer; outline: none;
     font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-    font-size: 0.72rem; letter-spacing: 0.08em; transition: all 0.2s;
+    font-size: 0.72rem; letter-spacing: 0.08em; transition: background 0.2s, border-color 0.2s, opacity 0.2s;
   }
   .pca-save:hover:not(:disabled) { background: rgba(0,255,65,0.2); border-color: rgba(0,255,65,0.5); }
+  .pca-save:focus-visible { box-shadow: 0 0 0 2px rgba(0,255,65,0.5); }
   .pca-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
   .pca-save--danger {
@@ -4124,6 +4134,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   .pca-save--danger:hover:not(:disabled) {
     background: rgba(255,59,48,0.2); border-color: rgba(255,59,48,0.55);
   }
+  .pca-save--danger:focus-visible { box-shadow: 0 0 0 2px rgba(255,59,48,0.5); }
 
   .pca-save--info {
     background: rgba(0,196,255,0.1); border-color: rgba(0,196,255,0.3); color: #00c4ff;
@@ -4131,6 +4142,7 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
   .pca-save--info:hover:not(:disabled) {
     background: rgba(0,196,255,0.2); border-color: rgba(0,196,255,0.55);
   }
+  .pca-save--info:focus-visible { box-shadow: 0 0 0 2px rgba(0,196,255,0.5); }
 
   /* Revenue */
   .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1.5rem; }
