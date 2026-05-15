@@ -67,11 +67,18 @@ async function flagOverdue(env, players) {
 // internal admin data. Anyone calling /api/players (this is unauthenticated)
 // gets only these fields. The admin equivalent /api/admin/players is auth-
 // gated and returns the full row.
+//
+// Team / Position / Receipt are public on purpose — they drive the 3-team
+// position builder (whose player sits on which slot, in which state).
+// They're not PII; they're the whole point of the public pitch view.
 function publicPlayer(p) {
   return {
     'Session Date': p['Session Date'] || '',
     'Player Name': p['Player Name'] || '',
     'Payment Status': p['Payment Status'] || '',
+    'Team': p['Team'] || '',
+    'Position': p['Position'] || '',
+    'Receipt': p['Receipt'] || '',
   };
 }
 
