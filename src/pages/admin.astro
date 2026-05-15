@@ -1,5 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { FORMATIONS } from '../../functions/api/_formations.js';
+// Formation slot list for the admin shuffle dropdowns — same source the
+// homepage and the Worker use, so the Position options always match the
+// real slots.
+const FORMATION_433 = FORMATIONS['4-3-3'];
 ---
 
 <Layout title="Admin — KroniBola" hideNav={true} noindex={true}>
@@ -491,6 +496,11 @@ import Layout from '../layouts/Layout.astro';
     <p class="ssm">SSM: 202603032902 (TR0336774-T)</p>
   </footer>
 </Layout>
+
+<!-- Formation slot list for the admin shuffle dropdowns. -->
+<script is:inline define:vars={{ kbFormation: FORMATION_433 }}>
+  window.KB_FORMATION = kbFormation;
+</script>
 
 <script>
   const API = '/api';
@@ -1473,6 +1483,11 @@ import Layout from '../layouts/Layout.astro';
 
     const statusColors: Record<string, string> = { Paid: '#00FF41', Pending: '#ff9500', Overdue: '#ff5722', Waitlist: '#00c4ff', Rejected: '#ff3b30' };
 
+    // 3-team game? If so, each card gets Team + Position shuffle dropdowns.
+    const sessionForDate = sessionsData.find((s: any) => s.Date === date);
+    const isTeamGameDate = !!sessionForDate && String(sessionForDate.Format || '').trim() === '3-team-11';
+    const formationSlots = (window as any).KB_FORMATION || [];
+
     wrap.innerHTML = filtered.map((p: any, i: number) => {
       const phone = String(p.Phone || '').replace("'", '').trim();
       const ref = p['Ref Code'] || '';
@@ -1502,6 +1517,27 @@ import Layout from '../layouts/Layout.astro';
         ? `<span class="pca-teampos" style="color:${teamColors[pTeam] || '#888'};border-color:${teamColors[pTeam] || '#888'}55;background:${teamColors[pTeam] || '#888'}14">Team ${esc(pTeam)} · ${esc(pPosition)}</span>`
         : '';
 
+      // Shuffle controls — only for 3-team sessions. A blank "—" option
+      // sits first so a player with no team/position set doesn't get one
+      // auto-assigned on save. Team/Position are PROTECTED server-side, so
+      // an untouched blank reverts to existing rather than wiping.
+      const shuffleRow = isTeamGameDate ? `<div class="pca-shuffle">
+        <div class="pca-field">
+          <label>Team</label>
+          <select class="form-select p-team" data-name="${playerName}">
+            <option value="" ${!pTeam ? 'selected' : ''}>—</option>
+            ${['A', 'B', 'C'].map((t) => `<option value="${t}" ${pTeam === t ? 'selected' : ''}>Team ${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="pca-field">
+          <label>Position</label>
+          <select class="form-select p-position" data-name="${playerName}">
+            <option value="" ${!pPosition ? 'selected' : ''}>—</option>
+            ${formationSlots.map((s: any) => `<option value="${esc(s.id)}" ${pPosition === String(s.id).toUpperCase() ? 'selected' : ''}>${esc(s.id)} — ${esc(s.full)}</option>`).join('')}
+          </select>
+        </div>
+      </div>` : '';
+
       return `<div class="player-card-admin ${isOverdue ? 'player-card--overdue' : ''}">
         <div class="pca-top">
           <div class="pca-avatar" style="background:${color}18;color:${color};border-color:${color}40">${esc(initial)}</div>
@@ -1518,6 +1554,7 @@ import Layout from '../layouts/Layout.astro';
           ${ua ? `<div><span class="trace-label">Device</span><span class="trace-val" title="${esc(ua)}">${esc(ua.slice(0, 80))}${ua.length > 80 ? '…' : ''}</span></div>` : ''}
           <button type="button" class="pca-block" data-phone="${esc(phone)}" data-ip="${esc(ip)}" data-name="${playerName}">🚫 BLOCK PHONE${ip ? ' + IP' : ''}</button>
         </div>` : ''}
+        ${shuffleRow}
         <div class="pca-controls">
           <div class="pca-field">
             <label>Status</label>
@@ -1737,6 +1774,13 @@ import Layout from '../layouts/Layout.astro';
     const refundMap = new Map<string, string>();
     document.querySelectorAll('.p-refund').forEach(sel => refundMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value));
 
+    // Team/Position shuffle maps — only populated for 3-team sessions
+    // (the .p-team / .p-position selects only render there).
+    const teamMap = new Map<string, string>();
+    document.querySelectorAll('.p-team').forEach(sel => teamMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value));
+    const positionMap = new Map<string, string>();
+    document.querySelectorAll('.p-position').forEach(sel => positionMap.set((sel as HTMLSelectElement).dataset.name!, (sel as HTMLSelectElement).value));
+
     const changedPlayers: { name: string; phone: string; oldStatus: string; newStatus: string }[] = [];
     // Collect Ref Codes for the deletions so the server can action them
     // explicitly. Rows missing from the payload are preserved now.
@@ -1754,6 +1798,10 @@ import Layout from '../layouts/Layout.astro';
           p['Payment Status'] = ns;
         }
         if (refundMap.has(p['Player Name'])) p['Refund'] = refundMap.get(p['Player Name']);
+        // Apply team/position shuffle. An empty value can't wipe an
+        // existing slot — Team/Position are PROTECTED server-side.
+        if (teamMap.has(p['Player Name'])) p['Team'] = teamMap.get(p['Player Name']);
+        if (positionMap.has(p['Player Name'])) p['Position'] = positionMap.get(p['Player Name']);
       }
       return p;
     }).filter(Boolean);
@@ -3724,6 +3772,13 @@ import Layout from '../layouts/Layout.astro';
   .pca-controls { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
   @media (max-width: 480px) { .pca-controls { flex-direction: column; align-items: stretch; } .pca-wa { align-self: flex-start; } }
   .pca-field { flex: 1; display: flex; flex-direction: column; gap: 0.15rem; }
+  /* Team/Position shuffle row — 3-team sessions only */
+  .pca-shuffle {
+    display: flex; gap: 0.5rem; margin-top: 0.6rem; padding-top: 0.6rem;
+    border-top: 1px dashed var(--border);
+  }
+  .pca-shuffle .pca-field { flex: 1; min-width: 0; }
+  .pca-shuffle .form-select { font-size: 0.8rem; }
   .pca-field label { font-size: 0.58rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
   .pca-field .form-select { padding: 0.5rem 0.6rem; font-size: 0.78rem; border-radius: 10px; }
   .pca-wa {
