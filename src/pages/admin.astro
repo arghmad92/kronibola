@@ -4118,6 +4118,13 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
      intrinsic width — long select options (e.g. "RCM — Centre Mid")
      force the row wider than the form box. */
   .ap-row > .form-group { min-width: 0; }
+  /* Inputs/selects in the manual-add form need width:100% + border-box so
+     they actually fill (and stay within) their flex parent. Without these,
+     padding lives outside the layout width and the field overflows the
+     row, especially on phones. */
+  #addPlayerBox { box-sizing: border-box; }
+  #addPlayerBox .form-input,
+  #addPlayerBox .form-select { width: 100%; box-sizing: border-box; }
   @media (max-width: 400px) { .ap-row { flex-direction: column; } }
   /* Team + Position selects carry longer text than the other rows; stack
      them at a wider breakpoint so they each get full width on phones. */
