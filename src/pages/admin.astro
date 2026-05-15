@@ -4114,7 +4114,14 @@ const FORMATION_433 = FORMATIONS['4-3-3'];
     display: flex; flex-direction: column; gap: 0.6rem;
   }
   .ap-row { display: flex; gap: 0.5rem; }
+  /* Without min-width:0, flex children can't shrink below their content's
+     intrinsic width — long select options (e.g. "RCM — Centre Mid")
+     force the row wider than the form box. */
+  .ap-row > .form-group { min-width: 0; }
   @media (max-width: 400px) { .ap-row { flex-direction: column; } }
+  /* Team + Position selects carry longer text than the other rows; stack
+     them at a wider breakpoint so they each get full width on phones. */
+  @media (max-width: 540px) { #apTeamRow { flex-direction: column; } }
 
   /* Notification cards */
   .notif-card {
